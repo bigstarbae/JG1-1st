@@ -1,0 +1,999 @@
+object frmEdit: TfrmEdit
+  Left = 266
+  Top = 119
+  BorderIcons = [biSystemMenu]
+  Caption = 'Model'
+  ClientHeight = 902
+  ClientWidth = 737
+  Color = clBtnFace
+  Font.Charset = HANGEUL_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -13
+  Font.Name = #44404#47548
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poDefault
+  OnClose = FormClose
+  OnCloseQuery = FormCloseQuery
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnShow = FormShow
+  PixelsPerInch = 96
+  TextHeight = 13
+  object shp6: TShape
+    Left = 22
+    Top = 147
+    Width = 672
+    Height = 1
+    Brush.Color = clBlack
+  end
+  object lbl62: TLabel
+    Left = 19
+    Top = 163
+    Width = 53
+    Height = 13
+    Alignment = taRightJustify
+    Caption = 'HEIGHT'
+    Font.Charset = HANGEUL_CHARSET
+    Font.Color = 2894892
+    Font.Height = -13
+    Font.Name = #44404#47548
+    Font.Style = [fsBold]
+    ParentFont = False
+  end
+  object Panel1: TPanel
+    Left = 0
+    Top = 0
+    Width = 737
+    Height = 902
+    Align = alClient
+    BevelOuter = bvNone
+    BorderStyle = bsSingle
+    Color = 15593457
+    Ctl3D = False
+    Font.Charset = HANGEUL_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    ParentBackground = False
+    ParentCtl3D = False
+    ParentFont = False
+    TabOrder = 0
+    object Shape3: TShape
+      Left = 8
+      Top = 12
+      Width = 700
+      Height = 5
+      Brush.Color = clBlack
+    end
+    object Label2: TLabel
+      Left = 63
+      Top = 65
+      Width = 33
+      Height = 16
+      Alignment = taRightJustify
+      Caption = 'Name'
+      FocusControl = edtPartName
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+    end
+    object Label3: TLabel
+      Left = 54
+      Top = 94
+      Width = 42
+      Height = 16
+      Alignment = taRightJustify
+      Caption = 'Part No'
+      FocusControl = edtPartNo
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+    end
+    object Shape6: TShape
+      Left = 8
+      Top = 50
+      Width = 700
+      Height = 1
+      Brush.Color = clBlack
+    end
+    object labPartName: TLabel
+      Left = 16
+      Top = 25
+      Width = 74
+      Height = 16
+      Caption = #47784#45944' '#51221#48372
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -16
+      Font.Name = #44404#47548
+      Font.Style = [fsBold]
+      ParentFont = False
+    end
+    object Shape7: TShape
+      Left = 8
+      Top = 124
+      Width = 700
+      Height = 2
+      Brush.Color = clBlack
+    end
+    object labIndex: TLabel
+      Left = 657
+      Top = 20
+      Width = 49
+      Height = 27
+      Alignment = taCenter
+      AutoSize = False
+      Caption = '01'
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -27
+      Font.Name = #44404#47548
+      Font.Style = [fsBold]
+      ParentFont = False
+      Layout = tlCenter
+    end
+    object edtPartName: TEdit
+      Left = 106
+      Top = 64
+      Width = 550
+      Height = 19
+      Ctl3D = False
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = #44404#47548
+      Font.Style = []
+      ImeName = #54620#44397#50612' '#51077#47141' '#49884#49828#53596' (IME 2000)'
+      MaxLength = 62
+      ParentCtl3D = False
+      ParentFont = False
+      TabOrder = 0
+      OnChange = edtPartNameChange
+    end
+    object edtPartNo: TEdit
+      Left = 106
+      Top = 92
+      Width = 550
+      Height = 19
+      Ctl3D = False
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = #44404#47548
+      Font.Style = []
+      ImeName = #54620#44397#50612' '#51077#47141' '#49884#49828#53596' (IME 2000)'
+      MaxLength = 62
+      ParentCtl3D = False
+      ParentFont = False
+      TabOrder = 1
+      OnChange = edtPartNameChange
+    end
+    object GroupBox1: TGroupBox
+      Left = 957
+      Top = 432
+      Width = 653
+      Height = 117
+      Caption = #49548#51020' '#44160#49324'(&E)'
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = #44404#47548
+      Font.Style = [fsBold]
+      ParentFont = False
+      TabOrder = 4
+      Visible = False
+      object Label6: TLabel
+        Left = 59
+        Top = 34
+        Width = 127
+        Height = 13
+        Alignment = taRightJustify
+        Caption = #51089#46041' '#49548#51020' '#44160#49324' '#44592#51456
+      end
+      object Label9: TLabel
+        Left = 335
+        Top = 34
+        Width = 74
+        Height = 13
+        Caption = '( dB '#51060#54616' )'
+      end
+      object Label49: TLabel
+        Left = 436
+        Top = 34
+        Width = 39
+        Height = 13
+        Alignment = taRightJustify
+        Caption = 'offset'
+        Visible = False
+      end
+      object Label50: TLabel
+        Left = 482
+        Top = 15
+        Width = 25
+        Height = 13
+        Caption = '#12'
+        Visible = False
+      end
+      object Label51: TLabel
+        Left = 547
+        Top = 15
+        Width = 25
+        Height = 13
+        Caption = '#13'
+        Visible = False
+      end
+      object Label58: TLabel
+        Left = 36
+        Top = 63
+        Width = 150
+        Height = 13
+        Alignment = taRightJustify
+        Caption = #52488#44592#51089#46041' '#49548#51020' '#52769#51221#44396#44036
+      end
+      object Label59: TLabel
+        Left = 335
+        Top = 63
+        Width = 69
+        Height = 13
+        Caption = '( '#52488' '#44620#51648' )'
+      end
+      object Label61: TLabel
+        Left = 36
+        Top = 86
+        Width = 150
+        Height = 13
+        Alignment = taRightJustify
+        Caption = #52488#44592#51089#46041' '#49548#51020' '#44160#49324#44592#51456
+      end
+      object Label62: TLabel
+        Left = 335
+        Top = 86
+        Width = 74
+        Height = 13
+        Caption = '( dB '#51060#54616' )'
+      end
+      object Label63: TLabel
+        Left = 436
+        Top = 86
+        Width = 39
+        Height = 13
+        Alignment = taRightJustify
+        Caption = 'offset'
+        Visible = False
+      end
+      object edtNoiseRunning: TEdit
+        Left = 190
+        Top = 31
+        Width = 141
+        Height = 19
+        Ctl3D = False
+        ImeName = 'Microsoft IME 2003'
+        ParentCtl3D = False
+        TabOrder = 0
+        OnChange = edtPartNameChange
+      end
+      object edtOffsetNoiseRunning0: TEdit
+        Left = 480
+        Top = 31
+        Width = 62
+        Height = 19
+        Ctl3D = False
+        ImeName = 'Microsoft IME 2003'
+        ParentCtl3D = False
+        TabOrder = 1
+        Text = 'edtLeverOffsetAngleRH'
+        Visible = False
+        OnChange = edtPartNameChange
+      end
+      object edtOffsetNoiseRunning1: TEdit
+        Left = 545
+        Top = 31
+        Width = 62
+        Height = 19
+        Ctl3D = False
+        ImeName = 'Microsoft IME 2003'
+        ParentCtl3D = False
+        TabOrder = 2
+        Text = 'edtLeverOffsetAngleRH'
+        Visible = False
+        OnChange = edtPartNameChange
+      end
+      object edtNoiseInitTime: TEdit
+        Left = 190
+        Top = 60
+        Width = 141
+        Height = 19
+        Ctl3D = False
+        ImeName = 'Microsoft IME 2003'
+        ParentCtl3D = False
+        TabOrder = 3
+        OnChange = edtPartNameChange
+      end
+      object edtNoiseInitMax: TEdit
+        Left = 190
+        Top = 83
+        Width = 141
+        Height = 19
+        Ctl3D = False
+        ImeName = 'Microsoft IME 2003'
+        ParentCtl3D = False
+        TabOrder = 4
+        OnChange = edtPartNameChange
+      end
+      object edtOffsetNoiseInit0: TEdit
+        Left = 480
+        Top = 83
+        Width = 62
+        Height = 19
+        Ctl3D = False
+        ImeName = 'Microsoft IME 2003'
+        ParentCtl3D = False
+        TabOrder = 5
+        Text = 'edtLeverOffsetAngleRH'
+        Visible = False
+        OnChange = edtPartNameChange
+      end
+      object edtOffsetNoiseInit1: TEdit
+        Left = 545
+        Top = 83
+        Width = 62
+        Height = 19
+        Ctl3D = False
+        ImeName = 'Microsoft IME 2003'
+        ParentCtl3D = False
+        TabOrder = 6
+        Text = 'edtLeverOffsetAngleRH'
+        Visible = False
+        OnChange = edtPartNameChange
+      end
+    end
+    object rdgCarType: TRadioGroup
+      Left = 24
+      Top = 137
+      Width = 329
+      Height = 54
+      Caption = 'CAR'
+      Columns = 3
+      Ctl3D = False
+      Font.Charset = ANSI_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = []
+      ItemIndex = 0
+      Items.Strings = (
+        'JG1'
+        'RJ1'
+        'HI')
+      ParentCtl3D = False
+      ParentFont = False
+      TabOrder = 2
+      OnClick = edtPartNameChange
+    end
+    object rdgPosType: TRadioGroup
+      Left = 363
+      Top = 137
+      Width = 160
+      Height = 54
+      Caption = 'POS'
+      Columns = 2
+      Ctl3D = False
+      Font.Charset = ANSI_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = []
+      ItemIndex = 0
+      Items.Strings = (
+        'LH'
+        'RH')
+      ParentCtl3D = False
+      ParentFont = False
+      TabOrder = 3
+      OnClick = edtPartNameChange
+    end
+    object pcMdl: TPageControl
+      Left = 0
+      Top = 219
+      Width = 735
+      Height = 681
+      ActivePage = ts1
+      Align = alBottom
+      Style = tsFlatButtons
+      TabOrder = 5
+      TabWidth = 180
+      object ts1: TTabSheet
+        Caption = #44160#49324' '#49444#51221
+        object grpInsepction01: TGroupBox
+          Left = 11
+          Top = 25
+          Width = 717
+          Height = 566
+          Caption = #47784#53552' '#49549#46020' '#48143' '#49548#51020
+          Ctl3D = False
+          Font.Charset = HANGEUL_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = #47569#51008' '#44256#46357
+          Font.Style = []
+          ParentCtl3D = False
+          ParentFont = False
+          TabOrder = 0
+          object pnlSlide: TPanel
+            Left = 1
+            Top = 318
+            Width = 715
+            Height = 75
+            Align = alTop
+            BevelEdges = []
+            BevelOuter = bvNone
+            TabOrder = 0
+            ExplicitLeft = 18
+            ExplicitTop = 35
+            ExplicitWidth = 685
+            object lbl28: TLabel
+              Left = 42
+              Top = 44
+              Width = 109
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #52572#45824' '#51089#46041' '#49884#44036'('#52488')'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl29: TLabel
+              Left = 244
+              Top = 44
+              Width = 74
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #44396#49549' '#51204#47448'(A)'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl1: TLabel
+              Left = 436
+              Top = 44
+              Width = 91
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #48260#45768#49905' '#54943#49688'('#54924')'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl18: TLabel
+              Left = 5
+              Top = 17
+              Width = 54
+              Height = 13
+              Alignment = taRightJustify
+              Caption = 'SWIBLE'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = 2894892
+              Font.Height = -13
+              Font.Name = #44404#47548
+              Font.Style = [fsBold]
+              ParentFont = False
+            end
+            object shp3: TShape
+              Left = 67
+              Top = 21
+              Width = 635
+              Height = 3
+              Brush.Color = 2894892
+              Pen.Color = 2894892
+            end
+            object edtTimeLimit_Swivel: TEdit
+              Left = 330
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = 15791615
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 0
+              OnChange = edtPartNameChange
+            end
+            object edtCurrLimit_Swivel: TEdit
+              Left = 162
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = 15791615
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 1
+              OnChange = edtPartNameChange
+            end
+            object edtBrnCnt_Swivel: TEdit
+              Left = 543
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = clWhite
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 2
+              OnChange = edtPartNameChange
+            end
+          end
+          object pnlCushLeg: TPanel
+            Left = 1
+            Top = 243
+            Width = 715
+            Height = 75
+            Align = alTop
+            BevelEdges = []
+            BevelOuter = bvNone
+            TabOrder = 1
+            ExplicitLeft = 18
+            ExplicitTop = 35
+            ExplicitWidth = 685
+            object lbl30: TLabel
+              Left = 42
+              Top = 44
+              Width = 109
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #52572#45824' '#51089#46041' '#49884#44036'('#52488')'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl31: TLabel
+              Left = 244
+              Top = 44
+              Width = 74
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #44396#49549' '#51204#47448'(A)'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl2: TLabel
+              Left = 436
+              Top = 44
+              Width = 91
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #48260#45768#49905' '#54943#49688'('#54924')'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl: TLabel
+              Left = 6
+              Top = 17
+              Width = 75
+              Height = 13
+              Alignment = taRightJustify
+              Caption = 'CUSH/LEG'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = 2894892
+              Font.Height = -13
+              Font.Name = #44404#47548
+              Font.Style = [fsBold]
+              ParentFont = False
+            end
+            object shp4: TShape
+              Left = 89
+              Top = 21
+              Width = 613
+              Height = 3
+              Brush.Color = 2894892
+              Pen.Color = 2894892
+            end
+            object edtTimeLimit_CushLeg: TEdit
+              Left = 330
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = 15791615
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 0
+              OnChange = edtPartNameChange
+            end
+            object edtCurrLimit_CushLeg: TEdit
+              Left = 162
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = 15791615
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 1
+              OnChange = edtPartNameChange
+            end
+            object edtBrnCnt_CushLeg: TEdit
+              Left = 543
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = clWhite
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 2
+              OnChange = edtPartNameChange
+            end
+          end
+          object pnlTILT: TPanel
+            Left = 1
+            Top = 168
+            Width = 715
+            Height = 75
+            Align = alTop
+            BevelEdges = []
+            BevelOuter = bvNone
+            TabOrder = 2
+            ExplicitLeft = 18
+            ExplicitTop = 35
+            ExplicitWidth = 685
+            object lbl32: TLabel
+              Left = 42
+              Top = 44
+              Width = 109
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #52572#45824' '#51089#46041' '#49884#44036'('#52488')'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl33: TLabel
+              Left = 244
+              Top = 44
+              Width = 74
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #44396#49549' '#51204#47448'(A)'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl3: TLabel
+              Left = 436
+              Top = 44
+              Width = 91
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #48260#45768#49905' '#54943#49688'('#54924')'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl20: TLabel
+              Left = 21
+              Top = 17
+              Width = 30
+              Height = 13
+              Alignment = taRightJustify
+              Caption = 'TILT'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = 2894892
+              Font.Height = -13
+              Font.Name = #44404#47548
+              Font.Style = [fsBold]
+              ParentFont = False
+            end
+            object shp5: TShape
+              Left = 59
+              Top = 21
+              Width = 643
+              Height = 3
+              Brush.Color = 2894892
+              Pen.Color = 2894892
+            end
+            object edtTimeLimit_TILT: TEdit
+              Left = 330
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = 15791615
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 0
+              OnChange = edtPartNameChange
+            end
+            object edtCurrLimit_TILT: TEdit
+              Left = 162
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = 15791615
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 1
+              OnChange = edtPartNameChange
+            end
+            object edtBrnCnt_TILT: TEdit
+              Left = 543
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = clWhite
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 2
+              OnChange = edtPartNameChange
+            end
+          end
+          object pnlHeight: TPanel
+            Left = 1
+            Top = 93
+            Width = 715
+            Height = 75
+            Align = alTop
+            BevelEdges = []
+            BevelOuter = bvNone
+            TabOrder = 3
+            ExplicitLeft = 18
+            ExplicitTop = 35
+            ExplicitWidth = 685
+            object lbl34: TLabel
+              Left = 42
+              Top = 44
+              Width = 109
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #52572#45824' '#51089#46041' '#49884#44036'('#52488')'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl35: TLabel
+              Left = 244
+              Top = 44
+              Width = 74
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #44396#49549' '#51204#47448'(A)'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl4: TLabel
+              Left = 436
+              Top = 44
+              Width = 91
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #48260#45768#49905' '#54943#49688'('#54924')'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl21: TLabel
+              Left = 3
+              Top = 16
+              Width = 53
+              Height = 13
+              Alignment = taRightJustify
+              Caption = 'HEIGHT'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = 2894892
+              Font.Height = -13
+              Font.Name = #44404#47548
+              Font.Style = [fsBold]
+              ParentFont = False
+            end
+            object shp7: TShape
+              Left = 59
+              Top = 21
+              Width = 643
+              Height = 3
+              Brush.Color = 2894892
+              Pen.Color = 2894892
+            end
+            object edtTimeLimit_Height: TEdit
+              Left = 330
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = 15791615
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 0
+              OnChange = edtPartNameChange
+            end
+            object edtCurrLimit_Height: TEdit
+              Left = 162
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = 15791615
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 1
+              OnChange = edtPartNameChange
+            end
+            object edtBrnCnt_Height: TEdit
+              Left = 543
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = clWhite
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 2
+              OnChange = edtPartNameChange
+            end
+          end
+          object pnlSlide4: TPanel
+            Left = 1
+            Top = 18
+            Width = 715
+            Height = 75
+            Align = alTop
+            BevelEdges = []
+            BevelOuter = bvNone
+            TabOrder = 4
+            ExplicitLeft = 18
+            ExplicitTop = 35
+            ExplicitWidth = 685
+            object lbl36: TLabel
+              Left = 42
+              Top = 44
+              Width = 109
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #52572#45824' '#51089#46041' '#49884#44036'('#52488')'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl37: TLabel
+              Left = 244
+              Top = 44
+              Width = 74
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #44396#49549' '#51204#47448'(A)'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl5: TLabel
+              Left = 436
+              Top = 44
+              Width = 91
+              Height = 17
+              Alignment = taRightJustify
+              Caption = #48260#45768#49905' '#54943#49688'('#54924')'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = #47569#51008' '#44256#46357
+              Font.Style = []
+              ParentFont = False
+            end
+            object lbl22: TLabel
+              Left = 10
+              Top = 17
+              Width = 41
+              Height = 13
+              Alignment = taRightJustify
+              Caption = 'SLIDE'
+              Font.Charset = HANGEUL_CHARSET
+              Font.Color = 2894892
+              Font.Height = -13
+              Font.Name = #44404#47548
+              Font.Style = [fsBold]
+              ParentFont = False
+            end
+            object shp8: TShape
+              Left = 59
+              Top = 21
+              Width = 643
+              Height = 3
+              Brush.Color = 2894892
+              Pen.Color = 2894892
+            end
+            object edtTimeLimit_Slide: TEdit
+              Left = 330
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = 15791615
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 0
+              OnChange = edtPartNameChange
+            end
+            object edtCurrLimit_Slide: TEdit
+              Left = 162
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = 15791615
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 1
+              OnChange = edtPartNameChange
+            end
+            object edtBrnCnt_Slide: TEdit
+              Left = 543
+              Top = 40
+              Width = 62
+              Height = 23
+              Color = clWhite
+              Ctl3D = False
+              ImeName = 'Microsoft IME 2003'
+              ParentCtl3D = False
+              TabOrder = 2
+              OnChange = edtPartNameChange
+            end
+          end
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,510 @@
+{
+    Ver. 210309.00
+}
+
+unit HVCanCtrler;
+
+interface
+
+uses
+    HVTester, BaseCAN, BaseAD, Log;
+
+type
+    THVCanCtrler = class(TBaseHVCtrler)
+    private
+        function GetSwSig: PCANSignal;
+        procedure SetOtherPosCtrler(const Value: THVCanCtrler);
+    protected
+
+        mCAN: TBaseCAN;
+
+        mLedData: byte;         // BCD형태의 3Bit로 사용 되어야 함
+
+        mCyWFrmList: TCANFrmList;
+        mFLIdx: integer;
+
+        mUseCyW: boolean;
+
+        mSwSig:     TCANSignal;
+        mLedSig:    TCANSignal;
+
+
+        mSWFrame:   TCANFrame;
+
+        mOtherPosCtrler: THVCanCtrler;        // 옆좌석 Ctrler
+
+        class var mIgn2Sig:   TCANSignal;
+
+        procedure CanRead(Sender: TObject); virtual;
+
+    public
+
+        constructor Create(CAN: TBaseCAN; SwSig, LedSig: TCANSignal; AD: TBaseAD; AICurrCh: integer); overload;
+        constructor Create(CAN: TBaseCAN; SwSig, LedSig, Ign2Sig: TCANSignal; AD: TBaseAD; AICurrCh: integer); overload;
+
+        destructor Destroy; override;
+
+        procedure InitSwSig(MsgID, StartByte, StartBit: integer); overload;
+        procedure InitLedSig(MsgID, StartByte, StartBit: integer; BitLen: integer = 3); overload;
+
+        procedure InitSwSig(MsgID: Cardinal; StartDBCBit, BitLen: integer; IsMotorolaFmt: boolean = true; IntervalMs: integer = 0); overload;
+        procedure InitLedSig(MsgID: Cardinal; StartDBCBit, BitLen: integer; IsMotorolaFmt: boolean = true; IntervalMs: integer = 0); overload;
+
+
+        // Base
+        function GetLedData: byte; override;
+
+        function  SetIgn2(IsOn: boolean): boolean; override;
+        function AddCyWFrame(Frame: TCANFrame): integer;        // Cyclic Read되는 메시지 주기에 맞춰 전송
+
+        property UseCyW: boolean read  mUseCyW write  mUseCyW;
+        property SwSig: PCANSignal read GetSwSig;
+        property OtherPosCtrler: THVCanCtrler read mOtherPosCtrler write SetOtherPosCtrler;
+
+        class property Ign2Sig: TCANSignal read mIgn2Sig write mIgn2Sig;
+    end;
+
+
+    THVBitTypeCanCtrler = class(THVCanCtrler)
+    protected
+
+        mIsWriteRevBits: boolean;
+        mUse2BitLedState: boolean;
+
+        procedure CanRead(Sender: TObject); override;
+        function  Convert3BitLed(LedData: byte): byte;
+    public
+        // Base
+
+        function IsSwType: boolean; override;          // ON -> OFF 스위치 형식인가?
+        function SwOn(CurStep: integer = 0): boolean; override;
+        function SwOff(CurStep: integer = 0): boolean; override;
+
+        property Use2BitLedState: boolean read mUse2BitLedState write mUse2BitLedState;
+        property IsWriteRevBits: boolean read mIsWriteRevBits write mIsWriteRevBits;
+    end;
+
+    // 직접 단(STEP)을 지정하는 Type
+    THVCmdTypeCanCtrler = class(THVCanCtrler)
+    private
+    protected
+        procedure CanRead(Sender: TObject); override;
+    public
+        // Base
+        function  IsSwType: boolean; override;          // ON -> OFF 스위치 형식인가?
+        function  SwOn(CurStep: integer = 0): boolean; override;
+        function  SwOff(CurStep: integer = 0): boolean; override;
+
+    end;
+
+    // Bit SW ON/OFF(OFF=0, ON=1), Cmd방식 Led상태 획득용
+    THVBitNCmdTypeCanCtrler = class(THVBitTypeCanCtrler)
+    protected
+        procedure CanRead(Sender: TObject); override;
+
+    end;
+
+    // Bit SW ON/OFF(OFF=1, ON=2), Cmd방식 Led상태 획득용
+    THVBit2NCmdTypeCanCtrler = class(THVBitNCmdTypeCanCtrler)
+    public
+
+        function SwOn(CurStep: integer = 0): boolean; override;
+        function SwOff(CurStep: integer = 0): boolean; override;
+    end;
+
+
+implementation
+
+uses
+    MyUtils;
+
+var
+    gCANFrame: TCANFrame;
+
+
+{ THVCanCtrler }
+
+constructor THVCanCtrler.Create(CAN: TBaseCAN; SwSig, LedSig: TCANSignal; AD: TBaseAD; AICurrCh: integer);
+begin
+    mCAN := CAN;
+    mCAN.OnRead.SyncAdd(CanRead);
+
+
+    mSwSig := SwSig;
+    mLedSig := LedSig;
+
+
+    mAD := AD;
+    mAICurrCh := AICurrCh;
+
+end;
+
+constructor THVCanCtrler.Create(CAN: TBaseCAN; SwSig, LedSig, Ign2Sig: TCANSignal; AD: TBaseAD; AICurrCh: integer);
+begin
+
+    mCAN := CAN;
+    mCAN.OnRead.SyncAdd(CanRead);
+
+    mSwSig := SwSig;
+    mLedSig := LedSig;
+    mIgn2Sig := Ign2Sig;
+
+    mAD := AD;
+    mAICurrCh := AICurrCh;
+
+end;
+
+destructor THVCanCtrler.Destroy;
+begin
+
+    mCAN.OnRead.SyncRemove(CanRead);
+
+    if Assigned(mCyWFrmList) then
+        mCyWFrmList.Free;
+
+    inherited;;
+end;
+
+function THVCanCtrler.AddCyWFrame(Frame: TCANFrame): integer;
+begin
+    if not Assigned(mCyWFrmList) then
+        mCyWFrmList :=  TCANFrmList.Create;
+
+
+    mCyWFrmList.Add(Frame);
+    Result := mCyWFrmList.Count;
+end;
+
+procedure THVCanCtrler.CanRead(Sender: TObject);
+begin
+    if mUseCyW and (mCyWFrmList.Count > 0) then          // TO DO : 주기로 들어오는 RcvPkt에 맞춰 전송시, CanCtrler는 복수개임을 주의
+    begin
+        mCan.Write(mCyWFrmList[mFLIdx]);
+        Inc(mFLIdx);
+        mFLIdx := mFLIdx mod mCyWFrmList.Count;
+    end;
+end;
+
+procedure THVCanCtrler.SetOtherPosCtrler(const Value: THVCanCtrler);
+begin
+    if Assigned(mOtherPosCtrler) then   Exit;
+
+    mOtherPosCtrler := Value;
+    Value.OtherPosCtrler := self;
+end;
+
+
+
+
+function THVCanCtrler.GetLedData: byte;
+begin
+    Result := mLedData;
+end;
+
+function THVCanCtrler.GetSwSig: PCANSignal;
+begin
+    Result := @mSwSig;
+end;
+
+procedure THVCanCtrler.InitSwSig(MsgID, StartByte, StartBit: integer);
+begin
+    mSwSig := TCANSignal.Create(MsgID, StartByte, StartBit, 1, 0);
+end;
+
+
+function THVCanCtrler.SetIgn2(IsOn: boolean): boolean;
+begin
+    if mIgn2Sig.IsEmpty then Exit(true);
+
+    gCANFrame.Clear;
+    mIgn2Sig.Write(gCANFrame, IsOn);
+
+    Result := mCAN.Write(gCANFrame);
+end;
+
+procedure THVCanCtrler.InitLedSig(MsgID, StartByte, StartBit: integer; BitLen: integer);
+begin
+    mLedSig := TCANSignal.Create(MsgID, StartByte, StartBit, BitLen, 0);
+end;
+
+
+procedure THVCanCtrler.InitLedSig(MsgID: Cardinal; StartDBCBit, BitLen: integer; IsMotorolaFmt: boolean; IntervalMs: integer);
+begin
+    mLedSig := TCANSignal.Create(MsgID, StartDBCBit, BitLen, IsMotorolaFmt, IntervalMs);
+end;
+
+procedure THVCanCtrler.InitSwSig(MsgID: Cardinal; StartDBCBit, BitLen: integer; IsMotorolaFmt: boolean; IntervalMs: integer);
+begin
+    mSwSig := TCANSignal.Create(MsgID, StartDBCBit, BitLen, IsMotorolaFmt, IntervalMs);
+end;
+
+{ THVBitTypeCanCtrler }
+
+procedure THVBitTypeCanCtrler.CanRead(Sender: TObject);
+begin
+    with Sender as TBaseCan do
+    begin
+        if ID = mLedSig.mID then
+        begin
+            if mLedSig.Is2ByteData then mLedData := mLedSig.GetData(Datas[mLedSig.mStartByte], Datas[mLedSig.mStartByte + 1])
+            else                        mLedData := mLedSig.GetData(Datas[mLedSig.mStartByte]);
+
+
+            if mUse2BitLedState then
+            begin
+                mLedData := Convert3BitLed(mLedData);
+            end;
+
+            inherited CanRead(Sender);
+        end;
+    end;
+end;
+
+function THVBitTypeCanCtrler.Convert3BitLed(LedData: byte): byte;
+var
+  i: Integer;
+begin
+    Result := 0;
+    for i := 0 to 2 do
+    begin
+        if ((LedData shr (2 * i)) and $03) = 1 then
+            Result := BitOn(Result, i);
+    end;
+end;
+
+function THVBitTypeCanCtrler.IsSwType: boolean;
+begin
+    Result := true;
+end;
+
+function THVBitTypeCanCtrler.SwOff(CurStep: integer): boolean;
+begin
+    gCANFrame.Clear;
+
+    if Assigned(mOtherPosCtrler) then
+    begin
+        gCANFrame.SetData(mOtherPosCtrler.mSWFrame.mData);
+        mSwSig.Write(mSWFrame, false, mIsWriteRevBits);
+    end;
+
+    mSwSig.Write(gCANFrame, false, mIsWriteRevBits);
+
+    Result := mCan.Write(gCANFrame);
+
+end;
+
+function THVBitTypeCanCtrler.SwOn(CurStep: integer): boolean;
+begin
+    gCANFrame.Clear();
+
+    if Assigned(mOtherPosCtrler) then
+    begin
+        gCANFrame.SetData(mOtherPosCtrler.mSWFrame.mData);
+        mSwSig.Write(mSWFrame, true, mIsWriteRevBits);
+    end;
+
+    mSwSig.Write(gCANFrame, true, mIsWriteRevBits);
+
+    Result := mCan.Write(gCANFrame);
+end;
+
+{ THVCmdTypeCanCtrler }
+
+function HDataToBCD(Data: byte): byte;
+begin
+    gLog.Panel('%x', Data);
+    case Data of
+        6: Result := 1;
+        7: Result := 3;
+        8: Result := 7;
+    else
+        Result := 0;
+
+    end;
+end;
+
+
+function VDataToBCD(Data: byte): byte;
+begin
+    case Data of
+        3: Result := 1;
+        4: Result := 3;
+        5: Result := 7;
+    else
+        Result := 0;
+    end;
+end;
+
+
+
+procedure THVCmdTypeCanCtrler.CanRead(Sender: TObject);
+begin
+    if not Assigned(mHVTest) then Exit;
+
+    with Sender as TBaseCan do
+    begin
+        if ID <> mLedSig.mID then exit;
+
+        if mHVTest.TestType = hvtHeat then mLedData := HDataToBCD(mLedSig.GetData(Datas[mLedSig.mStartByte]))
+        else                               mLedData := VDataToBCD(mLedSig.GetData(Datas[mLedSig.mStartByte]));
+
+        inherited CanRead(Sender);
+    end;
+end;
+
+{
+0x0:Init
+0x1:Unused
+0x2:Vent & Heater OFF
+0x3:Vent LOW
+0x4:Vent MID
+0x5:Vent HIGH
+0x6:Heater LOW
+0x7:Heater MID
+0x8:Heater HIGH
+0xF:Invalid
+}
+
+{
+function THVCmdTypeCanCtrler.SetIgn2(IsOn: boolean): boolean;
+begin
+    if mIgn2Sig.IsEmpty then Exit(true);
+
+
+    gCANFrame.Clear;
+    mIgn2Sig.Write(gCANFrame, IsOn);
+
+    Result := mCAN.Write(gCANFrame);
+end;
+}
+
+
+function THVCmdTypeCanCtrler.IsSwType: boolean;
+begin
+    Result := false;
+end;
+
+function THVCmdTypeCanCtrler.SwOff(CurStep: integer): boolean;
+begin
+    Result := true;
+end;
+
+function THVCmdTypeCanCtrler.SwOn(CurStep: integer): boolean;
+    function HStepToVal: integer;
+    begin
+        case CurStep of
+            3: Result := 8;
+            2: Result := 7;
+            1: Result := 6;
+            0: Result := 2;
+        else
+            Result := 0;
+        end;
+    end;
+
+    function VStepToVal: integer;
+    begin
+        case CurStep of
+            3: Result := 5;
+            2: Result := 4;
+            1: Result := 3;
+            0: Result := 2;
+        else
+            Result := 0;
+        end;
+
+    end;
+var
+    CmdVal: integer;
+
+begin
+    gCANFrame.Clear;
+    gCANFrame.mLen := 8;
+
+
+    if mHVTest.TestType = hvtHeat then
+    begin
+        CmdVal := HStepToVal();
+    end
+    else
+    begin
+        CmdVal := VStepToVal();
+    end;
+
+    // 디버그 로그 추가
+    gLog.panel('HV SwOn - Step:%d, CmdVal:%d, FrameLen:%d',
+               [CurStep, CmdVal, gCANFrame.mLen]);
+   {
+    if Assigned(mOtherPosCtrler) and (CurStep <> 0) then
+        mOtherPosCtrler.SwSig.Write(gCANFrame, 1);        // 옆좌석 Sw는 Unused, ECU에 따라 필요 없을 수 있음.
+   }
+
+    mSwSig.Write(gCANFrame, CmdVal);
+
+     // 전송 직전 프레임 상태 확인
+    gLog.Debug('전송 전 Frame: ID=$%X, Len=%d, Data=%s',
+               [gCANFrame.mID, gCANFrame.mLen, gCANFrame.ToStr]);
+
+    Result := mCAN.Write(gCANFrame);
+
+end;
+
+
+
+
+{ THVBitCmdTypeCanCtrler }
+
+procedure THVBitNCmdTypeCanCTrler.CanRead(Sender: TObject);
+begin
+    if not Assigned(mHVTest) then Exit;
+
+    with Sender as TBaseCan do
+    begin
+        if ID <> mLedSig.mID then exit;
+
+        if mHVTest.TestType = hvtHeat then mLedData := HDataToBCD(mLedSig.GetData(Datas[mLedSig.mStartByte]))
+        else                               mLedData := VDataToBCD(mLedSig.GetData(Datas[mLedSig.mStartByte]));
+    end;
+
+end;
+
+{ THVBit2NCmdTypeCanCtrler }
+
+function THVBit2NCmdTypeCanCtrler.SwOff(CurStep: integer): boolean;
+begin
+    gCANFrame.Clear;
+
+    if Assigned(mOtherPosCtrler) then
+    begin
+        gCANFrame.SetData(mOtherPosCtrler.mSWFrame.mData);
+        mSwSig.Write(mSWFrame, 1, mIsWriteRevBits);
+    end;
+
+    mSwSig.Write(gCANFrame, 1, mIsWriteRevBits);
+
+    Result := mCan.Write(gCANFrame);
+end;
+
+function THVBit2NCmdTypeCanCtrler.SwOn(CurStep: integer): boolean;
+begin
+    gCANFrame.Clear();
+
+    if Assigned(mOtherPosCtrler) then
+    begin
+        gCANFrame.SetData(mOtherPosCtrler.mSWFrame.mData);
+        mSwSig.Write(mSWFrame, 2, mIsWriteRevBits);
+    end;
+
+    mSwSig.Write(gCANFrame, 2, mIsWriteRevBits);
+
+    Result := mCan.Write(gCANFrame);
+end;
+
+initialization
+    gCANFrame := TCANFrame.Create(0, 8);
+
+finalization
+    gCANFrame.Clear;
+
+end.
+

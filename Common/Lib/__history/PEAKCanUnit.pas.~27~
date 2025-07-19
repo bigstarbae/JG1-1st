@@ -1,0 +1,375 @@
+{
+    Ver.230714.00
+
+가. CAN-FD:  전송과정
+    1) 노미널 비트 레이트 구간: 프레임의 제어 필드까지의 정보가 노미널 비트 레이트로 전송(500K bps)
+    2) BRS 비트 확인: BRS (Bit Rate Switch) 비트가 설정되어 있는 경우, 데이터 필드 전송 시 데이터 비트 레이트로 전환.
+    3) 데이터 비트 레이트 구간: 데이터 필드가 더 높은 속도로 전송
+    4) CRC 및 ACK 구간: 데이터 전송 후, CRC와 ACK 필드가 다시 노미널 비트 레이트로 전송(1M bps)
+
+나. Peak Can View CAN FD 설정
+    +-----------+-------------------+------------------+-----------+-------+-------+-----+-------+-----+
+    |           | Bit Rate [kbit/s] | Sample Point [%] | Prescaler | TSEG1 | TSEG2 | SJW |  tq   | Nq  |
+    +-----------+-------------------+------------------+-----------+-------+-------+-----+-------+-----+
+    | Nominal   |       500         |      80.0        |     2     |  63   |  16   |  3  | 25 ns |  80 |
+    | Data      |      1000         |      80.0        |     4     |  15   |   4   |  4  | 50 ns |  20 |
+    +-----------+-------------------+------------------+-----------+-------+-------+-----+-------+-----+
+
+다. 코드상의 CAN FD Preset: 통신 안전성 중요 설정, ECU통신에 권장!
+    : f_clock_mhz=80,nom_brp=8,nom_tseg1=15,nom_tseg2=4,nom_sjw=3,data_brp=2,data_tseg1=31,data_tseg2=8,data_sjw=4
+    +-----------+-------------------+------------------+-----------+-------+-------+-----+-------+-----+
+    |           | Bit Rate [kbit/s] | Sample Point [%] | Prescaler | TSEG1 | TSEG2 | SJW |  tq   | Nq  |
+    +-----------+-------------------+------------------+-----------+-------+-------+-----+-------+-----+
+    | Nominal   |       500         |      80.0        |     8     |  15   |   4   |  3  | 125 ns|  20 |
+    | Data      |      1000         |      80.0        |     2     |  31   |   8   |  4  |  25 ns|  40 |
+    +-----------+-------------------+------------------+-----------+-------+-------+-----+-------+-----+
+    시트 ECU와의 통신에서는 클럭 허용 오차와 통신 안정성이 더 중요,
+    - 데이터 전송에 더 많은 시간 단위 사용(Nq:40)하여 지연 시간을 줄임, 데이터 전송 많을 경우 유리
+    - 클럭 허용 오차 허용 범위 큼: (Data 전송 Prescaler: 2) : 숫자가 클 수록 민감
+
+
+}
+unit PEAKCanUnit;
+
+interface
+
+uses
+    BaseDAQ, BaseCAN, PCANBasic, SysUtils, Windows;
+    {Messages}
+
+type
+    TPeakCAN = class(TBaseCAN)
+    private
+        mPcanHandle: TPCANHandle;
+        mPCanBaudrate: TPCANBaudrate;
+        mHwType: TPCANType;
+        mOpenStatus, mStatus: TPCANStatus;
+        mRCanMsg, mWCanMsg: TPCANMsg;
+        mRCanMsgFD, mWCanMsgFD: TPCANMsgFD;
+        mPreScaleStr: AnsiString;
+    public
+        constructor Create();
+        destructor Destroy; override;
+
+        procedure SelectBaudrates(Baudrate: integer);
+        procedure SelectHwType(HwType: integer);
+        procedure ConfigureTraceFile();
+        procedure SetPreScaleStr(PreScaleStr: AnsiString);
+
+        function IsOpen: boolean; override;
+
+        function ReOpen: boolean; override;
+
+        function Open(CH, Baudrate: integer): boolean; overload; override;
+        function Open(BaudRate: integer): boolean; override;
+
+        procedure Close(); override;
+        function GetFormatedError(error: TPCANStatus): UnicodeString;
+        function Reads: boolean; override;
+        function Write(const ID: Cardinal; Flags: integer; Data: array of BYTE; Len: integer = 8): boolean; override;
+
+    end;
+
+implementation
+
+uses
+    Log, Math;
+
+{ TPeakCAN }
+
+procedure TPeakCAN.Close;
+begin
+    if IsOpen then
+    begin
+        mStatus := TPCANBasic.Uninitialize(mPcanHandle);
+        mPcanHandle := 0;
+        mOpenStatus := PCAN_ERROR_INITIALIZE;
+    end;
+end;
+
+procedure TPeakCAN.ConfigureTraceFile;
+var
+    iBuffer: Integer;
+begin
+	// Configure the maximum size of a trace file to 5 megabytes
+	//
+    iBuffer := 5;
+    mStatus := TPCANBasic.SetValue(mPcanHandle, PCAN_TRACE_SIZE, PLongWord(@iBuffer), sizeof(iBuffer));
+    if (mStatus <> PCAN_ERROR_OK) then
+        gLog.Panel('%s', [GetFormatedError(mStatus)]);
+	    //IncludeTextMessage(GetFormatedError(stsResult));
+
+    // Configure the way how trace files are created:
+    // * Standard name is used
+    // * Existing file is ovewritten,
+    // * Only one file is created.
+    // * Recording stopts when the file size reaches 5 megabytes.
+    //
+    iBuffer := TPCANBasic.TRACE_FILE_SINGLE or TPCANBasic.TRACE_FILE_OVERWRITE;
+    mStatus := TPCANBasic.SetValue(mPcanHandle, PCAN_TRACE_CONFIGURE, PLongWord(@iBuffer), sizeof(iBuffer));
+    if (mStatus <> PCAN_ERROR_OK) then
+        gLog.Panel('%s', [GetFormatedError(mStatus)]);
+	    //IncludeTextMessage(GetFormatedError(stsResult));
+end;
+
+constructor TPeakCAN.Create();
+var
+    strCH: string;
+begin
+    inherited Create(false);
+    //-- CH :
+    //-- selectedIO : 256;
+    //-- selectedintrrupt : 3;
+
+    mOpenStatus := PCAN_ERROR_INITIALIZE;
+    mPreScaleStr := FD_S_POINT_80_PRESET_1;
+end;
+
+destructor TPeakCAN.Destroy;
+begin
+    if Isopen then
+    begin
+        Close;
+    end;
+
+    inherited Destroy;
+end;
+
+function TPeakCAN.IsOpen: boolean;
+begin
+
+    //Result := mPcanHandle <> 0;
+
+    Result := mOpenStatus = PCAN_ERROR_OK;
+end;
+
+function TPeakCAN.Open(BaudRate: integer): boolean;
+begin
+    Result := Open(mCh, BaudRate);
+end;
+
+function TPeakCAN.Open(CH, Baudrate: integer): boolean;
+var
+    strCH: string;
+    addaptValue: integer;
+begin
+    Result := False;
+
+    mCh := CH;
+    mBaudrate := Baudrate;
+
+    CH := CH + 51;
+    strCH := IntToStr(CH);
+    mPcanHandle := TPCANHandle(StrToInt('$' + strCH));
+
+    SelectBaudrates(Baudrate);
+    SelectHwType(0);
+
+    //BitrateFD := FD_S_POINT_80_PRESET_1;
+
+    if mUseFD then
+    begin
+        mStatus := TPCANBasic.InitializeFD(mPcanHandle, @mPreScaleStr);
+    end
+    else
+    begin
+        mStatus := TPCANBasic.Initialize(mPcanHandle, mPCanBaudrate, mHwType, 256, 3);
+    end;
+
+    mOpenStatus := mStatus;
+
+    if (mStatus <> PCAN_ERROR_OK) then
+    begin
+        if (mStatus <> PCAN_ERROR_CAUTION) then
+        begin
+            gLog.Panel('%s', [PChar(string(GetFormatedError(mStatus)))]);
+        end
+        else
+        begin
+            gLog.Panel('The bitrate being used is different than the given one', []);
+        end;
+    end
+    else
+    begin
+        ConfigureTraceFile();
+        Result := True;
+    end;
+
+end;
+
+procedure TPeakCAN.SelectBaudrates(Baudrate: integer);
+begin
+    // We save the corresponding Baudrate enumeration
+    // type value for every selected Baudrate from the
+    // list.
+    //
+    case Baudrate of
+        1000000, 1000:
+            mPCanBaudrate := PCAN_BAUD_1M;
+        800000, 800:
+            mPCanBaudrate := PCAN_BAUD_800K;
+        500000, 500:
+            mPCanBaudrate := PCAN_BAUD_500K;
+        250000, 250:
+            mPCanBaudrate := PCAN_BAUD_250K;
+        125000, 125:
+            mPCanBaudrate := PCAN_BAUD_125K;
+        100000, 100:
+            mPCanBaudrate := PCAN_BAUD_100K;
+
+    else
+        mPCanBaudrate := TPCANBaudrate(0);
+    end;
+end;
+
+procedure TPeakCAN.SelectHwType(HwType: integer);
+begin
+    case HwType of
+        0:
+            mHwType := PCAN_TYPE_ISA;
+        1:
+            mHwType := PCAN_TYPE_ISA_SJA;
+        2:
+            mHwType := PCAN_TYPE_ISA_PHYTEC;
+        3:
+            mHwType := PCAN_TYPE_DNG;
+        4:
+            mHwType := PCAN_TYPE_DNG_EPP;
+        5:
+            mHwType := PCAN_TYPE_DNG_SJA;
+        6:
+            mHwType := PCAN_TYPE_DNG_SJA_EPP;
+    end;
+end;
+
+procedure TPeakCAN.SetPreScaleStr(PreScaleStr: AnsiString);
+begin
+
+end;
+
+function TPeakCAN.Reads: boolean;
+var
+    Len: Integer;
+begin
+
+    if mUseFD then
+    begin
+        ZeroMemory(@mRCanMsgFD, sizeOf(mRCanMsgFD));
+
+        mStatus := TPCANBasic.ReadFD(mPcanHandle, mRCanMsgFD);
+
+        Len := CalcLen(mRCanMsgFD.DLC);
+
+        if mStatus <> PCAN_ERROR_QRCVEMPTY then
+        begin
+            mCurRFrame.mLen := Len;
+            mCurRFrame.mID := mRCanMsgFD.ID;
+            Move(mRCanMsgFD.Data[0], mCurRFrame.mData, Len);
+            InternalReads;
+        end;
+    end
+    else
+    begin
+        ZeroMemory(@mRCanMsg, sizeOf(mRCanMsg));
+
+        mStatus := TPCANBasic.Read(mPcanHandle, mRCanMsg);
+
+        Len := mRCanMsg.Len;
+
+        if mStatus <> PCAN_ERROR_QRCVEMPTY then
+        begin
+            mCurRFrame.mLen := Len;
+            mCurRFrame.mID := mRCanMsg.ID;
+            Move(mRCanMsg.Data[0], mCurRFrame.mData, Len);
+            InternalReads;
+        end;
+    end;
+
+    Result := mStatus = PCAN_ERROR_OK;
+end;
+
+function TPeakCAN.ReOpen: boolean;
+begin
+    Result := False;
+
+    Close;
+
+    if mStatus = PCAN_ERROR_OK then
+        Result := Open(mBaudRate);
+
+    if Result then
+        gLog.Panel('ReOpen Success CANFD:%d', [IfThen(mUseFD, 1, 0)]);
+end;
+
+function TPeakCAN.Write(const ID: Cardinal; Flags: integer; Data: array of BYTE; Len: integer): boolean;
+var
+    DLC: Integer;
+begin
+
+    if mUseFD then
+    begin
+        ZeroMemory(@mWCanMsgFD, sizeof(mWCanMsgFD));
+        DLC := CalcDLC(Len);
+
+        mWCanMsgFD.ID := ID;
+        mWCanMsgFD.DLC := DLC;
+        Move(Data[0], mWCanMsgFD.DATA, Len);
+
+        if Len > 8 then
+        begin
+            if IsExtendedID(ID) then
+                mWCanMsgFD.MSGTYPE := PCAN_MESSAGE_FDEXTENDED_BRS
+            else
+                mWCanMsgFD.MSGTYPE := PCAN_MESSAGE_FD_BRS;
+        end
+        else
+        begin
+            if IsExtendedID(ID) then
+                mWCanMsg.MSGTYPE := PCAN_MESSAGE_EXTENDED
+            else
+                mWCanMsg.MSGTYPE := PCAN_MESSAGE_STANDARD;
+        end;
+
+        mStatus := TPCANBasic.WriteFD(mPcanHandle, mWCanMsgFD);
+    end
+    else
+    begin
+        ZeroMemory(@mWCanMsg, sizeof(mWCanMsg));
+
+        mWCanMsg.ID := ID;
+        mWCanMsg.LEN := Len;
+        Move(Data[0], mWCanMsg.DATA, Len);
+
+        if IsExtendedID(ID) then
+            mWCanMsg.MSGTYPE := PCAN_MESSAGE_EXTENDED
+        else
+            mWCanMsg.MSGTYPE := PCAN_MESSAGE_STANDARD;
+
+        mStatus := TPCANBasic.Write(mPcanHandle, mWCanMsg);
+    end;
+
+    Result := mStatus = PCAN_ERROR_OK;
+
+    InternalWrite(Result, ID, Data, Len);
+
+    if not Result then
+        gLog.Error('TPeakCAN.Write 실패: %d:%s', [Ord(mStatus), GetFormatedError(mStatus)]);
+end;
+
+function TPeakCAN.GetFormatedError(error: TPCANStatus): UnicodeString;
+var
+    buffer: array[0..255] of Ansichar;
+begin
+	// Gets the text using the GetErrorText API function
+	// If the function success, the translated error is returned. If it fails,
+	// a text describing the current error is returned.
+	//
+    mStatus := TPCANBasic.GetErrorText(error, 0, buffer);
+    if (mStatus <> PCAN_ERROR_OK) then
+        result := Format('An error ocurred. Error-code''s text (%Xh) couldn''t be retrieved', [Integer(error)])
+    else
+        result := UnicodeString(buffer);
+end;
+
+end.
+

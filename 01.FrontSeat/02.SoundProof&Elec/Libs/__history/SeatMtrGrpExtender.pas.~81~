@@ -1,0 +1,733 @@
+{
+    Ver.220208.00
+    : Seat Motor Test(Speed, Noise, Curr) Graph를 Synchronize없이 Thread Safe하게 사용 및 측정값 도출 도우미
+
+    Ver.250626.00
+    : TSMGrpParam.mNoiseExcludeSec 소음 전/후 제외 시간
+}
+unit SeatMtrGrpExtender;
+
+interface
+
+uses
+    SeatMotor, FaGraphEx, BaseFSM, SeatMotorType, FAGraphExHelper,
+    Generics.Collections, TSQueue, MMTimer, TimeChecker, ExtCtrls, Range,
+    FaGraphExTSExtender, myUtils, Spec;
+
+type
+
+{
+    << PwrSeat Motor FaGraph Series Idx >>
+
+    Series Idx          Data Idx
+    ------------------------------
+      0 : 전진 Noise    0 : 시간
+                        1 : Noise
+
+      1 : 후진 Noise    2 : 시간
+                        3 : Noise
+
+      2 : 전진 전류     4 : 시간
+                        5 : 전류
+
+      3 : 후진 전류     6 : 시간
+                        7 : 전류
+
+}
+
+{
+
+    ISeatMtrGraph = interface
+         procedure SetMotor(Mtr: TSeatMotor);
+
+        procedure Clear;
+        procedure Add(Dir: TMotorDir; TimeAsSec, Curr, Noise: double);
+        procedure AddToGrp;
+
+    end;
+}
+    PSMGrpParam = ^TSMGrpParam;
+
+    TSMGrpParam = packed record
+        // In
+        mMtrRunCurrRange: TRange;              // 모터 작동 전류 범위: 최소 기동 ~ 구속 전류
+        mTestTimeSpec, mTestCurrSpec: TSpec; // 전류 Spec
+
+        mInitNoiseT: double; // 초기 소음 시간 Spec
+        mInitNoiseMax, mNoiseMax: double; // 소음 Spec
+
+        mNoiseExcludeSec: TSpec;  // 소음 전후 배제 시간
+
+        mStroke: double;
+
+        mCurrDevTimeRange: TSpec;        // 전류 편차 검출 시간 범위   // 23.04.29 추가
+
+        constructor Create(TestTimeSpec, TestCurrSpec: TSpec; NoiseInitT, InitNoiseMax, NoiseMax, Stroke: Single); overload;
+        constructor Create(MtrRunCurrRange: TRange; TestTimeSpec, TestCurrSpec: TSpec; NoiseInitT, InitNoiseMax, NoiseMax, Stroke: Single); overload;
+    end;
+
+    PSMGrpData = ^TSMGrpData;
+
+    TSMGrpData = packed record
+        // Out
+        mInitNoise: TMinMaxAvg;
+        mRunNoise: TMinMaxAvg;
+        mCurr: TMinMaxAvg;
+        mSpeed: double;
+
+        mCurrDev: TMinMaxAvg;   // 전류 편차 23.04.29
+    end;
+
+    TSeatMtrGrpExtender = class(TFaGraphExTSExtender, ISeatMtrGraph)
+    protected
+        function QueryInterface(const IID: TGUID; out Obj): HResult; stdcall;
+        function _AddRef: Integer; stdcall;
+        function _Release: Integer; stdcall;
+
+    private
+        mRefCount: integer;
+
+        mZeroTime: double;
+
+        //
+        mParam: TSMGrpParam;
+        mData: PSMGrpData;
+
+        //
+        mShowNoiseSpec: boolean;
+        mShowCurrSpec: boolean;
+
+        // 구속 전류 표기시
+        mLockedCurr: double;
+
+        mIsDataProcessing: boolean;
+
+        mNoiseStartSec: Double;
+
+        function FindZeroTime(Dir: TMotorDir): boolean;
+        function MoveToZeroPos(Dir: TMotorDir): boolean;
+
+        function FindCurrData(Dir: TMotorDir): boolean;
+        function FindCurrDevData(Dir: TMotorDir): boolean;
+        function FindNoiseData(Dir: TMotorDir): boolean;
+        function InnerCalcSpeed(Dir: TMotorDir; RailLen: double): double;
+
+        procedure GrpBeforePaint(Sender: TObject);
+        procedure GrpAfterPaint(Sender: TObject);
+        procedure SetShowCurrSpec(const Value: boolean);
+        procedure SetShowNoiseSpec(const Value: boolean);
+        function GetSMGrpParam: PSMGrpParam;
+
+    public
+        constructor Create(Graph: TFaGraphEx);
+        destructor Destroy; override;
+
+
+        // ISeatMtrGraph Interface 구현
+        procedure Add(Dir: TMotorDir; TimeAsSec, Curr, Noise: double);
+        function IsDataProcessing: boolean;        // 인터페이스 구현
+
+        // FindData처럼 시간걸리는 작업시 Threading 처리시 사용
+        procedure BeginDataProcessing; virtual;
+        procedure EndDataProcessing; virtual;
+
+        procedure FindData(Dir: TMotorDir; Data: PSMGrpData); overload;
+        procedure FindData(Dir: TMotorDir; Param: TSMGrpParam; Data: PSMGrpData); overload;
+
+        function IsUnderMaxTimeRange(Dir: TMotorDir): boolean;    // X 마지막이  Time Spec 최대 이하인가? => 오류 처리
+
+
+        property ZeroTime: double read mZeroTime write mZeroTime;
+        property LockedCurr: double read mLockedCurr write mLockedCurr; // 구속 전류 표시용
+
+        property ShowCurrSpec: boolean write SetShowCurrSpec;
+        property ShowNoiseSpec: boolean write SetShowNoiseSpec;
+
+        property Param: PSMGrpParam read GetSMGrpParam;
+
+//      property NoiseStartSec: Double read mNoiseStartSec write mNoiseStartSec; //  Param.mNoiseExcludeSec로 대체, 차후 삭제
+    end;
+
+implementation
+
+uses
+    Windows, Graphics, DataUnit, Log, SysEnv, LangTran;
+
+constructor TSeatMtrGrpExtender.Create(Graph: TFaGraphEx);
+begin
+    inherited Create(Graph);
+
+    mZeroTime := 0;
+    mShowNoiseSpec := true;
+    mShowCurrSpec := true;
+
+    mNoiseStartSec := 0;
+
+    if not Assigned(mGraph) then
+        Exit;
+
+    Graph.OnBeforePaint := GrpBeforePaint;            // 전류 SPEC 사용 안 함
+    Graph.OnAfterPaint := GrpAfterPaint;
+
+end;
+
+destructor TSeatMtrGrpExtender.Destroy;
+begin
+    if not Assigned(mGraph) then
+        Exit;
+
+    mGraph.OnBeforePaint := nil;
+    mGraph.OnAfterPaint := nil;
+
+    inherited;
+end;
+
+procedure TSeatMtrGrpExtender.EndDataProcessing;
+begin
+    mIsDataProcessing := false;
+end;
+
+procedure TSeatMtrGrpExtender.SetShowCurrSpec(const Value: boolean);
+begin
+    if not Assigned(mGraph) then
+        Exit;
+
+    if Value <> mShowCurrSpec then
+    begin
+        mShowCurrSpec := Value;
+        mGraph.Invalidate;
+    end;
+end;
+
+procedure TSeatMtrGrpExtender.SetShowNoiseSpec(const Value: boolean);
+begin
+
+    mShowNoiseSpec := Value;
+
+    if Assigned(mGraph) then
+        mGraph.Invalidate;
+
+end;
+
+function TSeatMtrGrpExtender._AddRef: Integer;
+begin
+
+    Exit(-1);           // Dummy로 사용시
+    {
+    Inc(mRefCount);
+    Result := mRefCount;
+    }
+end;
+
+function TSeatMtrGrpExtender._Release: Integer;
+begin
+    Exit(-1);       // Duumy 사용시
+
+    {
+    Dec(mRefCount);
+
+    if mRefCount = 0 then
+        self.Free;
+
+    Result := mRefCount;
+    }
+end;
+
+function GetCurrXIdx(Dir: TMotorDir): integer;
+begin
+    Result := ord(Dir) * 2 + 4;
+end;
+
+function GetCurrYIdx(Dir: TMotorDir): integer;
+begin
+    Result := ord(Dir) * 2 + 5;
+end;
+
+function GetNoiseXIdx(Dir: TMotorDir): integer;
+begin
+    Result := ord(Dir) * 2;
+end;
+
+function GetNoiseYIdx(Dir: TMotorDir): integer;
+begin
+    Result := ord(Dir) * 2 + 1;
+end;
+
+procedure TSeatMtrGrpExtender.Add(Dir: TMotorDir; TimeAsSec, Curr, Noise: double);
+begin
+    if Dir = twForw then
+    begin
+        inherited Add([0, 2], [TimeAsSec, TimeAsSec], [Noise, Curr]);
+    end
+    else
+    begin
+        inherited Add([1, 3], [TimeAsSec, TimeAsSec], [Noise, Curr]);
+    end;
+end;
+
+function TSeatMtrGrpExtender.FindCurrData(Dir: TMotorDir): boolean;
+var
+    X, Y: double;
+    Idx: integer;
+begin
+    Result := false;
+    // 전류 시간축 자동 조절
+    {
+    if (gsysEnv.rUsrMaxRange <> 0) and (mGraph.FSdShare.GetMaxIndex(GetCurrXIdx(Dir)) > 0) then
+    begin
+        mGraph.FSdShare.GetData(GetCurrXIdx(Dir), mGraph.FSdShare.GetMaxIndex(GetCurrXIdx(Dir)) - 1, X);
+        mParam.mTestTimeSpec.mMax := X - abs(gsysEnv.rUsrMaxRange);
+    end;
+    }
+    Idx := 0;
+    with mGraph do
+    begin
+        if FSdShare.GetMaxIndex(GetCurrXIdx(Dir)) <= 0 then
+        begin
+            Exit(true);
+        end;
+
+        while FSdShare.GetData(GetCurrXIdx(Dir), Idx, X) do
+        begin
+
+            if mParam.mTestTimeSpec.IsIn(X) then
+            begin
+                FSdShare.GetData(GetCurrYIdx(Dir), Idx, Y);
+                mData.mCurr.Add(Y);
+            end;
+            Inc(Idx);
+        end;
+    end;
+    Result := true;
+
+end;
+
+function TSeatMtrGrpExtender.FindCurrDevData(Dir: TMotorDir): boolean;
+var
+    X, Y: double;
+    Idx: integer;
+begin
+    Result := false;
+
+    Idx := 0;
+    with mGraph do
+    begin
+        if FSdShare.GetMaxIndex(GetCurrXIdx(Dir)) <= 0 then
+        begin
+            Exit(true);
+        end;
+
+        while FSdShare.GetData(GetCurrXIdx(Dir), Idx, X) do
+        begin
+
+            if mParam.mCurrDevTimeRange.IsIn(X) then
+            begin
+                FSdShare.GetData(GetCurrYIdx(Dir), Idx, Y);
+                mData.mCurrDev.Add(Y);
+            end;
+            Inc(Idx);
+        end;
+    end;
+    Result := true;
+
+end;
+
+procedure TSeatMtrGrpExtender.FindData(Dir: TMotorDir; Data: PSMGrpData);
+begin
+    FindData(Dir, mParam, Data);
+end;
+
+procedure TSeatMtrGrpExtender.FindData(Dir: TMotorDir; Param: TSMGrpParam; Data: PSMGrpData);
+begin
+
+    mParam := Param;
+    mData := Data;
+    mData.mInitNoise.Clear;
+    mData.mRunNoise.Clear;
+    mData.mCurr.Clear;
+    mData.mCurrDev.Clear;
+
+    FindZeroTime(Dir);
+
+    MoveToZeroPos(Dir);
+
+    FindCurrData(Dir);
+
+    FindCurrDevData(Dir);
+
+    FindNoiseData(Dir);
+
+    mData.mSpeed := InnerCalcSpeed(Dir, Param.mStroke);
+end;
+
+procedure TSeatMtrGrpExtender.BeginDataProcessing;
+begin
+    mIsDataProcessing := true;
+end;
+
+function TSeatMtrGrpExtender.FindNoiseData(Dir: TMotorDir): boolean;
+var
+    X, Y, nRange: double;
+    DaqTimeRange: TRange;
+    XSeriesIdx, YSeriesIdx: Integer;
+    FIdx, Idx: integer;
+begin
+    Result := false;
+
+    with mGraph do
+    begin
+        XSeriesIdx := GetNoiseXIdx(Dir);
+        YSeriesIdx := GetNoiseYIdx(Dir);
+
+        if FSdShare.GetMaxIndex(XSeriesIdx) <= 0 then
+        begin
+            Result := true;
+            Exit;
+        end;
+
+        DaqTimeRange.Create(0, 0);
+
+        // X축 0초
+        FIdx := Series.Items[XSeriesIdx].FindXGreaterOrEqual(0, 0.0, sdForward);
+        if FIdx >= 0 then
+            DaqTimeRange.mMin := Series.Items[XSeriesIdx].XValue[FIdx]
+        else
+        begin
+            if FSdShare.GetData(XSeriesIdx, 0, X) then
+            begin
+                DaqTimeRange.mMin := X;
+            end
+            else
+            begin
+                DaqTimeRange.mMin := 0.0;
+            end;
+
+        end;
+
+        // X가 마지막 값 - FSdShare에서 직접 가져오기
+        if FSdShare.GetData(XSeriesIdx, FSdShare.GetMaxIndex(XSeriesIdx) - 1, X) then
+            DaqTimeRange.mMax := X
+        else
+            DaqTimeRange.mMax := 0.0;
+
+        if mParam.mNoiseExcludeSec.mFirst <> 0 then
+        begin
+            DaqTimeRange.mMin := DaqTimeRange.mMin + abs(mParam.mNoiseExcludeSec.mFirst);
+        end;
+
+        if mParam.mNoiseExcludeSec.mSecond <> 0 then
+        begin
+            DaqTimeRange.mMax := DaqTimeRange.mMax - abs(mParam.mNoiseExcludeSec.mSecond);
+        end;
+
+        Idx := 0;
+        // 소음은 작동구간 전체에서 취함.
+        while FSdShare.GetData(XSeriesIdx, Idx, X) do
+        begin
+            if not DaqTimeRange.IsIn(X) then
+            begin
+                Inc(Idx);
+                Continue;
+            end;
+
+            if mParam.mInitNoiseT <= X then
+            begin
+                FSdShare.GetData(YSeriesIdx, Idx, Y);
+                mData.mRunNoise.Add(Y);
+            end
+            else  // mNoiseStartSec 조건 제거하고 단순히 else 사용
+            begin
+                FSdShare.GetData(YSeriesIdx, Idx, Y);
+                mData.mInitNoise.Add(Y);
+            end;
+
+            Inc(Idx);
+        end;
+    end;
+
+    Result := true;
+end;
+
+function TSeatMtrGrpExtender.InnerCalcSpeed(Dir: TMotorDir; RailLen: double): double;
+var
+    Idx: integer;
+    PreX, X, Y: double;
+begin
+    Result := 0;
+    Idx := 0;
+    with mGraph do
+    begin
+        Idx := FSdShare.GetMaxIndex(GetCurrXIdx(Dir));
+        if (Idx <= 10) then
+        begin
+            Exit;
+        end;
+
+        Idx := Idx div 2;
+
+        while FSdShare.GetData(GetCurrXIdx(Dir), Idx, X) do
+        begin
+            PreX := X;          // 위 GetData함수에서 false로 리턴할 경우 X값이 0으로 설정되니, 이전값으로 아래에서 계산함
+            FSdShare.GetData(GetCurrYIdx(Dir), Idx, Y);
+
+            if not mParam.mMtrRunCurrRange.IsIn(Y) then
+            begin
+                if X <> 0 then
+                    Result := RailLen / X
+                else
+                    Result := 0.0;
+
+                break;
+            end;
+            Inc(Idx);
+        end;
+
+    end;
+
+    if (Result = 0) and (PreX <> 0) then      // 설정된 구속 상한 전류가 아닌 기동 전류 편차에 의해 정지된 경우 처리
+    begin
+        Result := RailLen / PreX;
+    end;
+
+end;
+
+function TSeatMtrGrpExtender.FindZeroTime(Dir: TMotorDir): boolean;
+var
+    Y: double;
+    Idx: integer;
+begin
+    Result := false;
+
+    with mGraph do
+    begin
+        if FSdShare.GetMaxIndex(GetCurrXIdx(Dir)) <= 0 then  // 시간이 0 이하면
+        begin
+            Result := true;
+            Exit;
+        end;
+        Idx := 0;
+        while FSdShare.GetData(GetCurrYIdx(Dir), Idx, Y) do
+        begin
+            if mParam.mMtrRunCurrRange.mMin <= Y then            // 최소 기동전류 보다 크면, 즉 구동되는 시점
+            begin
+                FSdShare.GetData(GetCurrXIdx(Dir), Idx, mZeroTime);
+                Break;
+            end;
+            Inc(Idx);
+        end;
+    end;
+    Result := true;
+
+end;
+
+function TSeatMtrGrpExtender.MoveToZeroPos(Dir: TMotorDir): boolean;
+var
+    X: double;
+    Idx: integer;
+begin
+    Result := false;
+    Idx := 0;
+    with mGraph do
+    begin
+        while FSdShare.GetData(GetCurrXIdx(Dir), Idx, X) do
+        begin
+            FSdShare.SetData(GetCurrXIdx(Dir), Idx, X - mZeroTime);
+
+            Inc(Idx);
+        end;
+    end;
+    Result := true;
+
+end;
+
+function TSeatMtrGrpExtender.IsDataProcessing: boolean;
+begin
+    Result := mIsDataProcessing;
+end;
+
+function TSeatMtrGrpExtender.IsUnderMaxTimeRange(Dir: TMotorDir): boolean;
+var
+    Idx: integer;
+    X: double;
+begin
+    Idx := mGraph.FSdShare.GetMaxIndex(GetCurrXIdx(Dir));
+    mGraph.FSdShare.GetData(GetCurrXIdx(Dir), Idx - 1, X);
+
+    Result := X < mParam.mTestTimeSpec.mMax;
+end;
+
+function TSeatMtrGrpExtender.GetSMGrpParam: PSMGrpParam;
+begin
+    Result := @mParam;
+end;
+
+procedure TSeatMtrGrpExtender.GrpAfterPaint(Sender: TObject);
+var
+    LockedCurrY: integer;
+    InitNoisePX, InitNoiseMaxPY, NoiseMaxPY: integer;   // Pixel X/Y
+    Rect: TRect;
+    FontColor, PenColor, BrushColor: TColor;
+    TmpCanvas: TCanvas;
+    grpEnv: TFaGraphEnv;
+    TA: Cardinal;
+begin
+    if (mParam.mInitNoiseMax <= 0) or (mParam.mNoiseMax <= 0) then
+        Exit;
+
+    with Sender as TFaGraphEx do
+    begin
+        GetCanvas(TmpCanvas);
+        grpEnv := GetGrpEnv(Tag);
+
+        PenColor := TmpCanvas.Pen.Color;
+        BrushColor := TmpCanvas.Brush.Color;
+        TmpCanvas.Brush.Color := grpEnv.rSpecLine[2];
+        TmpCanvas.Pen.Color := grpEnv.rSpecLine[2];
+
+
+        // 소음 Spec Line
+        Rect := GetBoardRect;
+        if mShowNoiseSpec then
+        begin
+            TmpCanvas.Brush.Color := grpEnv.rSpecLine[2];
+            TmpCanvas.Pen.Color := grpEnv.rSpecLine[2];
+
+            GetX(0, mParam.mInitNoiseT, InitNoisePX);
+            GetY(0, mParam.mInitNoiseMax, InitNoiseMaxPY);
+            GetY(0, mParam.mNoiseMax, NoiseMaxPY);
+
+            TmpCanvas.MoveTo(Rect.Left, InitNoiseMaxPY);         // 초기 소음 상한선
+            TmpCanvas.LineTo(InitNoisePX, InitNoiseMaxPY);
+
+            TmpCanvas.MoveTo(InitNoisePX, Rect.Top);
+            TmpCanvas.LineTo(InitNoisePX, Rect.Bottom);
+
+            TmpCanvas.MoveTo(InitNoisePX, NoiseMaxPY);          // 작동 소음 상한선
+            TmpCanvas.LineTo(Rect.Right, NoiseMaxPY);
+
+            SetBkMode(TmpCanvas.Handle, TRANSPARENT);
+            FontColor := TmpCanvas.Font.Color;
+            TmpCanvas.Font.Color := grpEnv.rSpecLine[2];
+            TA := SetTextAlign(TmpCanvas.Handle, TA_LEFT or TA_BOTTOM);
+            TmpCanvas.TextOut(Rect.Left, InitNoiseMaxPY, _TR('초기'));
+            TmpCanvas.TextOut(InitNoisePX, NoiseMaxPY, _TR(' 작동'));
+        end;
+
+        // 구속 전류 표기
+        if mLockedCurr > 0 then
+        begin
+            GetY(2, mLockedCurr, LockedCurrY);
+
+            TmpCanvas.Pen.Color := $00AAAAFF; //clYellow;
+            TmpCanvas.MoveTo(Rect.Left, LockedCurrY);
+            TmpCanvas.LineTo(Rect.Right, LockedCurrY);
+
+            SetBkMode(TmpCanvas.Handle, TRANSPARENT);
+            FontColor := TmpCanvas.Font.Color;
+            TmpCanvas.Font.Color := $00AAAAFF; //GridColor;
+            TA := SetTextAlign(TmpCanvas.Handle, TA_RIGHT or TA_BOTTOM);
+    //        SetBkMode(TmpCanvas.Handle, TRANSPARENT);
+            TmpCanvas.TextOut(Rect.Right, LockedCurrY, _TR('구속전류 '));
+        end;
+
+        // 원복
+        SetTextAlign(TmpCanvas.Handle, TA);
+        TmpCanvas.Font.Color := FontColor;
+        TmpCanvas.Brush.Color := BrushColor;
+        TmpCanvas.Pen.Color := PenColor;
+
+    end;
+
+end;
+
+function TSeatMtrGrpExtender.QueryInterface(const IID: TGUID; out Obj): HResult;
+begin
+    if GetInterface(IID, Obj) then
+        Result := S_OK
+    else
+        Result := E_NOINTERFACE;
+end;
+
+procedure TSeatMtrGrpExtender.GrpBeforePaint(Sender: TObject);
+var
+    Rect: TRect;
+    PenColor, BrushColor: TColor;
+    TmpCanvas: TCanvas;
+    grpEnv: TFaGraphEnv;
+begin
+    with Sender as TFaGraphEx do
+    begin
+        GetCanvas(TmpCanvas);
+        grpEnv := GetGrpEnv(Tag);
+
+        PenColor := TmpCanvas.Pen.Color;
+        BrushColor := TmpCanvas.Brush.Color;
+
+        if mShowCurrSpec then
+        begin
+            with Rect do
+            begin
+                GetX(2, mParam.mTestTimeSpec.mMin, Left);
+                GetX(2, mParam.mTestTimeSpec.mMax, Right);
+                GetY(2, mParam.mTestCurrSpec.mMin, Bottom);
+                GetY(2, mParam.mTestCurrSpec.mMax, Top);
+            end;
+            TmpCanvas.Brush.Color := grpEnv.rSpecLine[0];
+            TmpCanvas.Pen.Color := grpEnv.rSpecLine[0];
+
+            // 전류 Spec Box
+            TmpCanvas.FillRect(Rect);
+        end;
+
+        if not mParam.mCurrDevTimeRange.IsEmpty then
+        begin
+            Rect := GetBoardRect;
+            GetX(2, mParam.mCurrDevTimeRange.mMin, Rect.Left);
+            GetX(2, mParam.mCurrDevTimeRange.mMax, Rect.Right);
+
+            TmpCanvas.Brush.Color := $00FAF7EF;
+            TmpCanvas.Pen.Color := $00FAF7EF;
+
+            // 전류 편차 범위 Box
+            TmpCanvas.FillRect(Rect);
+        end;
+
+        TmpCanvas.Brush.Color := BrushColor;
+        TmpCanvas.Pen.Color := PenColor;
+    end;
+
+end;
+
+{ TSMGrpParam }
+
+constructor TSMGrpParam.Create(MtrRunCurrRange: TRange; TestTimeSpec, TestCurrSpec: TSpec; NoiseInitT, InitNoiseMax, NoiseMax, Stroke: Single);
+begin
+    mMtrRunCurrRange := MtrRunCurrRange;
+    mTestTimeSpec := TestTimeSpec;
+    mTestCurrSpec := TestCurrSpec;
+
+    mInitNoiseT := NoiseInitT;
+    mInitNoiseMax := InitNoiseMax;
+    mNoiseMax := NoiseMax;
+    mStroke := Stroke;
+
+    mNoiseExcludeSec.Clear(0);
+end;
+
+constructor TSMGrpParam.Create(TestTimeSpec, TestCurrSpec: TSpec; NoiseInitT, InitNoiseMax, NoiseMax, Stroke: Single);
+begin
+
+    mTestTimeSpec := TestTimeSpec;
+    mTestCurrSpec := TestCurrSpec;
+
+    mInitNoiseT := NoiseInitT;
+    mInitNoiseMax := InitNoiseMax;
+    mNoiseMax := NoiseMax;
+    mStroke := Stroke;
+
+    mNoiseExcludeSec.Clear(0);
+
+end;
+
+end.
+

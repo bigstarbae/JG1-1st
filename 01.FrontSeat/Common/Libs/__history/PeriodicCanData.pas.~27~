@@ -1,0 +1,100 @@
+unit PeriodicCanData;
+
+interface
+
+uses
+    Classes, BaseCAN, IntervalCaller, Log, ModelType, SysUtils, SeatType;
+
+const
+    // Interval Caller
+    IC_ATL = 'IC_SW_ATL';
+    IC_IGN = 'IC_IGN';
+    IC_IGN_RJ1_PE = 'IC_IGN_RJ1_PE';
+    IC_SPEED = 'IC_SPEED';
+    IC_IBOX_ON = 'IC_IBOX_ON';
+    IC_IBOX_CRK = 'IC_IBOX_CRK';
+
+type
+    TPeriodicCanData = class
+    private
+        mICMan : TIntervalCallerManager;
+        mCAN: TBaseCAN;
+        mCarType : TCAR_TYPE;
+
+        procedure SetEnabled(Enable: boolean);
+
+    public
+        constructor Create(CAN: TBaseCAN; CarType: TCAR_TYPE);
+        destructor Destroy;
+
+        procedure Init(CarType: TCAR_TYPE);
+
+        procedure Run;
+
+        procedure SetIgn(IsStart: boolean);
+
+
+
+        property Enabled : boolean write SetEnabled;
+
+
+    end;
+
+implementation
+
+{ TPeriodicCanData }
+
+constructor TPeriodicCanData.Create(CAN: TBaseCAN; CarType: TCAR_TYPE);
+begin
+    mCAN := CAN;
+    mCarType := CarType;
+
+    mICMan := TIntervalCallerManager.Create();
+
+    mICMan.Add(IC_IGN_RJ1_PE,
+        procedure
+        var
+            CANFrame: TCANData;
+        begin
+            FillChar(CANFrame, SizeOf(CANFrame), 0);
+            CANFrame[3] := $D8;
+            mCAN.Write($100, CANFrame, 8);
+        end, 200);
+end;
+
+destructor TPeriodicCanData.Destroy;
+begin
+    FreeAndNil(mICMan);
+end;
+
+procedure TPeriodicCanData.Init(CarType: TCAR_TYPE);
+begin
+    mCarType := CarType;
+end;
+
+procedure TPeriodicCanData.Run;
+begin
+    mICMan.Run;
+end;
+
+procedure TPeriodicCanData.SetEnabled(Enable: boolean);
+begin
+    mICMan.Enabled := Enable;
+end;
+
+procedure TPeriodicCanData.SetIgn(IsStart: boolean);
+begin
+    case mCarType of
+        ctJG1: ;
+        ctRJ1:
+            begin
+                mICMan.Items[IC_IGN_RJ1_PE].Enabled := IsStart;
+            end;
+        ctHI: ;
+        ctSPARE1: ;
+        ctSPARE2: ;
+    end;
+
+end;
+
+end.

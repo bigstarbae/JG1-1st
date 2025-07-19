@@ -1,0 +1,85 @@
+unit IODef;
+
+interface
+uses
+     Windows,  Global, SeatMotorType;
+
+const
+    _WORD_PER_ST        = 2;        // 공정당 LAN WORD
+    _LAN_IO_CH_COUNT    = (_WORD_PER_ST * 16  * 2); // (In + Out)
+    _DIO_CH_COUNT       = (48 * 2); // Max(In: 12,  Out: 72) * 2 ; 공정별 DIO 객체 생성함으로 1공정 단위별 갯수
+
+    MAX_SW_PIN_COUNT    = 20;
+    MAX_MAIN_PIN_COUNT  = 34;
+
+    MAX_SPEC_DI_COUNT = 0;
+    MAX_MODEL_WD_COUNT = 3 * MAX_ST_COUNT;
+
+
+    //=================================================================================
+    // DI
+
+    // 사양 IN
+    DI_SPEC_CHK_START           = 0;
+
+    // 모터 JOG
+    DI_SLIDE_MTR_CW             = 0;
+    DI_SLIDE_MTR_CCW            = 1;
+    DI_HGT_MTR_CW               = 2;
+    DI_HGT_MTR_CCW              = 3;
+    DI_TILT_MTR_CW              = 4;
+    DI_TILT_MTR_CCW             = 5;
+    DI_EXT_MTR_CW               = 6;
+    DI_EXT_MTR_CCW              = 7;
+    DI_SWIVEL_FULL              = 8;
+    DI_SWIVEL_RETURN            = 9;
+
+
+    //=================================================================================
+    // DO
+    _DIO_OUT_START              = _DIO_CH_COUNT div 2;
+
+    DO_IGN1                     = _DIO_OUT_START;
+    DO_IGN2                     = _DIO_OUT_START + 1;
+    DO_TEST_PW                  = _DIO_OUT_START + 2;
+    DO_SPEC_CHCEK_PW            = _DIO_OUT_START + 3;
+    DO_INU_100_PW               = _DIO_OUT_START + 4;
+    DO_CAN_100K                 = _DIO_OUT_START + 5;
+    DO_CAN_500K                 = _DIO_OUT_START + 6;
+
+    // 메인 및 SW 커넥터 사양 릴레이
+    DO_RJ1_HI_CAR               = _DIO_OUT_START + 12;
+    DO_JG1_CAR                  = _DIO_OUT_START + 13;
+
+    DO_RJ1_HI_PASS_SW           = _DIO_OUT_START + 24;
+
+    //=================================================================================
+    _LAN_OUT_START              = _LAN_IO_CH_COUNT div 2;
+
+
+    //=================================================================================
+    // AI
+    AI_MAIN_CURR            = 0;
+    AI_MOTOR_CURR           = 1;
+
+    // 소음기는 없지만..
+    AI_NOISE                = 2;
+
+    AI_MAIN_CON_VOLT_START  = 8;
+
+    //=================================================================================
+    //  AO
+    SYS_REF_VOLT         = -1;        // 시스템 기준 전압 CH(-1 V)
+
+
+    // 이후 진단 AI  추가 할 것
+
+    //=================================================================================
+    // Counter
+
+
+implementation
+
+
+
+end.

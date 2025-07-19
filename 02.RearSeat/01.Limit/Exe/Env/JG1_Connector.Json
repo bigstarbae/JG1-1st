@@ -1,0 +1,672 @@
+{
+  "VER": "250521.00",
+  "CAR": "JG1",
+  "CONNECTORS":  [
+    {
+      "TYPE": 10,
+      "CONNECTOR_NAME": "JG1 4P LH",
+      "ID": "JG1:4P:LH",
+      "PIN_NAMES":  [
+        "MOT PWR B+(A)",
+        "MOT PWR B+(B)",
+        "",
+        "HVPSU ECU B+",
+        "SAU ECU B+ (BK EXT)",
+        "HVPSU B2 CAN LO",
+        "HVPSU B2 CAN HI",
+        "HVPSU IGN1",
+        "BUCKLE_ SBR LH+ (RH)",
+        "BUCKLE_ SBR LH- (RH)",
+        "BUCKLE_ WS LH+ (RH)",
+        "BUCKLE_ WS LH- (RH)",
+        "HVPSU ECU GND",
+        "",
+        "MOT PWR GND(A)",
+        "MOT PWR GND(B)",
+        "",
+        "SAU PWR B+ (BK EXT)",
+        "HV MAT PWR B+",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "BUCKLE ILL_ LIN BUS",
+        "L CAN LO (PSS)",
+        "L CAN HI (PSS)",
+        "SAU L CAN LO (BK EXT)",
+        "SAU L CAN HI (BK EXT)",
+        "HV MAT PWR GND",
+        "SAU PWR GND/ECU GND (B)",
+        "",
+        "BUCKLE ILL_ B+",
+        "BUCKLE ILL_ GND"
+      ]
+    },
+	{
+      "TYPE": 10,
+      "CONNECTOR_NAME": "JG1 4P RH",
+      "ID": "JG1:4P:RH",
+      "PIN_NAMES":  [
+        "MOT PWR B+(A)",
+        "MOT PWR B+(B)",
+        "",
+        "HVPSU ECU B+",
+        "SAU ECU B+ (BK EXT)",
+        "HVPSU B2 CAN LO",
+        "HVPSU B2 CAN HI",
+        "HVPSU IGN1",
+        "BUCKLE_ SBR LH+ (RH)",
+        "BUCKLE_ SBR LH- (RH)",
+        "BUCKLE_ WS LH+ (RH)",
+        "BUCKLE_ WS LH- (RH)",
+        "HVPSU ECU GND",
+        "",
+        "MOT PWR GND(A)",
+        "MOT PWR GND(B)",
+        "",
+        "SAU PWR B+ (BK EXT)",
+        "HV MAT PWR B+",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "BUCKLE ILL_ LIN BUS",
+        "L CAN LO (PSS)",
+        "L CAN HI (PSS)",
+        "SAU L CAN LO (BK EXT)",
+        "SAU L CAN HI (BK EXT)",
+        "HV MAT PWR GND",
+        "SAU PWR GND/ECU GND (B)",
+        "",
+        "BUCKLE ILL_ B+",
+        "BUCKLE ILL_ GND"
+      ]
+    },
+    {
+      "TYPE": 10,
+      "CONNECTOR_NAME": "JG1 5P LH",
+      "ID": "JG1:5P:LH",
+      "PIN_NAMES":  [
+        "MOT PWR B+(A)",
+        "MOT PWR B+(B)",
+        "ARMREST IGN2",
+        "HVPSU ECU B+",
+        "ARMREST LIN BUS",
+        "HVPSU B2 CAN LO",
+        "HVPSU B2 CAN HI",
+        "HVPSU IGN1",
+        "BUCKLE_ SBR LH+",
+        "BUCKLE_ SBR LH-",
+        "BUCKLE_ WS LH+",
+        "BUCKLE_ WS LH-",
+        "HVPSU ECU GND",
+        "ARMREST LIN GND",
+        "MOT PWR GND(A)",
+        "MOT PWR GND(B)",
+        "ARMREST IGN3",
+        "ARMREST USB B+",
+        "HV MAT PWR B+",
+        "ARMREST USB WAKEUP",
+        "ARMREST USB ALETR",
+        "ARMREST ILL+",
+        "ARMREST ILL-",
+        "ARMREST CAN LO",
+        "ARMREST CAN HI",
+        "L CAN LO (PSS)",
+        "L CAN HI (PSS)",
+        "BUCKLE CTR_ WS CTR+",
+        "BUCKLE CTR_ WS CTR-",
+        "HV MAT PWR GND",
+        "ARMREST USB GND",
+        "",
+        "BUCKLE CTR_ SBR CTR+",
+        "BUCKLE CTR_ SBR CTR-"
+      ]
+    },
+    {
+      "TYPE": 10,
+      "CONNECTOR_NAME": "JG1 5P RH",
+      "ID": "JG1:5P:RH",
+      "PIN_NAMES":  [
+        "MOT PWR B+(A)",
+        "MOT PWR B+(B)",
+        "",
+        "HVPSU ECU B+",
+        "",
+        "HVPSU B2 CAN LO",
+        "HVPSU B2 CAN HI",
+        "HVPSU IGN1",
+        "BUCKLE_ SBR RH+",
+        "BUCKLE_ SBR RH-",
+        "BUCKLE_ WS RH+",
+        "BUCKLE_ WS RH-",
+        "HVPSU ECU GND",
+        "",
+        "MOT PWR GND(A)",
+        "MOT PWR GND(B)",
+        "",
+        "",
+        "HV MAT PWR B+",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "L CAN LO (PSS)",
+        "L CAN HI (PSS)",
+        "",
+        "",
+        "HV MAT PWR GND",
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "TYPE": 10,
+      "CONNECTOR_NAME": "JG1 6P LH",
+      "ID": "JG1:6P:LH",
+      "PIN_NAMES":  [
+        "MOT PWR B+(A)",
+        "MOT PWR B+(B)",
+        "",
+        "HVPSU ECU B+",
+        "SAU ECU B+ (BK EXT)",
+        "HVPSU B2 CAN LO",
+        "HVPSU B2 CAN HI",
+        "HVPSU IGN1",
+        "BUCKLE_ SBR LH+ (RH)",
+        "BUCKLE_ SBR LH- (RH)",
+        "BUCKLE_ WS LH+ (RH)",
+        "BUCKLE_ WS LH- (RH)",
+        "HVPSU ECU GND",
+        "",
+        "MOT PWR GND(A)",
+        "MOT PWR GND(B)",
+        "",
+        "SAU PWR B+ (BK EXT)",
+        "HV MAT PWR B+",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "BUCKLE ILL_ LIN BUS",
+        "L CAN LO (PSS)",
+        "L CAN HI (PSS)",
+        "SAU L CAN LO (BK EXT)",
+        "SAU L CAN HI (BK EXT)",
+        "HV MAT PWR GND",
+        "SAU PWR GND/ECU GND (B)",
+        "",
+        "BUCKLE ILL_ B+",
+        "BUCKLE ILL_ GND"
+      ]
+    },
+    {
+      "TYPE": 10,
+      "CONNECTOR_NAME": "JG1 6P RH",
+      "ID": "JG1:6P:RH",
+      "PIN_NAMES":  [
+        "MOT PWR B+(A)",
+        "MOT PWR B+(B)",
+        "",
+        "HVPSU ECU B+",
+        "SAU ECU B+ (BK EXT)",
+        "HVPSU B2 CAN LO",
+        "HVPSU B2 CAN HI",
+        "HVPSU IGN1",
+        "BUCKLE_ SBR LH+ (RH)",
+        "BUCKLE_ SBR LH- (RH)",
+        "BUCKLE_ WS LH+ (RH)",
+        "BUCKLE_ WS LH- (RH)",
+        "HVPSU ECU GND",
+        "",
+        "MOT PWR GND(A)",
+        "MOT PWR GND(B)",
+        "",
+        "SAU PWR B+ (BK EXT)",
+        "HV MAT PWR B+",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "BUCKLE ILL_ LIN BUS",
+        "L CAN LO (PSS)",
+        "L CAN HI (PSS)",
+        "SAU L CAN LO (BK EXT)",
+        "SAU L CAN HI (BK EXT)",
+        "HV MAT PWR GND",
+        "SAU PWR GND/ECU GND (B)",
+        "",
+        "BUCKLE ILL_ B+",
+        "BUCKLE ILL_ GND"
+      ]
+    },
+    {
+      "TYPE": 10,
+      "CONNECTOR_NAME": "JG1SE 6P LH",
+      "ID": "JG1SE:6P:LH",
+      "PIN_NAMES":  [
+        "MOT PWR B+(A)",
+        "MOT PWR B+(B)",
+        "LONG SLI FWD MTR",
+        "HVPSU ECU B+",
+        "SAU ECU B+ (BK EXT)",
+        "HVPSU B2 CAN LO",
+        "x",
+        "HVPSU IGN1",
+        "BUCKLE_ SBR LH+ (RH)",
+        "BUCKLE_ SBR LH- (RH)",
+        "BUCKLE_ WS LH+ (RH)",
+        "BUCKLE_ WS LH- (RH)",
+        "HVPSU ECU GND",
+        "LONG SLI BWD MTR",
+        "MOT PWR GND(A)",
+        "MOT PWR GND(B)",
+        "",
+        "SAU PWR B+ (BK EXT)",
+        "HV MAT PWR B+",
+        "",
+        "LONG SLI SNSR IN",
+        "LONG SLI SNSR OUT",
+        "",
+        "",
+        "BUCKLE ILL_ LIN BUS",
+        "L CAN LO (PSS)",
+        "L CAN HI (PSS)",
+        "SAU L CAN LO (BK EXT)",
+        "SAU L CAN HI (BK EXT)",
+        "",
+        "SAU PWR GND/ECU GND (B)",
+        "",
+        "BUCKLE ILL_ B+",
+        "BUCKLE ILL_ GND"
+      ]
+    },
+	{
+      "TYPE": 10,
+      "CONNECTOR_NAME": "JG1SE 6P RH",
+      "ID": "JG1SE:6P:RH",
+      "PIN_NAMES":  [
+        "MOT PWR B+(A)",
+        "MOT PWR B+(B)",
+        "LONG SLI FWD MTR",
+        "HVPSU ECU B+",
+        "SAU ECU B+ (BK EXT)",
+        "HVPSU B2 CAN LO",
+        "x",
+        "HVPSU IGN1",
+        "BUCKLE_ SBR LH+ (RH)",
+        "BUCKLE_ SBR LH- (RH)",
+        "BUCKLE_ WS LH+ (RH)",
+        "BUCKLE_ WS LH- (RH)",
+        "HVPSU ECU GND",
+        "LONG SLI BWD MTR",
+        "MOT PWR GND(A)",
+        "MOT PWR GND(B)",
+        "",
+        "SAU PWR B+ (BK EXT)",
+        "HV MAT PWR B+",
+        "",
+        "LONG SLI SNSR IN",
+        "LONG SLI SNSR OUT",
+        "",
+        "",
+        "BUCKLE ILL_ LIN BUS",
+        "L CAN LO (PSS)",
+        "L CAN HI (PSS)",
+        "SAU L CAN LO (BK EXT)",
+        "SAU L CAN HI (BK EXT)",
+        "",
+        "SAU PWR GND/ECU GND (B)",
+        "",
+        "BUCKLE ILL_ B+",
+        "BUCKLE ILL_ GND"
+      ]
+    },
+    {
+      "TYPE": 10,
+      "CONNECTOR_NAME": "JG1 7P LH",
+      "ID": "JG1:7P:LH",
+      "PIN_NAMES":  [
+        "MOT PWR B+(A)",
+        "MOT PWR B+(B)",
+        "ARMREST IGN2",
+        "HVPSU ECU B+",
+        "ARMREST LIN BUS",
+        "HVPSU B2 CAN LO",
+        "HVPSU B2 CAN HI",
+        "HVPSU IGN1",
+        "BUCKLE_ SBR LH+",
+        "BUCKLE_ SBR LH-",
+        "BUCKLE_ WS LH+",
+        "BUCKLE_ WS LH-",
+        "HVPSU ECU GND",
+        "ARMREST LIN GND",
+        "MOT PWR GND(A)",
+        "MOT PWR GND(B)",
+        "ARMREST IGN3",
+        "ARMREST USB B+",
+        "HV MAT PWR B+",
+        "ARMREST USB WAKEUP",
+        "ARMREST USB ALETR",
+        "ARMREST ILL+",
+        "ARMREST ILL-",
+        "ARMREST CAN LO",
+        "ARMREST CAN HI",
+        "L CAN LO (PSS)",
+        "L CAN HI (PSS)",
+        "BUCKLE CTR_ WS CTR+",
+        "BUCKLE CTR_ WS CTR-",
+        "HV MAT PWR GND",
+        "ARMREST USB GND",
+        "",
+        "BUCKLE CTR_ SBR CTR+",
+        "BUCKLE CTR_ SBR CTR-"
+      ]
+    },
+	{
+      "TYPE": 10,
+      "CONNECTOR_NAME": "JG1 HVPSU 7P RH",
+      "ID": "JG1:7P:RH",
+      "PIN_NAMES":  [
+        "MOT PWR B+(A)",
+        "MOT PWR B+(B)",
+        "",
+        "HVPSU ECU B+",
+        "",
+        "HVPSU B2 CAN LO",
+        "HVPSU B2 CAN HI",
+        "HVPSU IGN1",
+        "BUCKLE_ SBR RH+",
+        "BUCKLE_ SBR RH-",
+        "BUCKLE_ WS RH+",
+        "BUCKLE_ WS RH-",
+        "HVPSU ECU GND",
+        "",
+        "MOT PWR GND(A)",
+        "MOT PWR GND(B)",
+        "",
+        "",
+        "HV MAT PWR B+",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "L CAN LO (PSS)",
+        "L CAN HI (PSS)",
+        "",
+        "",
+        "HV MAT PWR GND",
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+	{
+      "TYPE": 30,
+      "CONNECTOR_NAME": "JG1 CUSH MAT",
+      "ID": "JG1:CUSH:MAT",
+      "PIN_NAMES":  [
+        "CUSH MAT PWR",
+        "CUSH NTC+",
+        "CUSH NTC-",
+        "CUSH MAT GND"
+      ]
+    },
+	{
+      "TYPE": 40,
+      "CONNECTOR_NAME": "JG1 BACK MAT 7P",
+      "ID": "JG1:7P:BACK:MAT",
+      "PIN_NAMES":  [
+        "BACK MAT+",
+        "BACK MAT GND"
+      ]
+    },
+	{
+      "TYPE": 130,
+      "CONNECTOR_NAME": "JG1 H/REST MAT",
+      "ID": "JG1:HREST:MAT",
+      "PIN_NAMES":  [
+        "H.REST MAT PWR",
+        "H.REST NTC+",
+        "H.REST NTC-",
+        "H.REST MAT GND"
+      ]
+    },
+	{
+      "TYPE": 140,
+      "CONNECTOR_NAME": "JG1 BLO BK",
+      "ID": "JG1:BLOW",
+      "PIN_NAMES":  [
+        "BLW VCC",
+        "BLW VSP",
+        "BLW GND"
+      ]
+    }
+  ],
+  "WIRING_SETS":  [
+    {
+      "TYPE": 10,
+      "WIRING_NUMBERS":  [
+        {
+          "NUMBER": "J10-1",
+          "ELECTRODE": "1"
+        },
+        {
+          "NUMBER": "J10-2",
+          "ELECTRODE": "2"
+        },
+        {
+          "NUMBER": "J10-3",
+          "ELECTRODE": "3"
+        },
+        {
+          "NUMBER": "J10-4",
+          "ELECTRODE": "4"
+        },
+        {
+          "NUMBER": "J10-5",
+          "ELECTRODE": "5"
+        },
+        {
+          "NUMBER": "J10-6",
+          "ELECTRODE": "6"
+        },
+        {
+          "NUMBER": "J10-7",
+          "ELECTRODE": "7"
+        },
+        {
+          "NUMBER": "J10-8",
+          "ELECTRODE": "8"
+        },
+        {
+          "NUMBER": "J10-9",
+          "ELECTRODE": "9"
+        },
+        {
+          "NUMBER": "J10-10",
+          "ELECTRODE": "10"
+        },
+        {
+          "NUMBER": "J10-11",
+          "ELECTRODE": "11"
+        },
+        {
+          "NUMBER": "J10-12",
+          "ELECTRODE": "12"
+        },
+        {
+          "NUMBER": "J10-13",
+          "ELECTRODE": "13"
+        },
+        {
+          "NUMBER": "J10-14",
+          "ELECTRODE": "14"
+        },
+        {
+          "NUMBER": "J10-15",
+          "ELECTRODE": "15"
+        },
+        {
+          "NUMBER": "J10-16",
+          "ELECTRODE": "16"
+        },
+        {
+          "NUMBER": "J10-17",
+          "ELECTRODE": "17"
+        },
+        {
+          "NUMBER": "J10-18",
+          "ELECTRODE": "18"
+        },
+        {
+          "NUMBER": "J10-19",
+          "ELECTRODE": "19"
+        },
+        {
+          "NUMBER": "J10-20",
+          "ELECTRODE": "20"
+        },
+        {
+          "NUMBER": "J10-21",
+          "ELECTRODE": "21"
+        },
+        {
+          "NUMBER": "J10-22",
+          "ELECTRODE": "22"
+        },
+        {
+          "NUMBER": "J10-23",
+          "ELECTRODE": "23"
+        },
+        {
+          "NUMBER": "J10-24",
+          "ELECTRODE": "24"
+        },
+        {
+          "NUMBER": "J10-25",
+          "ELECTRODE": "25"
+        },
+        {
+          "NUMBER": "J10-26",
+          "ELECTRODE": "26"
+        },
+        {
+          "NUMBER": "J10-27",
+          "ELECTRODE": "27"
+        },
+        {
+          "NUMBER": "J10-28",
+          "ELECTRODE": "28"
+        },
+        {
+          "NUMBER": "J10-29",
+          "ELECTRODE": "29"
+        },
+        {
+          "NUMBER": "J10-30",
+          "ELECTRODE": "30"
+        },
+        {
+          "NUMBER": "J10-31",
+          "ELECTRODE": "31"
+        },
+        {
+          "NUMBER": "J10-32",
+          "ELECTRODE": "32"
+        },
+        {
+          "NUMBER": "J10-33",
+          "ELECTRODE": "33"
+        },
+        {
+          "NUMBER": "J10-34",
+          "ELECTRODE": "34"
+        }
+      ]
+    },
+	{
+      "TYPE": 30,
+      "WIRING_NUMBERS":  [
+        {
+          "NUMBER": "J30-1",
+          "ELECTRODE": "35"
+        },
+        {
+          "NUMBER": "J30-2",
+          "ELECTRODE": "36"
+        },
+        {
+          "NUMBER": "J30-3",
+          "ELECTRODE": "37"
+        },
+        {
+          "NUMBER": "J30-4",
+          "ELECTRODE": "38"
+        }
+      ]
+    },
+	{
+      "TYPE": 40,
+      "WIRING_NUMBERS":  [
+        {
+          "NUMBER": "J40-1",
+          "ELECTRODE": "43"
+        },
+        {
+          "NUMBER": "J40-2",
+          "ELECTRODE": "44"
+        }
+      ]
+    },
+	{
+      "TYPE": 130,
+      "WIRING_NUMBERS":  [
+        {
+          "NUMBER": "J130-1",
+          "ELECTRODE": "45"
+        },
+        {
+          "NUMBER": "J130-2",
+          "ELECTRODE": "46"
+        },
+        {
+          "NUMBER": "J130-3",
+          "ELECTRODE": "47"
+        },
+        {
+          "NUMBER": "J130-4",
+          "ELECTRODE": "48"
+        }
+      ]
+    },
+	{
+      "TYPE": 140,
+      "WIRING_NUMBERS":  [
+        {
+          "NUMBER": "J140-1",
+          "ELECTRODE": "49"
+        },
+        {
+          "NUMBER": "J140-2",
+          "ELECTRODE": "50"
+        },
+        {
+          "NUMBER": "J140-3",
+          "ELECTRODE": "51"
+        }
+      ]
+    }
+  ]
+}

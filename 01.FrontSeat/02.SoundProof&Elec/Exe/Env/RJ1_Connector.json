@@ -1,0 +1,709 @@
+{
+  "VER": "250625.00",
+  "CAR": "RJ1",
+  "CONNECTORS":  [
+    {
+      "TYPE": 10,
+      "CONNECTOR_NAME": "RJ1 DPSM+SHVU DRV",
+      "ID": "MAIN:RJ1:DRV",
+      "PIN_NAMES":  [
+        "MOT PWR B+(A)",
+        "SHVU PWR B+",
+        "LUMBAR/BOLSTER GND",
+        "MOT PWR GND(A)",
+        "MOT PWR B+(B)",
+        "LUMBAR/BOLSTER B+",
+        "SHVU PWR GND",
+        "MOT PWR GND(B)",
+        "IGN1",
+        "MOOD B+",
+        "AUTO CUT B+",
+        "",
+        "",
+        "",
+        "",
+        "MONITOR DET",
+        "MONITOR GND",
+        "IPM GND",
+        "MONITOR PWR",
+        "PSM ECU B+",
+        "",
+        "MOOD GND",
+        "LIN BUS",
+        "",
+        "B CAN HI",
+        "B CAN LO",
+        "PSM ECU GND",
+        ""
+      ]
+    },
+    {
+      "TYPE": 10,
+      "CONNECTOR_NAME": "RJ1 8REL+SHVU DRV",
+      "ID": "MAIN:RJ1:DRV:8REL",
+      "PIN_NAMES":  [
+        "MOT PWR B+(A)",
+        "SHVU PWR B+",
+        "LUMBAR/BOLSTER GND",
+        "MOT PWR GND(A)",
+        "MOT PWR B+(B)",
+        "LUMBAR/BOLSTER B+",
+        "SHVU PWR GND",
+        "MOT PWR GND(B)",
+        "IGN1",
+        "MOOD B+",
+        "AUTO CUT B+",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "IPM GND",
+        "",
+        "8REL ECU B+",
+        "",
+        "MOOD GND",
+        "LIN BUS",
+        "",
+        "B CAN HI",
+        "B CAN LO",
+        "8REL ECU GND",
+        ""
+      ]
+    },
+    {
+      "TYPE": 10,
+      "CONNECTOR_NAME": "RJ1 APSM+SHVU PASS",
+      "ID": "MAIN:RJ1:PSG",
+      "PIN_NAMES":  [
+        "MOT PWR B+(A)",
+        "SHVU PWR B+",
+        "LUMBAR/BOLSTER GND",
+        "MOT PWR GND(A)",
+        "MOT PWR B+(B)",
+        "LUMBAR/BOLSTER B+",
+        "SHVU PWR GND",
+        "MOT PWR GND(B)",
+        "IGN1",
+        "MOOD B+",
+        "AUTO CUT B+",
+        "",
+        "",
+        "A IMS SW",
+        "EasyAccessIND OUT",
+        "MONITOR DET",
+        "MONITOR GND",
+        "IPM GND",
+        "MONITOR PWR",
+        "PSM ECU B+",
+        "",
+        "MOOD GND",
+        "LIN BUS",
+        "",
+        "B CAN HI",
+        "B CAN LO",
+        "PSM ECU GND",
+        "A IMS SW GND"
+      ]
+    },
+    {
+      "TYPE": 19,
+      "CONNECTOR_NAME": "RJ1 8REL+SHVU PASS",
+      "ID": "MAIN:RJ1:PSG:8REL",
+      "PIN_NAMES":  [
+        "MOT PWR B+(A)",
+        "SHVU PWR B+",
+        "",
+        "MOT PWR GND(A)",
+        "MOT PWR B+(B)",
+        "",
+        "SHVU PWR GND",
+        "MOT PWR GND(B)",
+        "IGN1",
+        "MOOD B+",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "8REL ECU B+",
+        "",
+        "MOOD GND",
+        "LIN BUS",
+        "",
+        "B CAN HI",
+        "B CAN LO",
+        "8REL ECU GND",
+        ""
+      ]
+    },
+{
+      "TYPE": 21,
+      "CONNECTOR_NAME": "RJ1 DPSM+SHVU DRV BK.EXT",
+      "ID": "BK.EXT:RJ1:DRV",
+      "PIN_NAMES":  [
+        "",
+        "",
+        "H/REST UP MTR",
+        "LIN BUS(SHVU)",
+        "",
+        "H/REST U/D HallSEN OUT",
+        "H/REST F/B HallSEN OUT",
+        "RECL HallSEN OUT",
+        "MONITOR DET",
+        "",
+        "H/REST U/D HallSEN B+",
+        "H/REST F/B HallSEN B+",
+        "RECL HallSEN B+",
+        "H/REST FWD MTR",
+        "RESL FWD MTR",
+        "",
+        "",
+        "",
+        "H/REST DN MTR",
+        "LUMBAR/BOLSTER B+",
+        "LUMBAR/BOLSTER GND",
+        "MONITOR B+",
+        "MONITOR GND",
+        "MOOD LAMP B+",
+        "MOOD LAMP GND",
+        "MOOD LAMP LIN",
+        "",
+        "",
+        "",
+        "H/REST BWD MTR",
+        "RECL BWD MTR",
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "TYPE": 21,
+      "CONNECTOR_NAME": "RJ1 8REL+SHVU DRV BK.EXT",
+      "ID": "BK.EXT:RJ1:DRV:8REL",
+      "PIN_NAMES":  [
+        "",
+        "",
+        "",
+        "LIN BUS(SHVU)",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "RESL FWD MTR",
+        "",
+        "",
+        "",
+        "",
+        "LUMBAR/BOLSTER B+",
+        "LUMBAR/BOLSTER GND",
+        "",
+        "",
+        "MOOD LAMP B+",
+        "MOOD LAMP GND",
+        "MOOD LAMP LIN",
+        "",
+        "",
+        "",
+        "",
+        "RECL BWD MTR",
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "TYPE": 21,
+      "CONNECTOR_NAME": "RJ1 APSM+SHVU PASS BK.EXT",
+      "ID": "BK.EXT:RJ1:PSG",
+      "PIN_NAMES":  [
+        "WALK IN SLI FWD SW",
+        "H/REST DN MTR",
+        "H/REST UP MTR",
+        "MOOD LAMP B+",
+        "",
+        "H/REST U/D HallSEN OUT",
+        "H/REST F/B HallSEN OUT",
+        "RECL HallSEN OUT",
+        "",
+        "MOOD LAMP GND",
+        "H/REST U/D HallSEN B+",
+        "H/REST F/B HallSEN B+",
+        "RECL HallSEN B+",
+        "H/REST FWD MTR",
+        "RESL FWD MTR",
+        "WALK IN REC FWD SW",
+        "WALK IN SLI BWD SW",
+        "",
+        "WALK IN SW GND",
+        "LIN BUS(SHVU)",
+        "LUMBAR/BOLSTER B+",
+        "LUMBAR/BOLSTER GND",
+        "MONITOR B+",
+        "MONITOR GND",
+        "MONITOR DET",
+        "MOOD LAMP LIN",
+        "",
+        "",
+        "",
+        "H/REST BWD MTR",
+        "RECL BWD MTR",
+        "WALK IN REC BWD SW",
+        "",
+        ""
+      ]
+    },
+    {
+      "TYPE": 21,
+      "CONNECTOR_NAME": "RJ1 8REL+SHVU PASS BK.EXT",
+      "ID": "BK.EXT:RJ1:PSG:8REL",
+      "PIN_NAMES":  [
+        "WALK IN SLI FWD SW",
+        "",
+        "",
+        "MOOD LAMP B+",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "MOOD LAMP GND",
+        "",
+        "",
+        "",
+        "",
+        "RESL FWD MTR",
+        "WALK IN REC FWD SW",
+        "WALK IN SLI BWD SW",
+        "",
+        "WALK IN SW GND",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "MOOD LAMP LIN",
+        "",
+        "",
+        "",
+        "",
+        "RECL BWD MTR",
+        "WALK IN REC BWD SW",
+        "",
+        ""
+      ]
+    },
+    {
+      "TYPE": 31,
+      "CONNECTOR_NAME": "RJ1 WARMER CUSH HTR.MAT",
+      "ID": "HTR.MAT:RJ1",
+      "PIN_NAMES":  [
+        "NTC+",
+        "BACK MAT GND",
+        "NTC-",
+        "CUSH MAT PWR",
+        "BACK MAT PWR",
+        "CUSH MAT GND"
+      ]
+    },
+	{
+      "TYPE": 32,
+      "CONNECTOR_NAME": "RJ1 CCSM CUSH",
+      "ID": "RJ1:CCSM:CUSH:MAT",
+      "PIN_NAMES":  [
+        "NTC+",
+        "BACK MAT GND",
+        "NTC-",
+        "CUSH MAT PWR",
+        "",
+        "CU, BK MAT GND"
+      ]
+    },
+	{
+      "TYPE": 40,
+      "CONNECTOR_NAME": "RJ1 SW",
+      "ID": "RJ1:SW",
+      "PIN_NAMES":  [
+        "ECU GND",
+        "",
+        "LIN BUS",
+        "",
+        "",
+        "",
+        "",
+        "ECU B+"
+      ]
+    },
+	{
+      "TYPE": 90,
+      "CONNECTOR_NAME": "RJ1 A.PT",
+      "ID": "RJ1:APT",
+      "PIN_NAMES":  [
+        "A/PT HI",
+        "A/PT HI",
+        "A/PT LOW",
+        "A/PT LOW"
+      ]
+    }
+  ],
+  "WIRING_SETS":  [
+    {
+      "TYPE": 10,
+      "WIRING_NUMBERS":  [
+        {
+          "NUMBER": "J10-1",
+          "ELECTRODE": "1"
+        },
+        {
+          "NUMBER": "J10-2",
+          "ELECTRODE": "2"
+        },
+        {
+          "NUMBER": "J10-3",
+          "ELECTRODE": "3"
+        },
+        {
+          "NUMBER": "J10-4",
+          "ELECTRODE": "4"
+        },
+        {
+          "NUMBER": "J10-5",
+          "ELECTRODE": "5"
+        },
+        {
+          "NUMBER": "J10-6",
+          "ELECTRODE": "6"
+        },
+        {
+          "NUMBER": "J10-7",
+          "ELECTRODE": "7"
+        },
+        {
+          "NUMBER": "J10-8",
+          "ELECTRODE": "8"
+        },
+        {
+          "NUMBER": "J10-9",
+          "ELECTRODE": "9"
+        },
+        {
+          "NUMBER": "J10-10",
+          "ELECTRODE": "10"
+        },
+        {
+          "NUMBER": "J10-11",
+          "ELECTRODE": "11"
+        },
+        {
+          "NUMBER": "J10-12",
+          "ELECTRODE": "12"
+        },
+        {
+          "NUMBER": "J10-13",
+          "ELECTRODE": "13"
+        },
+        {
+          "NUMBER": "J10-14",
+          "ELECTRODE": "14"
+        },
+        {
+          "NUMBER": "J10-15",
+          "ELECTRODE": "15"
+        },
+        {
+          "NUMBER": "J10-16",
+          "ELECTRODE": "16"
+        },
+        {
+          "NUMBER": "J10-17",
+          "ELECTRODE": "17"
+        },
+        {
+          "NUMBER": "J10-18",
+          "ELECTRODE": "18"
+        },
+        {
+          "NUMBER": "J10-19",
+          "ELECTRODE": "19"
+        },
+        {
+          "NUMBER": "J10-20",
+          "ELECTRODE": "20"
+        },
+        {
+          "NUMBER": "J10-21",
+          "ELECTRODE": "21"
+        },
+        {
+          "NUMBER": "J10-22",
+          "ELECTRODE": "22"
+        },
+        {
+          "NUMBER": "J10-23",
+          "ELECTRODE": "23"
+        },
+        {
+          "NUMBER": "J10-24",
+          "ELECTRODE": "24"
+        },
+        {
+          "NUMBER": "J10-25",
+          "ELECTRODE": "25"
+        },
+        {
+          "NUMBER": "J10-26",
+          "ELECTRODE": "26"
+        },
+        {
+          "NUMBER": "J10-27",
+          "ELECTRODE": "27"
+        },
+        {
+          "NUMBER": "J10-28",
+          "ELECTRODE": "28"
+        }
+      ]
+    },
+	{
+      "TYPE": 21,
+      "WIRING_NUMBERS":  [
+        {
+          "NUMBER": "J20-1",
+          "ELECTRODE": "35"
+        },
+        {
+          "NUMBER": "J20-2",
+          "ELECTRODE": "36"
+        },
+        {
+          "NUMBER": "J20-3",
+          "ELECTRODE": "37"
+        },
+        {
+          "NUMBER": "J20-4",
+          "ELECTRODE": "38"
+        },
+        {
+          "NUMBER": "J20-5",
+          "ELECTRODE": "39"
+        },
+        {
+          "NUMBER": "J20-6",
+          "ELECTRODE": "40"
+        },
+        {
+          "NUMBER": "J20-7",
+          "ELECTRODE": "41"
+        },
+        {
+          "NUMBER": "J20-8",
+          "ELECTRODE": "42"
+        },
+        {
+          "NUMBER": "J20-9",
+          "ELECTRODE": "43"
+        },
+        {
+          "NUMBER": "J20-10",
+          "ELECTRODE": "44"
+        },
+        {
+          "NUMBER": "J20-11",
+          "ELECTRODE": "45"
+        },
+        {
+          "NUMBER": "J20-12",
+          "ELECTRODE": "46"
+        },
+        {
+          "NUMBER": "J20-13",
+          "ELECTRODE": "47"
+        },
+        {
+          "NUMBER": "J20-14",
+          "ELECTRODE": "48"
+        },
+        {
+          "NUMBER": "J20-15",
+          "ELECTRODE": "49"
+        },
+        {
+          "NUMBER": "J20-16",
+          "ELECTRODE": "50"
+        },
+        {
+          "NUMBER": "J20-17",
+          "ELECTRODE": "51"
+        },
+        {
+          "NUMBER": "J20-18",
+          "ELECTRODE": "52"
+        },
+        {
+          "NUMBER": "J20-19",
+          "ELECTRODE": "53"
+        },
+        {
+          "NUMBER": "J20-20",
+          "ELECTRODE": "54"
+        },
+        {
+          "NUMBER": "J20-21",
+          "ELECTRODE": "55"
+        },
+        {
+          "NUMBER": "J20-22",
+          "ELECTRODE": "56"
+        },
+        {
+          "NUMBER": "J20-23",
+          "ELECTRODE": "57"
+        },
+        {
+          "NUMBER": "J20-24",
+          "ELECTRODE": "58"
+        },
+        {
+          "NUMBER": "J20-25",
+          "ELECTRODE": "59"
+        },
+        {
+          "NUMBER": "J20-26",
+          "ELECTRODE": "60"
+        },
+        {
+          "NUMBER": "J20-27",
+          "ELECTRODE": "61"
+        },
+        {
+          "NUMBER": "J20-28",
+          "ELECTRODE": "62"
+        },
+        {
+          "NUMBER": "J20-29",
+          "ELECTRODE": "63"
+        },
+        {
+          "NUMBER": "J20-30",
+          "ELECTRODE": "64"
+        },
+        {
+          "NUMBER": "J20-31",
+          "ELECTRODE": "65"
+        },
+        {
+          "NUMBER": "J20-32",
+          "ELECTRODE": "66"
+        },
+        {
+          "NUMBER": "J20-33",
+          "ELECTRODE": "67"
+        },
+        {
+          "NUMBER": "J20-34",
+          "ELECTRODE": "68"
+        }
+      ]
+    },
+	{
+      "TYPE": 31,
+      "WIRING_NUMBERS":  [
+        {
+          "NUMBER": "J30-1",
+          "ELECTRODE": "69"
+        },
+        {
+          "NUMBER": "J30-2",
+          "ELECTRODE": "70"
+        },
+        {
+          "NUMBER": "J30-3",
+          "ELECTRODE": "71"
+        },
+        {
+          "NUMBER": "J30-4",
+          "ELECTRODE": "72"
+        },
+        {
+          "NUMBER": "J30-5",
+          "ELECTRODE": "73"
+        },
+        {
+          "NUMBER": "J30-6",
+          "ELECTRODE": "74"
+        }
+      ]
+    },
+	{
+      "TYPE": 40,
+      "WIRING_NUMBERS":  [
+        {
+          "NUMBER": "-",
+          "ELECTRODE": "-"
+        },
+        {
+          "NUMBER": "-",
+          "ELECTRODE": "-"
+        },
+        {
+          "NUMBER": "J40-3",
+          "ELECTRODE": "77"
+        },
+        {
+          "NUMBER": "-",
+          "ELECTRODE": "-"
+        },
+        {
+          "NUMBER": "-",
+          "ELECTRODE": "-"
+        },
+        {
+          "NUMBER": "-",
+          "ELECTRODE": "-"
+        },
+        {
+          "NUMBER": "-",
+          "ELECTRODE": "-"
+        },
+        {
+          "NUMBER": "-",
+          "ELECTRODE": "-"
+        }
+      ]
+    },
+	{
+      "TYPE": 90,
+      "WIRING_NUMBERS":  [
+        {
+          "NUMBER": "J90-1",
+          "ELECTRODE": "82"
+        },
+        {
+          "NUMBER": "J90-2",
+          "ELECTRODE": "83"
+        },
+        {
+          "NUMBER": "J90-3",
+          "ELECTRODE": "84"
+        },
+        {
+          "NUMBER": "J90-4",
+          "ELECTRODE": "85"
+        }
+      ]
+    }
+  ]
+}

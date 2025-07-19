@@ -1,0 +1,640 @@
+object frmRetrieve: TfrmRetrieve
+  Left = -8
+  Top = -8
+  BorderStyle = bsSingle
+  Caption = #44208#44284#51312#54924
+  ClientHeight = 1051
+  ClientWidth = 1914
+  Color = clBtnFace
+  Constraints.MaxHeight = 1080
+  Constraints.MaxWidth = 1920
+  Font.Charset = HANGEUL_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -13
+  Font.Name = #44404#47548
+  Font.Style = []
+  OldCreateOrder = False
+  WindowState = wsMaximized
+  OnClose = FormClose
+  OnCloseQuery = FormCloseQuery
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnShow = FormShow
+  PixelsPerInch = 96
+  TextHeight = 13
+  object Panel3: TPanel
+    Left = 0
+    Top = 46
+    Width = 1914
+    Height = 34
+    Align = alTop
+    BevelOuter = bvNone
+    Color = clBlack
+    ParentBackground = False
+    TabOrder = 0
+    ExplicitWidth = 1274
+    object sbtnToExcel: TSpeedButton
+      Tag = 8
+      Left = 393
+      Top = 2
+      Width = 123
+      Height = 26
+      Caption = #50641#49472#48320#54872'(&E)'
+      Flat = True
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      ParentFont = False
+      Spacing = 8
+      OnClick = sbtnToExcelClick
+    end
+    object sbtnDetailView: TSpeedButton
+      Tag = 6
+      Left = 139
+      Top = 4
+      Width = 123
+      Height = 26
+      Caption = #49345#49464#48372#44592'(&V)'
+      Flat = True
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      ParentFont = False
+      OnClick = sbtnDetailViewClick
+    end
+    object sbtnSearch: TSpeedButton
+      Tag = 7
+      Left = 12
+      Top = 4
+      Width = 123
+      Height = 26
+      Caption = #52286#44592'(&S)'
+      Flat = True
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      NumGlyphs = 2
+      ParentFont = False
+      Spacing = 8
+      OnClick = sbtnSearchClick
+    end
+    object sbtnSelectFolder: TSpeedButton
+      Tag = 8
+      Left = 535
+      Top = 4
+      Width = 123
+      Height = 26
+      Caption = #54260#45908#51648#51221'(&F)'
+      Flat = True
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      ParentFont = False
+      Spacing = 8
+      OnClick = sbtnSelectFolderClick
+    end
+    object Panel1: TPanel
+      Left = 1783
+      Top = 0
+      Width = 131
+      Height = 34
+      Align = alRight
+      AutoSize = True
+      BevelOuter = bvNone
+      BorderWidth = 4
+      Color = clBlack
+      TabOrder = 0
+      ExplicitLeft = 1143
+      object sbtnExit: TSpeedButton
+        Tag = 10
+        Left = 4
+        Top = 3
+        Width = 123
+        Height = 26
+        Caption = #45803#44592'(&C)'
+        Flat = True
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = clWhite
+        Font.Height = -16
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = [fsBold]
+        NumGlyphs = 2
+        ParentFont = False
+        Spacing = 8
+        OnClick = sbtnExitClick
+      end
+    end
+  end
+  object scbCon: TScrollBox
+    Left = 0
+    Top = 80
+    Width = 1914
+    Height = 91
+    VertScrollBar.Smooth = True
+    Align = alTop
+    BorderStyle = bsNone
+    Font.Charset = HANGEUL_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 1
+    ExplicitWidth = 1274
+    object GroupBox5: TGroupBox
+      Left = 969
+      Top = 6
+      Width = 187
+      Height = 81
+      Caption = #49440#53469'('#47560#50864#49828#50724#47480#51901#53364#47533')'
+      TabOrder = 2
+      object Label3: TLabel
+        Left = 27
+        Top = 22
+        Width = 60
+        Height = 17
+        Caption = #49440#53469#44060#49688' :'
+      end
+      object sbtnSelAll: TSpeedButton
+        Left = 9
+        Top = 46
+        Width = 86
+        Height = 27
+        Caption = #47784#46160#49440#53469
+        OnClick = sbtnSelAllClick
+      end
+      object sbtnUnSelect: TSpeedButton
+        Left = 94
+        Top = 46
+        Width = 86
+        Height = 27
+        Caption = #51204#52404#54644#51228
+        OnClick = sbtnUnSelectClick
+      end
+      object stxSelCount: TStaticText
+        Left = 91
+        Top = 21
+        Width = 88
+        Height = 17
+        Alignment = taRightJustify
+        AutoSize = False
+        BorderStyle = sbsSingle
+        Color = clWhite
+        ParentColor = False
+        TabOrder = 0
+      end
+    end
+    object GroupBox2: TGroupBox
+      Left = 325
+      Top = 6
+      Width = 295
+      Height = 81
+      Caption = #52286#51012#45236#50857'(&N)'
+      TabOrder = 0
+      object Label6: TLabel
+        Left = 10
+        Top = 58
+        Width = 153
+        Height = 17
+        Caption = '('#44160#49353#45824#49345': LotNo, PartNo)'
+      end
+      object edtModel: TEdit
+        Left = 9
+        Top = 25
+        Width = 272
+        Height = 25
+        Hint = #50668#47084#44060#47484' '#44160#49353#54624' '#44221#50864' '#52980#47560#47196' '#48516#47532#54616#49464#50836'.'
+        ImeName = #54620#44397#50612'('#54620#44544')'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 0
+      end
+    end
+    object GroupBox4: TGroupBox
+      Left = 626
+      Top = 6
+      Width = 90
+      Height = 81
+      Caption = #44208#44284'(&L)'
+      TabOrder = 1
+      object Label4: TLabel
+        Left = 42
+        Top = 24
+        Width = 30
+        Height = 18
+        Alignment = taCenter
+        AutoSize = False
+        Caption = 'OK'
+        Color = 16737380
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWhite
+        Font.Height = -15
+        Font.Name = #44404#47548
+        Font.Style = [fsBold]
+        ParentColor = False
+        ParentFont = False
+        Transparent = False
+        Layout = tlCenter
+      end
+      object Label5: TLabel
+        Left = 42
+        Top = 51
+        Width = 30
+        Height = 18
+        Alignment = taCenter
+        AutoSize = False
+        Caption = 'NG'
+        Color = clRed
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWhite
+        Font.Height = -15
+        Font.Name = #44404#47548
+        Font.Style = [fsBold]
+        ParentColor = False
+        ParentFont = False
+        Transparent = False
+        Layout = tlCenter
+      end
+      object ckbok: TCheckBox
+        Left = 21
+        Top = 24
+        Width = 15
+        Height = 17
+        Caption = 'OK'
+        Checked = True
+        State = cbChecked
+        TabOrder = 0
+      end
+      object ckbng: TCheckBox
+        Left = 21
+        Top = 52
+        Width = 15
+        Height = 17
+        Caption = 'NG'
+        Checked = True
+        Color = clBtnFace
+        ParentColor = False
+        State = cbChecked
+        TabOrder = 1
+      end
+    end
+    object GroupBox1: TGroupBox
+      Left = 6
+      Top = 6
+      Width = 313
+      Height = 81
+      Caption = #51089#50629#44592#44036'(&T)'
+      TabOrder = 4
+      object Label1: TLabel
+        Left = 274
+        Top = 24
+        Width = 26
+        Height = 17
+        Caption = #48512#53552
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -13
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = [fsBold]
+        ParentFont = False
+      end
+      object Label2: TLabel
+        Left = 274
+        Top = 53
+        Width = 26
+        Height = 17
+        Caption = #44620#51648
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -13
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = [fsBold]
+        ParentFont = False
+      end
+      object dtpStart: TDateTimePicker
+        Left = 5
+        Top = 21
+        Width = 129
+        Height = 25
+        Date = 36585.603486805600000000
+        Time = 36585.603486805600000000
+        ImeName = #54620#44397#50612'('#54620#44544')'
+        TabOrder = 0
+        OnKeyPress = dtpStartKeyPress
+      end
+      object dtpEnd: TDateTimePicker
+        Left = 5
+        Top = 49
+        Width = 129
+        Height = 25
+        Date = 36585.603486805600000000
+        Time = 36585.603486805600000000
+        ImeName = #54620#44397#50612'('#54620#44544')'
+        TabOrder = 1
+        OnKeyPress = dtpStartKeyPress
+      end
+      object dtpStartTime: TDateTimePicker
+        Left = 137
+        Top = 21
+        Width = 129
+        Height = 25
+        Date = 36585.603486805600000000
+        Time = 36585.603486805600000000
+        ImeName = #54620#44397#50612'('#54620#44544')'
+        Kind = dtkTime
+        TabOrder = 2
+        OnKeyPress = dtpStartKeyPress
+      end
+      object dtpEndTime: TDateTimePicker
+        Left = 137
+        Top = 48
+        Width = 129
+        Height = 25
+        Date = 36585.603486805600000000
+        Time = 36585.603486805600000000
+        ImeName = #54620#44397#50612'('#54620#44544')'
+        Kind = dtkTime
+        TabOrder = 3
+        OnKeyPress = dtpStartKeyPress
+      end
+    end
+    object GroupBox3: TGroupBox
+      Left = 722
+      Top = 7
+      Width = 244
+      Height = 81
+      Caption = #51312#44148'(&B)'
+      TabOrder = 5
+      Visible = False
+      object ckbNonIMS: TCheckBox
+        Left = 150
+        Top = 49
+        Width = 73
+        Height = 17
+        Caption = 'Non-IMS'
+        TabOrder = 0
+      end
+      object ckbIMS: TCheckBox
+        Left = 150
+        Top = 23
+        Width = 73
+        Height = 17
+        Caption = 'IMS'
+        TabOrder = 1
+      end
+      object ckbJK: TCheckBox
+        Left = 16
+        Top = 24
+        Width = 41
+        Height = 17
+        Caption = 'JKa'
+        TabOrder = 2
+      end
+      object ckbIK: TCheckBox
+        Left = 59
+        Top = 47
+        Width = 40
+        Height = 16
+        Caption = 'IK'
+        TabOrder = 3
+        Visible = False
+      end
+      object ckbCK: TCheckBox
+        Left = 16
+        Top = 47
+        Width = 41
+        Height = 17
+        Caption = 'CK'
+        TabOrder = 4
+        Visible = False
+      end
+      object ckbCV: TCheckBox
+        Left = 59
+        Top = 24
+        Width = 40
+        Height = 17
+        Caption = 'CV'
+        TabOrder = 5
+        Visible = False
+      end
+      object ckbJW: TCheckBox
+        Left = 98
+        Top = 47
+        Width = 40
+        Height = 16
+        Caption = 'JW'
+        TabOrder = 6
+        Visible = False
+      end
+      object ckbCE: TCheckBox
+        Left = 98
+        Top = 24
+        Width = 40
+        Height = 17
+        Caption = 'CE'
+        TabOrder = 7
+        Visible = False
+      end
+    end
+    object Button1: TButton
+      Left = 129
+      Top = 4
+      Width = 75
+      Height = 25
+      Caption = 'Button1'
+      TabOrder = 3
+      OnClick = Button1Click
+    end
+    object ckbSort: TCheckBox
+      Left = 1161
+      Top = 15
+      Width = 82
+      Height = 17
+      Caption = #49884#44036#51221#47148
+      TabOrder = 6
+    end
+  end
+  object stubcount: TStatusBar
+    Left = 0
+    Top = 1030
+    Width = 1914
+    Height = 21
+    Panels = <
+      item
+        Alignment = taRightJustify
+        Width = 200
+      end
+      item
+        Alignment = taCenter
+        Bevel = pbNone
+        Text = 
+          #44160#49353#51008' '#45824#49548#47928#51088#47484' '#44396#48324#54633#45768#45796'. '#45936#51060#53552' '#49440#53469#51008' '#47560#50864#49828' '#50724#47480#51901' '#48260#53948'(Shift '#53412#47484' '#54632#44760' '#51060#50857#54616#47732' '#44060#48324','#44536#47353' '#49440#53469#46121#45768#45796 +
+          '.)'
+        Width = 50
+      end>
+    ExplicitTop = 974
+    ExplicitWidth = 1274
+  end
+  object Panel2: TPanel
+    Left = 0
+    Top = 171
+    Width = 1914
+    Height = 859
+    Align = alClient
+    BevelOuter = bvNone
+    BorderWidth = 5
+    TabOrder = 3
+    ExplicitWidth = 1274
+    ExplicitHeight = 803
+    object Splitter1: TSplitter
+      Left = 5
+      Top = 778
+      Width = 1904
+      Height = 6
+      Cursor = crVSplit
+      Align = alBottom
+      ResizeStyle = rsNone
+      ExplicitLeft = 4
+      ExplicitTop = 611
+      ExplicitWidth = 1257
+    end
+    object Panel6: TPanel
+      Left = 5
+      Top = 5
+      Width = 1904
+      Height = 773
+      Align = alClient
+      BevelOuter = bvNone
+      TabOrder = 0
+      ExplicitWidth = 1264
+      ExplicitHeight = 717
+      object sgrdResult: TStringGrid
+        Left = 0
+        Top = 0
+        Width = 1904
+        Height = 773
+        Align = alClient
+        ColCount = 17
+        DefaultColWidth = 100
+        DefaultRowHeight = 20
+        DefaultDrawing = False
+        FixedCols = 0
+        RowCount = 2
+        Font.Charset = ANSI_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -13
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = []
+        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing]
+        ParentFont = False
+        TabOrder = 0
+        OnDblClick = sgrdResultDblClick
+        ExplicitWidth = 1264
+        ExplicitHeight = 717
+        ColWidths = (
+          50
+          89
+          86
+          74
+          54
+          115
+          63
+          70
+          100
+          100
+          100
+          100
+          100
+          100
+          100
+          100
+          100)
+      end
+      object lbLog: TListBox
+        Left = 336
+        Top = 232
+        Width = 329
+        Height = 65
+        ImeName = 'Microsoft Office IME 2007'
+        ItemHeight = 13
+        TabOrder = 1
+        Visible = False
+      end
+    end
+    object pnlRetrieveEx: TPanel
+      Left = 5
+      Top = 784
+      Width = 1904
+      Height = 70
+      Align = alBottom
+      BevelOuter = bvLowered
+      TabOrder = 1
+      ExplicitTop = 728
+      ExplicitWidth = 1264
+      object sgrdResultEx: TStringGrid
+        Left = 1
+        Top = 1
+        Width = 1902
+        Height = 68
+        Align = alClient
+        BorderStyle = bsNone
+        ColCount = 9
+        DefaultRowHeight = 20
+        FixedCols = 0
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -13
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = []
+        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing]
+        ParentFont = False
+        TabOrder = 0
+        OnDrawCell = sgrdResultExDrawCell
+        ExplicitWidth = 1262
+        ColWidths = (
+          64
+          196
+          99
+          99
+          100
+          105
+          104
+          64
+          64)
+      end
+    end
+  end
+  object pnlTitle: TPanel
+    Left = 0
+    Top = 0
+    Width = 1914
+    Height = 46
+    Align = alTop
+    BevelOuter = bvNone
+    Caption = 'Ass'#39'y '#51312#47549#46972#51064
+    Color = 4013373
+    FullRepaint = False
+    Font.Charset = HANGEUL_CHARSET
+    Font.Color = clWhite
+    Font.Height = -27
+    Font.Name = #45796#51020'_Regular'
+    Font.Style = [fsBold]
+    ParentBackground = False
+    ParentFont = False
+    TabOrder = 4
+    ExplicitWidth = 1274
+  end
+  object DlgSave: TSaveDialog
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
+    Left = 820
+    Top = 29
+  end
+end

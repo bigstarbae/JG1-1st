@@ -1,0 +1,47 @@
+unit UDSCarConfig;
+
+interface
+
+uses
+  UDSDef, SeatType, SeatIMSCtrler;  // 필요한 유닛들
+
+type
+  TUDSCarConfigurator = class
+  public
+    class procedure SetupCANIDs(AIMSCtrler, AUDSMoveCtrler: TObject; ACarType: TCAR_TYPE; AIsDrvPos: Boolean);
+    class procedure SetupUDSMoveData(UDSMoveCtrler: TCANUDSMoveCtrler; ACarType: TCAR_TYPE; AIsIMS: Boolean);
+  end;
+
+implementation
+
+// 구현부...
+
+{ TUDSCarConfigurator }
+
+class procedure TUDSCarConfigurator.SetupCANIDs(AIMSCtrler, AUDSMoveCtrler: TObject; ACarType: TCAR_TYPE;
+  AIsDrvPos: Boolean);
+begin
+
+
+end;
+
+class procedure TUDSCarConfigurator.SetupUDSMoveData(UDSMoveCtrler: TCANUDSMoveCtrler; CarType: TCAR_TYPE; IsIMS: Boolean);
+begin
+    case ACarType of
+        ctJG1:
+            begin
+                UDSMoveCtrler.SetMotorLIDMap(JG1_UDS_LID_MAP);
+            end;
+        ctHI, ctRJ1:
+            begin
+                if AIsIMS then
+                    UDSMoveCtrler.SetMotorLIDMap(HI_RJ1_IMS_UDS_LID_MAP)
+                else
+                    UDSMoveCtrler.SetMotorLIDMap(RJ1_EMC_MOTOR_LID_MAP);
+
+            end;
+    end;
+
+end;
+
+end.

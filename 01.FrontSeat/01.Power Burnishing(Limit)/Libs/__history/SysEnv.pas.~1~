@@ -1,0 +1,325 @@
+unit SysEnv;
+
+interface
+
+uses
+    Classes, Windows,  SeatType, SeatMotorType, DataUnit, CANIDFilter, RefVoltSetter;
+
+
+type
+    //------------------
+    // Main sys env
+    //-------------------
+
+    TTestMode = (tmProd, tmCostDueCheck);         // 양산, 원가 실사 모드
+
+    TSysEnv = packed record // sizeof=
+        rVer: string;
+
+        rStGroupNo,     // 공정그룹 번호 : PC 1대에 2공정이상 묶을 경우, LanIO Start Add구분을 위해 사용
+        rStNo: integer; // 공정 번호
+
+        rLoadTime: TDatetime;
+        rWorkTime: TDatetime;
+        rLotNo: integer;
+        { 하드디스크 남은용량 관리 }
+        rAutoDel: boolean;
+        rWarning, rDelete: Cardinal;
+        { 화면 표시용 소수점 위치 }
+        rWidth: integer;
+        { 화면보호기 사용여부 }
+        rUserScreenSaver: boolean;
+        { 쓰레드 가동여부 }
+        rEnabled: boolean;
+        { 패스워드 사용여부 }
+        rUsePasswd: boolean;
+        { 그래프 보관 월 }
+        rKeepGraphTime: WORD; // 0= 작업안함
+        rGraphCheckTime: array [0 .. 1] of double; // 하루중 특정시간
+        { 하드웨어 관련 }
+        rTesWaitTime: double;
+        rPwrWaitTime: double;
+        rCanWaitTime: double;
+
+        // rPwrDebugMode: boolean ;
+        rCanDebugMode: boolean;
+
+        { 검사관련 }
+        rSpecCheckTime: double;
+        rFilter: array [0 .. 7] of integer;
+        rLoadReleaseTime: double; // 1 부하로딩후 대기(소음방지)
+        rLimitAmps, rLimitAmpsOffset: double; // 2 안전전류
+        rLimitDelay: double;
+
+        rUseMotors: array[TMotorORD] of boolean ;
+        rUseLimitSet: array[TMotorOrd] of boolean;
+        rUseAllLimitSet: boolean;
+
+
+        rTestVolt,
+        rTestAmp,
+        rCheckAmp: double ;
+
+        rUsePwrSyncMove: boolean;      // 파워 동시 작동시
+
+        rBurCount : integer;
+        rMtrErrRetryCount : integer;
+        rEachMtrInitMove,               // 정렬시 개별 동작
+        rEachMtrTestMove: boolean;      // 검사시 개별 동작
+
+        rUseMtrTrendGrp : boolean;
+        rUseBurnishing,
+        rUseStartAlign,
+
+        rUseLimitDel: boolean;        // 시작시 Limit 삭제 유무
+
+        rSlideSensorSet : boolean;
+
+        { 데이타 저장폴더 }
+        rGraphDir: string[255];
+        rResultDir: string[255];
+
+        rDIChType: string[100];    // DI 접점 타입 0:A, 1:B Type  :  형식 'AABB ABAAAA BBB' 공백 상관 없음
+
+        rIsKor: boolean;
+
+        rTestMode: TTestMode;   // tmProd(양산모드), tmCostDueCheck(원가 실사모드)
+
+        rCanIDFilter: TCanIDFilter;
+
+        rUseSOEM: Boolean;
+
+        rRefVoltSetter: TRefVoltSetter;
+    end;
+
+
+    function  LoadEnvFile: boolean ;
+    function  SaveEnvFile: boolean ;
+
+    function  GetEnvPath(FileName: string): string;
+
+
+var
+    gSysEnv : TSysEnv ;
+
+
+implementation
+uses
+    IniFiles, MyUtils, SysUtils, SeatMotor, Global, LangTran;
+
+
+
+function GetEnvPath(FileName: string): string;
+begin
+    Result := GetHomeDirectory + DIR_ENV;
+
+    if DirectoryExists(Result) then
+        ForceDirectories(Result);
+
+    if FileName <> '' then
+        Result := Result + '\' + FileName;
+end;
+
+function LoadEnvFile: boolean;
+var
+    i: integer;
+    Ini: TIniFile;
+    sTm: string;
+begin
+    Result := true;
+    sTm := Format('%s\%s', [GetUsrDir(udENV, Now()), ENV_FILE]);
+    FillChar(gSysEnv, sizeof(TSysEnv), #0);
+
+    gSysEnv.rCanIDFilter := TCanIDFilter.Create;
+    gSysEnv.rRefVoltSetter := TRefVoltSetter.Create(MAX_ST_COUNT, 2);
+
+    Ini := TIniFile.Create(sTm);
+
+    try
+        TSMParam.Read(Ini);
+
+        with Ini, gSysEnv do
+        begin
+            rStGroupNo := ReadInteger('SYSTEM', 'STATION GROUP NO', 1);
+            rStNo := ReadInteger('SYSTEM', 'STATION NO', 0);
+
+            rDIChType := Ini.ReadString('DI CH TYPE', 'DEFAULT', 'AAAA AAAA AAAA AAAA AAAA AAAA AAAA AAAA');
+
+            rLoadTime := ReadDateTime('SYSTEM', '_LOAD_TIME', Now());
+            rWorkTime := ReadDateTime('SYSTEM', '_WORK_TIME', 1 + EncodeTime(8, 0, 0, 0));
+            rLotNo := ReadInteger('SYSTEM', 'LOTNO', 0);
+
+            rAutoDel := ReadBool('SYSTEM', '_AUTO_DEL_USE', false);
+            rWarning := ReadInteger('SYSTEM', '_DISK_WARNING', 20 * 1024); // GB
+            rDelete := ReadInteger('SYSTEM', '_DISK_DELETE', 15 * 1024); // GB
+
+            rWidth := ReadInteger('SYSTEM', '_COMMA_POS', 1); // 화면 표시용 소수점 위치
+            rUserScreenSaver := ReadBool('SYSTEM', '_USE_SCREENSAVER', false);
+            rEnabled := ReadBool('SYSTEM', '_USE_ENABLE', true);
+            rUsePasswd := ReadBool('SYSTEM', '_USE_SIZE', false);
+
+            rKeepGraphTime := WORD(ReadInteger('SYSTEM', 'KEEP GRAPH DATA', 12));
+            rGraphCheckTime[0] := ReadFloat('SYSTEM', 'GRAPH CHECK TIME 1', Trunc(Now) + EncodeTime(11, 30, 0, 0));
+            rGraphCheckTime[1] := ReadFloat('SYSTEM', 'GRAPH CHECK TIME 2', Trunc(Now) + EncodeTime(12, 0, 0, 0));
+            if rGraphCheckTime[0] >= rGraphCheckTime[1] then
+            begin
+                rGraphCheckTime[0] := rGraphCheckTime[1];
+                rGraphCheckTime[1] := rGraphCheckTime[0] + EncodeTime(0, 30, 0, 0);
+            end;
+
+            rSpecCheckTime := ReadFloat('SYSTEM', 'SPEC CHK TIME', 10.0);
+
+            rTesWaitTime := ReadFloat('SYSTEM', 'TEST WAIT TIME', 2.0);
+            rPwrWaitTime := ReadFloat('SYSTEM', 'POWER SUPPLY WAIT TIME', 2.0);
+            rCanWaitTime := ReadFloat('SYSTEM', 'CAN WAIT TIME', 1.5);
+
+
+            // rPwrDebugMode:= ReadBool('SYSTEM','POWER DEBUG MODE',false) ;
+
+            rCanDebugMode := ReadBool('SYSTEM', 'CAN DEBUG MODE', false);
+
+            for i := 0 to 7 do
+            begin
+                rFilter[i] := ReadInteger('SYSTEM', 'Filter CH' + IntToStr(i), 0);
+            end;
+            rLoadReleaseTime := ReadFloat('PWR ENV', _TR('부하 로딩후 안정화 시간'), 3.0);
+            rLimitAmps := ReadFloat('PWR ENV', _TR('최대허용전류'), 30.0);
+            rLimitAmpsOffset:= ReadFloat('PWR ENV',_TR('최대허용전류 OFFST'), 0.0) ;
+
+            rTestVolt := ReadFloat('PWR ENV', 'TEST VOLT', 13.5) ;
+            rTestAmp := ReadFloat('PWR ENV', 'TEST AMPERE', 30) ;
+            rCheckAmp := ReadFloat('PWR ENV', 'CHECK AMPERE', 1) ;
+            rUsePwrSyncMove := ReadBool('PWR ENV', 'PWR SYNC MOVE', true);
+            rBurCount := ReadInteger('PWR ENV', 'BUR CNT', 1);
+            rSlideSensorSet := ReadBool('PWR ENV', 'SLIDE M SENSOR SET', False);
+
+
+            rUseBurnishing := ReadBool('PWR ENV', 'USE BURNISHING', false);
+            rUseStartAlign := ReadBool('PWR ENV', 'TEST START ALIGN', true);
+            rMtrErrRetryCount := ReadInteger('PWR ENV', 'MTR ERR RETRY CNT', 2);
+            rEachMtrInitMove := ReadBool('PWR ENV', 'EACH MTR INIT MOVE', true);
+            rEachMtrTestMove := ReadBool('PWR ENV', 'EACH MTR TEST MOVE', true);
+            rUseMtrTrendGrp := ReadBool('PWR ENV', 'USE MTR TREND GRP', true);
+
+            rResultDir := ReadString('SYSTEM', 'RESULT DIR', '');
+            if rResultDir = '' then
+                rResultDir := GetUsrDir(udHOME, Now);
+
+            rGraphDir := ReadString('SYSTEM', 'GRAPH DIR', '');
+            if rGraphDir = '' then
+                rGraphDir := GetUsrDir(udHOME, Now);
+
+            rIsKor := ReadBool('SYSTEM', 'IS KOR', true) ;
+
+            rTestMode := TTestMode(ReadInteger('SYSTEM', 'TEST MODE', 0));
+
+            rUseAllLimitSet := ReadBool('PWR_ENV', 'USE LIMIT SET', false);
+            rUseLimitDel := ReadBool('PWR_ENV', 'USE LIMIT DEL', true);
+
+            rCanIDFilter.Read(Ini);
+            rRefVoltSetter.Read(Ini);
+
+            rUseSOEM := ReadBool('SYSTEM', 'USE SOEM', False);
+        end;
+    finally
+        Ini.Free;
+    end;
+end;
+
+function SaveEnvFile: boolean;
+var
+    i: integer;
+    Ini: TIniFile;
+    sTm: string;
+begin
+    Result := true;
+    sTm := Format('%s\%s', [GetUsrDir(udENV, Now()), ENV_FILE]);
+    Ini := TIniFile.Create(sTm);
+
+    try
+        TSMParam.Write(Ini);
+
+        with Ini, gSysEnv do
+        begin
+            WriteInteger('SYSTEM', 'STATION GROUP NO', rStGroupNo);
+            WriteInteger('SYSTEM', 'STATION NO', rStNo);
+
+            Ini.WriteString('DI CH TYPE', 'DEFAULT', rDIChType);
+
+            WriteDateTime('SYSTEM', '_LOAD_TIME', rLoadTime);
+            WriteDateTime('SYSTEM', '_WORK_TIME', rWorkTime);
+            WriteInteger('SYSTEM', 'LOTNO', rLotNo);
+
+            WriteBool('SYSTEM', '_AUTO_DEL_USE', rAutoDel);
+            WriteInteger('SYSTEM', '_DISK_WARNING', rWarning);
+            WriteInteger('SYSTEM', '_DISK_DELETE', rDelete);
+
+            WriteInteger('SYSTEM', '_COMMA_POS', rWidth); // 화면 표시용 소수점 위치
+            WriteBool('SYSTEM', '_USE_SCREENSAVER', rUserScreenSaver);
+
+            WriteBool('SYSTEM', '_USE_ENABLE', rEnabled);
+            WriteBool('SYSTEM', '_USE_SIZE', rUsePasswd);
+
+            WriteInteger('SYSTEM', 'KEEP GRAPH DATA', rKeepGraphTime);
+            WriteFloat('SYSTEM', 'GRAPH CHECK TIME 1', rGraphCheckTime[0]);
+            WriteFloat('SYSTEM', 'GRAPH CHECK TIME 2', rGraphCheckTime[1]);
+
+            WriteFloat('SYSTEM', 'SPEC CHK TIME', rSpecCheckTime);
+            WriteFloat('SYSTEM', 'TEST WAIT TIME', rTesWaitTime);
+            WriteFloat('SYSTEM', 'POWER SUPPLY WAIT TIME', rPwrWaitTime);
+            WriteFloat('SYSTEM', 'CAN WAIT TIME', rCanWaitTime);
+
+
+
+            // WriteBool('SYSTEM','POWER DEBUG MODE',rPwrDebugMode) ;
+            WriteBool('SYSTEM', 'CAN DEBUG MODE', rCanDebugMode);
+
+            for i := 0 to 7 do
+            begin
+                WriteInteger('SYSTEM', 'Filter CH' + IntToStr(i), rFilter[i]);
+            end;
+            WriteFloat('PWR ENV', ('최대허용전류'), rLimitAmps);
+            WriteFloat('PWR ENV',('최대허용전류 OFFSET'),rLimitAmpsOffset) ;
+
+            WriteFloat('PWR ENV','LIMIT DELAY', rLimitDelay) ;
+
+            WriteBool('PWR ENV', 'USE BURNISHING', rUseBurnishing);
+            WriteBool('PWR ENV', 'TEST START ALIGN', rUseStartAlign);
+
+
+            WriteString('SYSTEM', 'GRAPH DIR', rGraphDir);
+            WriteString('SYSTEM', 'RESULT DIR', rResultDir);
+
+            WriteFloat('PWR ENV', 'TEST VOLT', rTestVolt) ;
+
+            WriteFloat('PWR ENV', 'TEST AMPERE', rTestAmp) ;
+            WriteFloat('PWR ENV', 'CHECK AMPERE', rCheckAmp) ;
+
+
+            WriteBool('SYSTEM', 'IS KOR', rIsKor) ;
+
+            WriteInteger('SYSTEM', 'TEST MODE', integer(rTestMode));
+
+
+            WriteBool('PWR_ENV', 'USE LIMIT SET', rUseAllLimitSet);
+            WriteBool('PWR_ENV', 'USE LIMIT DEL', rUseLimitDel);
+
+            rCanIDFilter.Write(Ini);
+            rRefVoltSetter.Write(Ini);
+
+            WriteBool('SYSTEM', 'USE SOEM', rUseSOEM);
+        end;
+    finally
+        Ini.Free;
+    end;
+end;
+
+Initialization
+
+
+Finalization
+
+    gSysEnv.rRefVoltSetter.Free;
+    gSysEnv.rCanIDFilter.Free;
+
+end.

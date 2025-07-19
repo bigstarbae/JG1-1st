@@ -1,0 +1,686 @@
+{
+    Ver.220222.00 : AsyncCall 사용하여  TDIODirectMoveCtrler내 지연 함수 비동기 처리
+    Ver.240829.00 : TDIODirectMoveCtrler 삭제 및 TDIODirectMoveCtrler로 변경(SeatConnector의존)
+}
+unit SeatMoveCtrler;
+
+interface
+
+uses
+    Windows, Sysutils, Classes, KiiMessages, TimeChecker, SeatMotorType,
+    SeatMotor, BaseCAN, BaseDIO, BaseAD, SeatConnector;
+
+type
+    TDIOMoveChReqEvent = function(MtrID: TMotorOrd; Dir: TMotorDir): Integer of object;
+
+    TMotorLIDMap = array[TMotorORD] of Cardinal;
+
+    // SeatMtr  구동  DO 보드 Ch
+    TSMDOChInfo = packed record
+        mMtrID: TMotorOrd;
+        constructor Create(MtrID: TMotorOrd; FwCh, BwCh: Integer);
+        case Integer of
+            0:
+                (mDirFwCh, mDirBwCh: Integer;);
+            1:
+                (mChs: array[0..1] of Integer;);
+    end;
+
+    TSMDOChInfos = array[TMotorOrd] of TSMDOChInfo;
+
+    TDIOMoveCtrler = class(TBaseMoveCtrler)
+    protected
+        mDIO: TBaseDIO;
+        mTC: TTimeChecker;
+        mChInfos: TSMDOChInfos;
+
+        mChReqFunc: TDIOMoveChReqEvent;         // 클라이언트에서 직접 DO를 다룰때 사용
+
+    protected
+        function GetDIOMoveCh(MtrID: TMotorOrd; Dir: TMotorDir): Integer; virtual;
+
+    public
+        constructor Create(DIO: TBaseDIO; ChReqFunc: TDIOMoveChReqEvent = nil); overload;
+        constructor Create(DIO: TBaseDIO; ChInfos: array of TSMDOChInfo); overload;
+        constructor Create(DIO: TBaseDIO; MtrID: TMotorOrd; FwCh, BwCh: Integer); overload;
+
+        destructor Destroy; override;
+
+        function FSMMove(MtrID: TMotorOrd; Dir: TMotorDir): Integer; override;
+
+        function MoveToForw(MtrID: TMotorOrd): Boolean; override;
+        function MoveToBack(MtrID: TMotorOrd): Boolean; override;
+
+        function StopForForw(MtrID: TMotorOrd): Boolean; override;
+        function StopForBack(MtrID: TMotorOrd): Boolean; override;
+
+        procedure SetDirCh(MtrID: TMotorOrd; FwCh, BwCh: Integer);
+    end;
+
+    // H/W에서 지원하던 모터 제어를 S/W에서 처리
+    TDIODirectMoveCtrler = class(TBaseMoveCtrler)
+    protected
+        mTC: TTimeChecker;
+        mSwCon: TSwConnector;
+
+        mSwPinType: TPwrSwPinType;
+    public
+        constructor Create(SwCon: TSwConnector; SwPinType: TPwrSwPinType);
+
+        function GetCurr: Double; override;
+
+        function FSMMove(MtrID: TMotorOrd; Dir: TMotorDir): Integer; override;
+        function FSMStop(MtrID: TMotorOrd; Dir: TMotorDir): Integer; override;
+
+        function MoveToForw(MtrID: TMotorOrd): Boolean; override;
+        function MoveToBack(MtrID: TMotorOrd): Boolean; override;
+
+        function StopForForw(MtrID: TMotorOrd): Boolean; override;
+        function StopForBack(MtrID: TMotorOrd): Boolean; override;
+
+        function GetStateStr(IsSimple: Boolean = false): string; override;
+
+    end;
+
+
+    // UDS 이동 명령 기준으로 작성
+    TCANUDSMoveCtrler = class(TBaseMoveCtrler)
+    protected
+        mMotorLIDMap: TMotorLIDMap;
+        mReqID, mRespID: cardinal;
+        mCan: TBaseCAN;
+
+        mRepeatTC: TTimeChecker;
+
+        mAdvanceType: boolean;
+        mIsDrv: boolean;              // 임시 쿠션 Ext 용 ? (PSU가 왜 CushExt만 해당되는지 체크 필요)
+
+        procedure CanRead(Sender: TObject);
+
+        function Mtr2LID(Mtr: TMotorOrd; Dir: TMotorDir): WORD; virtual;
+        function WriteIOCBIFrame(LocalID: WORD; Param: byte; DataLen: byte = 4): boolean;
+        function WriteExtSession: boolean;      // 이동 명령전 송신 Extended Session
+
+        procedure SetEnabled(const Value: boolean); override;
+    public
+        constructor Create(Can: TBaseCan; ReqID, RespID: cardinal);
+        destructor Destroy; override;
+
+        procedure SetMotorLIDMap(const AMap: TMotorLIDMap);
+
+        function FSMMove(MtrID: TMotorOrd; Dir: TMotorDir): integer; override;
+
+        function MoveToForw(MtrID: TMotorOrd): boolean; override;
+        function MoveToBack(MtrID: TMotorOrd): boolean; override;
+
+        function StopForForw(MtrID: TMotorOrd): boolean; override;
+        function StopForBack(MtrID: TMotorOrd): boolean; override;
+        function Stop(MtrID: TMotorOrd): boolean; override;
+
+        property ReqID: cardinal read mReqID write mReqID;
+        property RespID: cardinal read mRespID write mRespID;
+
+        property AdvenceType: boolean read mAdvanceType write mAdvanceType;
+    end;
+
+
+    TSimulMoveCtrler = class(TBaseMoveCtrler)
+    public
+        function MoveToForw(MtrID: TMotorOrd): Boolean; override;
+        function MoveToBack(MtrID: TMotorOrd): Boolean; override;
+
+        function StopForForw(MtrID: TMotorOrd): Boolean; override;
+        function StopForBack(MtrID: TMotorOrd): Boolean; override;
+
+    end;
+
+implementation
+
+uses
+    UDSDef, Log, Forms, myUtils, AsyncCalls;
+
+const
+    _MTR_RUN_CURR = 0.5;
+    _RELAY_AFTER_RUN_DELAY = 150;
+    _EXT_SESSION_DELAY = 200;
+    _EXT_SESSION_INTERVAL_SEC = 2000;
+
+{ TMoveCtrler }
+constructor TDIOMoveCtrler.Create(DIO: TBaseDIO; ChReqFunc: TDIOMoveChReqEvent);
+begin
+    mDIO := DIO;
+    mChReqFunc := ChReqFunc;
+end;
+
+constructor TDIOMoveCtrler.Create(DIO: TBaseDIO; ChInfos: array of TSMDOChInfo);
+var
+    i: Integer;
+begin
+    mDIO := DIO;
+    for i := 0 to Length(ChInfos) - 1 do
+    begin
+        mChInfos[ChInfos[i].mMtrID] := ChInfos[i];
+    end;
+end;
+
+constructor TDIOMoveCtrler.Create(DIO: TBaseDIO; MtrID: TMotorOrd; FwCh, BwCh: Integer);
+begin
+    mDIO := DIO;
+    SetDirCh(MtrID, FwCh, BwCh);
+end;
+
+destructor TDIOMoveCtrler.Destroy;
+begin
+
+    inherited;
+end;
+
+function TDIOMoveCtrler.FSMMove(MtrID: TMotorOrd; Dir: TMotorDir): Integer;
+begin
+    Result := 0;
+    case mState of
+        0:
+            begin
+                if Move(MtrID, Dir) then
+                begin
+                    mTC.Start(300);
+                    Inc(mState);
+                end
+                else
+                    Exit(-1);
+            end;
+        1:
+            begin
+                if mTC.IsTimeOut then
+                    Exit(1);
+            end;
+    end;
+end;
+
+function TDIOMoveCtrler.GetDIOMoveCh(MtrID: TMotorOrd; Dir: TMotorDir): Integer;
+begin
+    if Assigned(mChReqFunc) then
+        Result := mChReqFunc(MtrID, Dir)
+    else
+        Result := mChInfos[MtrID].mChs[Ord(Dir)];
+end;
+
+function TDIOMoveCtrler.MoveToForw(MtrID: TMotorOrd): Boolean;
+var
+    Ch: Integer;
+begin
+    mDir := twForw;
+
+    Ch := GetDIOMoveCh(MtrID, mDir);
+
+    Result := Ch >= 0;
+
+    if Result then
+    begin
+        mDIO.SetIO(Ch, true);
+        mIsMove := true;
+        //gLog.Panel('모터 전진 ON:%d', [Ch]);
+    end;
+
+end;
+
+function TDIOMoveCtrler.MoveToBack(MtrID: TMotorOrd): Boolean;
+var
+    Ch: Integer;
+begin
+    mDir := twBack;
+
+    Ch := GetDIOMoveCh(MtrID, mDir);
+
+    Result := Ch >= 0;
+
+    if Result then
+    begin
+        mDIO.SetIO(Ch, true);
+        mIsMove := true;
+        //gLog.Panel('모터 후진 ON:%d', [Ch]);
+    end;
+
+end;
+
+procedure TDIOMoveCtrler.SetDirCh(MtrID: TMotorOrd; FwCh, BwCh: Integer);
+begin
+    mChInfos[MtrID].mMtrID := MtrID;
+    mChInfos[MtrID].mDirFwCh := FwCh;
+    mChInfos[MtrID].mDirBwCh := BwCh;
+end;
+
+function TDIOMoveCtrler.StopForBack(MtrID: TMotorOrd): Boolean;
+var
+    Ch: Integer;
+begin
+    Ch := GetDIOMoveCh(MtrID, twBack);
+
+    Result := Ch >= 0;
+
+    if Result then
+    begin
+        mDIO.SetIO(Ch, false);
+        mIsMove := false;
+        //gLog.Panel('모터 후진 OFF:%d', [Ch]);
+    end;
+
+end;
+
+function TDIOMoveCtrler.StopForForw(MtrID: TMotorOrd): Boolean;
+var
+    Ch: Integer;
+begin
+    Ch := GetDIOMoveCh(MtrID, twForw);
+
+    Result := Ch >= 0;
+    if Result then
+    begin
+        mDIO.SetIO(Ch, false);
+        mIsMove := false;
+        //gLog.Panel('모터 전진 OFF:%d', [Ch]);
+    end;
+
+end;
+
+
+{ TCANUDSMoveCtrler }
+
+procedure TCANUDSMoveCtrler.CanRead(Sender: TObject);
+begin
+
+    with Sender as TBaseCAN do
+    begin
+        if ID = mRespID then
+        begin
+            if RFrame.Compare(0, [$03, $7F, $2F], 3) then
+            begin
+                mIsMove := False;
+                gLog.Error('CAN UDS 응답 오류: %s', [ToStr]);
+            end;
+        end;
+    end;
+
+    if not mIsMove or not mEnabled then
+        Exit;
+
+    if mRepeatTC.IsTimeOut then
+    begin
+        WriteExtSession;
+        mRepeatTC.Start(_EXT_SESSION_INTERVAL_SEC);
+
+    end;
+end;
+
+constructor TCANUDSMoveCtrler.Create(Can: TBaseCan; ReqID, RespID: cardinal);
+begin
+    mCan := Can;
+    mReqID := ReqID;
+    mRespID := RespID;
+    mCAN.OnRead.SyncAdd(CanRead);
+
+    mEnabled := true;
+end;
+
+destructor TCANUDSMoveCtrler.Destroy;
+begin
+
+    mCAN.OnRead.SyncRemove(CanRead);
+    inherited;
+end;
+
+procedure TCANUDSMoveCtrler.SetEnabled(const Value: boolean);
+begin
+    if mEnabled = Value then
+        Exit;
+
+    mEnabled := Value;
+
+    if mEnabled then
+        mCAN.OnRead.SyncAdd(CanRead)
+    else
+        mCAN.OnRead.SyncRemove(CanRead);
+
+end;
+
+procedure TCANUDSMoveCtrler.SetMotorLIDMap(const AMap: TMotorLIDMap);
+begin
+    mMotorLIDMap := AMap;
+end;
+
+function TCANUDSMoveCtrler.Mtr2LID(Mtr: TMotorOrd; Dir: TMotorWayORD): WORD;
+var
+    BaseAddr: WORD;
+begin
+    if mAdvanceType then
+        BaseAddr := $F000
+    else
+        BaseAddr := $B400;
+
+    Result := BaseAddr + mMotorLIDMap[Mtr];
+
+    if Dir = twBack then
+        Result := Result + 1;
+end;
+
+function TCANUDSMoveCtrler.MoveToForw(MtrID: TMotorOrd): boolean;
+var
+    Ret: boolean;
+begin
+    //  UDS Move명령 구현, 또는 차종별 클래스로 상속하여 구현. 단 일반 명령일 경우 연속(Cyclic) 명령으로 처리해야 함(safe 기능)
+    Result := true;
+
+    TAsyncCalls.Invoke(
+        procedure
+        begin
+            mDir := twForw;
+
+            Ret := WriteExtSession;
+            Sleep(_EXT_SESSION_DELAY);
+            if not Ret then
+                Exit;
+
+            Ret := WriteIOCBIFrame(Mtr2LID(MtrID, twForw), _UDS_IOCBI_START);
+            if Ret then
+            begin
+                mIsMove := true;
+                mRepeatTC.Start(_EXT_SESSION_INTERVAL_SEC);
+            end;
+        end).Forget;
+end;
+
+function TCANUDSMoveCtrler.MoveToBack(MtrID: TMotorOrd): boolean;
+var
+    Ret: boolean;
+begin
+    Result := true;
+
+    TAsyncCalls.Invoke(
+        procedure
+        begin
+
+            mDir := twBack;
+
+            Ret := WriteExtSession;
+            Sleep(_EXT_SESSION_DELAY);
+            if not Ret then
+                Exit;
+
+            Ret := WriteIOCBIFrame(Mtr2LID(MtrID, twBack), _UDS_IOCBI_START);
+            if Ret then
+            begin
+                mIsMove := true;
+                mRepeatTC.Start(_EXT_SESSION_INTERVAL_SEC);
+            end;
+        end).Forget;
+end;
+
+
+// _EXT_SESSION_DELAY를 없애기 위한 테스트함수..
+
+function TCANUDSMoveCtrler.FSMMove(MtrID: TMotorOrd; Dir: TMotorDir): integer;
+
+    function IsExtSessionRespDone: Boolean;
+    begin
+        //0x7AB: [06 50 03 00 32 01 F4 AA ]
+        Result := (mCan.Datas[1] = $50) and (mCan.Datas[2] = $03); //and (mResCode in [$7AB, $79F]);
+
+        {
+        if Result then
+            gLog.Debug('EXT.SESSION 응답 수신', []);
+        }
+    end;
+
+begin
+    //  UDS Move명령 구현, 또는 차종별 클래스로 상속하여 구현. 단 일반 명령일 경우 연속(Cyclic) 명령으로 처리해야 함(안전상)
+    Result := 0;
+
+    case mState of
+//        0:
+//            begin
+//                WriteExtSession;
+//                mRepeatTC.Start(400);
+//                Inc(mState);
+//            end;
+//        1:
+//            begin
+//                if mRepeatTC.IsTimeOut or IsExtSessionRespDone then
+//                    Inc(mState);
+
+//            end;
+        0:
+            begin
+                if Dir = twForw then
+                begin
+                    if WriteIOCBIFrame(Mtr2LID(MtrID, twForw), _UDS_IOCBI_START) then
+                    begin
+                        mIsMove := true;
+                        mRepeatTC.Start(_EXT_SESSION_INTERVAL_SEC);
+                        mState := 0;
+                        Exit(1);
+                    end;
+
+                end
+                else
+                begin
+                    if WriteIOCBIFrame(Mtr2LID(MtrID, twBack), _UDS_IOCBI_START) then
+                    begin
+                        mIsMove := true;
+                        mRepeatTC.Start(_EXT_SESSION_INTERVAL_SEC);
+                        mState := 0;
+                        Exit(1);
+                    end;
+                end;
+
+            end;
+    end;
+end;
+
+function TCANUDSMoveCtrler.Stop(MtrID: TMotorOrd): boolean;
+begin
+    if mIsMove and (mRepeatTC.GetPassTimeAsSec <= 0.1) then
+        Sleep(100);         // Ext세션 송신 명령과 겹침 방지
+
+
+    mIsMove := false; // CanRead에서 Ext세션 겹치지 않게 미리 처리
+
+    Result := WriteIOCBIFrame(Mtr2LID(MtrID, mDir), _UDS_IOCBI_STOP);
+
+    if not Result then
+        mIsMove := True;   // 실패시 그대로 ..
+end;
+
+function TCANUDSMoveCtrler.StopForForw(MtrID: TMotorOrd): boolean;
+begin
+
+    Result := WriteIOCBIFrame(Mtr2LID(MtrID, twForw), _UDS_IOCBI_STOP);
+    if Result then
+        mIsMove := false;
+end;
+
+function TCANUDSMoveCtrler.StopForBack(MtrID: TMotorOrd): boolean;
+begin
+    Result := WriteIOCBIFrame(Mtr2LID(MtrID, twBack), _UDS_IOCBI_STOP);
+    if Result then
+        mIsMove := false;
+end;
+
+function TCANUDSMoveCtrler.WriteExtSession: boolean;
+begin
+    Result := mCan.Write(mReqID, 0, [$02, $10, $03, 0, 0, 0, 0, 0], 8);
+
+    //gLog.Debug('EXT. SESSION 설정:%s', [BoolToStr(Result, true)]);
+end;
+
+function TCANUDSMoveCtrler.WriteIOCBIFrame(LocalID: WORD; Param: byte; DataLen: byte): boolean;
+begin
+    Result := mCan.Write(mReqID, 0, [DataLen, _UDS_IOCBI_REQ_SID, HIBYTE(LocalID), LOBYTE(LocalID), Param, 0, 0, 0], 8);
+    mIsMove := Result;
+end;
+
+{ TSimulMoveCtrler }
+
+function TSimulMoveCtrler.MoveToBack(MtrID: TMotorOrd): Boolean;
+begin
+    mDir := twBack;
+    gLog.Panel('%s : 후진 시작(SIM MV CTRLER)', [GetMotorName(MtrID)]);
+    Result := true;
+end;
+
+function TSimulMoveCtrler.MoveToForw(MtrID: TMotorOrd): Boolean;
+begin
+    mDir := twForw;
+    gLog.Panel('%s : 전진 시작(SIM MV CTRLER)', [GetMotorName(MtrID)]);
+    Result := true;
+end;
+
+function TSimulMoveCtrler.StopForBack(MtrID: TMotorOrd): Boolean;
+begin
+    gLog.Panel('%s : 후진 정지(SIM MV CTRLER)', [GetMotorName(MtrID)]);
+    Result := true;
+end;
+
+function TSimulMoveCtrler.StopForForw(MtrID: TMotorOrd): Boolean;
+begin
+    gLog.Panel('%s : 전진 정지(SIM MV CTRLER)', [GetMotorName(MtrID)]);
+    Result := true;
+end;
+
+{ TDIODirectMoveCtrler }
+
+constructor TDIODirectMoveCtrler.Create(SwCon: TSwConnector; SwPinType: TPwrSwPinType);
+begin
+    mSwCon := SwCon;
+    mSwPinType := SwPinType;
+    mUseCtrlerCurr := True;
+end;
+
+function TDIODirectMoveCtrler.FSMMove(MtrID: TMotorOrd; Dir: TMotorDir): Integer;
+begin
+    Result := 0;
+    case mState of
+        0:
+            begin
+                mDir := Dir;
+                mSwCon.SetDir(mSwPinType, Dir = twForw);   // 극성
+                mTC.Start(_RELAY_AFTER_RUN_DELAY);
+
+                Inc(mState);
+            end;
+        1:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    // LINK
+                    mSwCon.SetLink(mSwPinType, True);
+                    mState := 0;
+                    Exit(1);
+                end;
+            end;
+    end;
+
+end;
+
+function TDIODirectMoveCtrler.FSMStop(MtrID: TMotorOrd; Dir: TMotorDir): Integer;
+begin
+    Result := 0;
+    case mState of
+        0:
+            begin
+                mSwCon.SetLink(mSwPinType, False);
+
+                mTC.Start(_RELAY_AFTER_RUN_DELAY);
+                Inc(mState);
+            end;
+        1:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    mSwCon.ResetDir(mSwPinType);
+
+                    mState := 0;
+                    Exit(1);
+                end;
+            end;
+    end;
+end;
+
+function TDIODirectMoveCtrler.GetCurr: Double;
+begin
+    Result := mSwCon.GetCurr(mSwPinType, mDir = twForw);
+end;
+
+function TDIODirectMoveCtrler.GetStateStr(IsSimple: Boolean): string;
+begin
+    Result := inherited GetStateStr(IsSimple);
+end;
+
+
+function TDIODirectMoveCtrler.MoveToForw(MtrID: TMotorOrd): Boolean;
+begin
+    Result := true;
+
+    mID := MtrID;
+    mIsMove := True;
+    mDir := twForw;
+
+    TAsyncCalls.Invoke(
+        procedure
+        begin
+            mSwCon.SetDir(mSwPinType, True);
+            Sleep(_RELAY_AFTER_RUN_DELAY);
+            mSwCon.SetLink(mSwPinType, True);
+        end).Forget;
+end;
+
+function TDIODirectMoveCtrler.MoveToBack(MtrID: TMotorOrd): Boolean;
+begin
+    Result := true;
+
+    mID := MtrID;
+    mIsMove := True;
+    mDir := twBack;
+
+    TAsyncCalls.Invoke(
+        procedure
+        begin
+            mSwCon.SetDir(mSwPinType, False);
+            Sleep(_RELAY_AFTER_RUN_DELAY);
+            mSwCon.SetLink(mSwPinType, True);
+        end).Forget;
+end;
+
+function TDIODirectMoveCtrler.StopForForw(MtrID: TMotorOrd): Boolean;
+begin
+    Result := true;
+
+    mID := MtrID;
+    mIsMove := False;
+
+    TAsyncCalls.Invoke(
+        procedure
+        begin
+            mSwCon.SetLink(mSwPinType, False);
+            Sleep(_RELAY_AFTER_RUN_DELAY);
+            mSwCon.ResetDir(mSwPinType);
+        end).Forget;
+end;
+
+function TDIODirectMoveCtrler.StopForBack(MtrID: TMotorOrd): Boolean;
+begin
+    Result := StopForForw(MtrID);
+end;
+
+
+
+{ TSMDOChInfo }
+
+constructor TSMDOChInfo.Create(MtrID: TMotorOrd; FwCh, BwCh: Integer);
+begin
+    mMtrID := MtrID;
+    mDirFwCh := FwCh;
+    mDirBwCh := BwCh;
+end;
+
+end.
+

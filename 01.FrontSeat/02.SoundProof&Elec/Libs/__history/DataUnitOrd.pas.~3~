@@ -1,0 +1,327 @@
+unit DataUnitOrd;
+
+interface
+
+type
+
+    // 검사여부, 실제 검사여부, 결과판정.
+    // 검사항목 안에 부가 검사항목이 많을 경우
+    // -> 개별 판정에 대한 데이타가 별도 있다면 하나로 명명, 아닐 경우 별도 분리.
+    TTsORD = (
+        tsValidity,
+
+        tsWeight,
+
+        tsSpecCheck,
+
+        tsResult,   //전체판정
+
+        tsSlide,
+        tsTilt,
+        tsHeight,
+        tsLegSupt,
+        tsSwivel,
+
+        tsElec,
+        tsIMS_MEM1, // IMS
+        tsIMS_MEM2, // IMS
+        tsIMS_MEM3,
+        tsIMS_EasyAccess,  // 승하차
+
+        tsAbnormalSound,   // 이음 판정
+
+        tsNoise,    //소음검사여부
+        tsCurr,     //전류판정여부 반드시 속도와 둘중에 하나는 있어야 한다.
+        tsSpeed,    //속도판정여부
+
+
+        // 리미트
+        tsLimit,   // 모터별
+        tsTotLimit,
+
+        // H/V
+        tsVentNoise,
+
+        tsHeatDrv, tsHeatPsg, tsVentDrv, tsVentPsg,
+
+        // 블로워
+        tsBlow,
+        tsFlowTest, // 외부 풍량계(블로워용)
+
+
+        tsBuckle,
+        tsAncPT,        // 앵커 PT(프리텐셔너)
+        tsODS,          // ODS Can통신 유무
+        tsDTCClear,     // DTC 삭제
+
+        tsWalkin,
+
+        tsMidPos,
+
+        tsEcuInfo,
+
+
+        tsPoprcv, tsPopsnd, tsDeviation,
+
+
+        sSP34, tsSP35, tsSP36, tsSP37, tsSP38, tsSP39, tsSP40,
+        tsSP41, tsSP42, tsSP43, tsSP44, tsSP45, tsSP46, tsSP47, tsSP48, tsSP49, tsSP50);
+
+    TTypeORD = (toUsrType, toDrvType, toSeatType, toImsType, toCarType, toLumbType, toWorkIntype, toHeatTypeDrv, toHeatTypeAss);
+
+    TResultORD = (
+                roNone,
+                roIndex,
+                roPosType,
+                roDrvType,
+                roWayType,
+                roSeatOpType,
+                roCarType,
+                roPosExType,
+
+                roImsType,
+                roHVType,
+                roTestType,
+                roPartName,
+                roPartNo,
+                roLclPartNo,
+
+                roDate,
+                roTime,
+                roDateTime,
+                roPalletNo,
+                roMcNo,
+
+                roLotNo,
+
+                roRsSpecCheck,
+
+
+                // 전장 Spec
+                roSpecHeatOnLo, roSpecHeatOnHi, rospecHeatOnHiLo,
+                roSpecHeatOffLo, rospecHeatOffHi, rospecHeatOffHiLo,
+                roSpecVentOnLo, rospecVentOnHi, rospecVentOnHiLo,
+                roSpecVentOffLo, rospecVentOffHi, rospecVentOffHiLo,
+
+
+                // 버클
+                roSpecBuckleHiLo,
+
+                // 앵커 PT 스펙
+                roSpecAncPT,
+                //=====================================
+                // Motor Type/Dir CTRL
+                roSlide_CTRL,
+                roTilt_CTRL,
+                roHeight_CTRL,
+                roLegSupt_CTRL,
+                roSwivel_CTRL,
+
+                roDirFw_CTRL,
+                roDirBw_CTRL,
+                //=====================================
+
+                // 모터 스펙 : 스펙은 연속으로 나열할 것!  case처리 편의
+                rospecCurrLo,
+                rospecCurrHi,
+                rospecCurrHiLo,
+                rospecTimeLo,
+                rospecTimeHi,
+                rospecTimeHiLo,
+
+                rospecFwSpeedLo,
+                rospecFwSpeedHi,
+                rospecFwSpeedHiLo,
+                rospecBwSpeedLo,
+                rospecBwSpeedHi,
+                rospecBwSpeedHiLo,
+
+                // 소음 스펙
+                rospecInitNoiseTime,
+                rospecInitNoiseHi,
+                rospecRunNoiseHi,
+
+                // 소음 편차 스펙
+                rospecInitNoiseDevHi,
+                rospecRunNoiseDevHi,
+
+
+
+
+                //=====================================
+                // 모터 Param
+                roMaxOperTime,
+                roLockedCurr,
+                roStroke,
+
+
+                //------------------------------------
+                // 모터 데이타
+                roDataTime,
+
+                roDataFwCurr,
+                roDataBwCurr,
+                roRsCurr,
+                roRsTotCurr,
+
+                roDataFwSpeed,
+                roDataBwSpeed,
+
+                roRsSpeed,      // 현 모터
+                roRsTotSpeed,   // 전체 모터 대상
+
+                roDataFwInitNoise,
+                roDataFwRunNoise,
+                roDataBwInitNoise,
+                roDataBwRunNoise,
+
+                roDataFwInitNoiseDev,
+                roDataFwRunNoiseDev,
+                roDataBwInitNoiseDev,
+                roDataBwRunNoiseDev,
+
+
+                roRsNoise,      // 현 모터
+                roRsTotNoise,   // 전체 모터
+
+                roRsLimit,
+                roRsTotLimit,
+
+
+                roRsFwMotor,
+                roRsBwMotor,
+
+                // 속도 + 소음 + 전류
+                roRsMotor,
+                roRsTotMotor,
+
+                //------------------------------------
+
+                // Fan소음
+                rospecVentNoise,
+                roDataVentNoise,
+                roRsVentNoise,
+
+                roRsAbnormalSound,     // 이음(사용자 감지)
+
+                roRsWalkIn,
+
+
+                //------------------------------------
+                // 전장
+                //------------------------------------
+
+                roRsElec,  // 전장 : H/V + IMS 전체 판정 + 버클
+
+
+                // ECU Info
+                roSpecEcuPartNo,
+                roDataEcuPartNo,    roRsEcuPartNo,
+                roSpecEcuSwVer,
+                roDataEcuSwVer,     roRsEcuSwVer,
+                roSpecEcuHwVer,
+                roDataEcuHwVer,     roRsEcuHwVer,
+                roRsEcuInfo,
+
+                // 버클
+                roDatBuckle,
+                roRsBuckle,
+
+                // 앵커 PT
+                roDatAncPT,
+                roRsAncPT,
+
+                // ODS
+                roRsODS,
+
+                // DTC Clear
+                roRsDTCClear,
+
+                // IMS
+                roRsMem1,
+                roRsMem2,
+                roRsMem3,
+                roRsEasyAccess, // 승하차
+                roRsIMS,
+
+                //=====================================
+                // H/V Pod/Type CTRL
+                roHVDrv_CTRL,
+                roHVAss_CTRL,
+
+                roHVHeat_CTRL,
+                roHVVent_CTRL,
+
+                roHVDrvHtr_CTRL,
+                roHVDrvVnt_CTRL,
+
+                //=====================================
+
+                // H/V
+                roDatOnCurr,
+                roRsOnCurr,
+                roDatOffCurr,
+                roRsOffCurr,
+
+                roDatLedOffBit,
+                roDatLedHiBit,
+                roDatLedMidBit,
+                roDatLedLoBit,
+
+                roRsLedOff,
+                roRsLedHi,
+                roRsLedMid,
+                roRsLedLo,
+
+                roRsFlowTest,
+
+
+                roRsIgn,
+                roRsHeatByPos,   // 시트 좌석별
+                roRsVentByPos,
+
+                roRsHeat,    // 히터 전체 결과
+                roRsVent,
+                //------------------------------------
+                roDatOffBlow,
+                roRsOffBlow,
+                roDatOnBlow,
+                roRsOnBlow,
+                //------------------------------------
+
+                roRsAccessory,
+                roRsSmart,
+
+                roDatSeatBC,            // 쿠션 바코드
+                roDatRework,
+
+                //------------------------------------
+                roErIndex,
+                roErMcNO,
+                //--------
+                roGroupBeginTime,
+
+                roGroupEndTime,
+                roGroupTime,
+                roGroupCount,
+                //--------
+                roErOccurTime,
+                roErReleaseTime,
+
+                roErTime,
+                roErCode,
+                roErText,
+                roPoprcved,
+                roPopsnded,
+
+                roCycleTime,
+                roNO  ,
+                roRsMidPos
+
+     );
+
+
+
+implementation
+
+end.

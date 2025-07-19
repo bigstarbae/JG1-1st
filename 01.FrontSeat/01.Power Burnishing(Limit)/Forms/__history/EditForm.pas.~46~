@@ -1,0 +1,483 @@
+unit EditForm;
+{$INCLUDE myDefine.inc}
+
+interface
+
+uses
+    Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+    Dialogs, ExtCtrls, StdCtrls, Buttons, ImgList, DataUnit, KiiMessages,
+    ComCtrls, ModelType, SeatType, SeatMotorType, Grids, pngimage, Label3D;
+
+type
+    TCustomBorderRadioGroup = class(TRadioGroup)
+    private
+        FBorderColor: TColor;
+    protected
+        procedure Paint; override;
+    public
+        constructor Create(AOwner: TComponent); override;
+        property BorderColor: TColor read FBorderColor write FBorderColor;
+    end;
+
+    TfrmEdit = class(TForm)
+        Panel1: TPanel;
+        Shape3: TShape;
+        Label2: TLabel;
+        Label3: TLabel;
+        edtPartName: TEdit;
+        edtPartNo: TEdit;
+        Shape6: TShape;
+        labPartName: TLabel;
+        Shape7: TShape;
+        labIndex: TLabel;
+        GroupBox1: TGroupBox;
+        Label6: TLabel;
+
+        Label9: TLabel;
+        edtNoiseRunning: TEdit;
+        Label49: TLabel;
+        edtOffsetNoiseRunning0: TEdit;
+        edtOffsetNoiseRunning1: TEdit;
+        Label50: TLabel;
+        Label51: TLabel;
+        Label58: TLabel;
+        Label59: TLabel;
+        edtNoiseInitTime: TEdit;
+        Label61: TLabel;
+        Label62: TLabel;
+        Label63: TLabel;
+        edtNoiseInitMax: TEdit;
+        edtOffsetNoiseInit0: TEdit;
+        edtOffsetNoiseInit1: TEdit;
+        rdgCarType: TRadioGroup;
+    rdgPosType: TRadioGroup;
+    pcMdl: TPageControl;
+    ts1: TTabSheet;
+    grpInsepction01: TGroupBox;
+    pnlSlide: TPanel;
+    lbl28: TLabel;
+    lbl29: TLabel;
+    lbl1: TLabel;
+    edtTimeLimit_Swivel: TEdit;
+    edtCurrLimit_Swivel: TEdit;
+    edtBrnCnt_Swivel: TEdit;
+    shp6: TShape;
+    lbl62: TLabel;
+    lbl18: TLabel;
+    shp3: TShape;
+    pnlCushLeg: TPanel;
+    lbl30: TLabel;
+    lbl31: TLabel;
+    lbl2: TLabel;
+    lbl: TLabel;
+    shp4: TShape;
+    edtTimeLimit_CushExt: TEdit;
+    edtCurrLimit_CushExt: TEdit;
+    edtBrnCnt_CushExt: TEdit;
+    pnlTILT: TPanel;
+    lbl32: TLabel;
+    lbl33: TLabel;
+    lbl3: TLabel;
+    lbl20: TLabel;
+    shp5: TShape;
+    edtTimeLimit_TILT: TEdit;
+    edtCurrLimit_TILT: TEdit;
+    edtBrnCnt_TILT: TEdit;
+    pnlHeight: TPanel;
+    lbl34: TLabel;
+    lbl35: TLabel;
+    lbl4: TLabel;
+    lbl21: TLabel;
+    shp7: TShape;
+    edtTimeLimit_Height: TEdit;
+    edtCurrLimit_Height: TEdit;
+    edtBrnCnt_Height: TEdit;
+    pnlSlide4: TPanel;
+    lbl36: TLabel;
+    lbl37: TLabel;
+    lbl5: TLabel;
+    lbl22: TLabel;
+    shp8: TShape;
+    edtTimeLimit_Slide: TEdit;
+    edtCurrLimit_Slide: TEdit;
+    edtBrnCnt_Slide: TEdit;
+    rdgDrvPos: TRadioGroup;
+        procedure FormClose(Sender: TObject; var Action: TCloseAction);
+        procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+        procedure FormCreate(Sender: TObject);
+        procedure FormDestroy(Sender: TObject);
+        procedure FormShow(Sender: TObject);
+        procedure edtPartNameChange(Sender: TObject);
+        procedure cbxSwIoFw_SlideChange(Sender: TObject);
+        procedure rgPos4OutPClick(Sender: TObject);
+    private
+    { Private declarations }
+        mInit: boolean;
+        mChangeEvent: TNotifyStatus;
+        mModels: TModels;
+        mIsMdlExSave: boolean;
+
+        procedure Init;
+
+        procedure SpecCheckBoxMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+
+        procedure ReadMessage(var myMsg: TMessage); message WM_SYS_CODE;
+        function TransModels(aIsEdit: boolean): boolean;
+
+    public
+    { Public declarations }
+        procedure SetFrm(aIndex: integer);
+        procedure Save(AItems: array of boolean; IsMotor, IsDelivery, IsSwIo, IsUsrType, IsMdlSync: boolean);
+
+        property OnUserChange: TNotifyStatus read mChangeEvent write mChangeEvent;
+    end;
+
+var
+    frmEdit: TfrmEdit;
+
+implementation
+
+uses
+    Global, ModelUnit, SeatTypeUI, Log, myUtils, Math, DioForm, PasswdForm,
+    DioReferForm, IniFiles, LanIOUnit, SysEnv, IODef, TsWorkUnit,
+    LangTran;
+
+{$R *.dfm}
+
+constructor TCustomBorderRadioGroup.Create(AOwner: TComponent);
+begin
+    inherited;
+
+    FBorderColor := $00EDEFF1;
+end;
+
+procedure TCustomBorderRadioGroup.Paint;
+var
+    R: TRect;
+begin
+    inherited;
+    R := ClientRect;
+    Canvas.Pen.Color := FBorderColor;
+    Canvas.Pen.Width := 1;
+    Canvas.Brush.Style := bsClear;
+    Canvas.Rectangle(R);
+end;
+
+procedure TfrmEdit.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+
+{
+    if mIsMdlExSave then
+    begin
+        gModels.SaveMdlExDatas(GetEnvPath('MdlExDatas.dat'));
+    end;
+}
+    Action := caFree;
+end;
+
+procedure TfrmEdit.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+begin
+    gLog.ToFiles('%s CLOSE', [Caption]);
+end;
+
+procedure TfrmEdit.FormCreate(Sender: TObject);
+var
+    i: integer;
+    cFind: TWinControl;
+begin
+    mInit := true;
+    mIsMdlExSave := false;
+
+    Init;
+end;
+
+procedure TfrmEdit.FormDestroy(Sender: TObject);
+begin
+//
+end;
+
+procedure TfrmEdit.FormShow(Sender: TObject);
+begin
+
+    mInit := false;
+    gLog.ToFiles('%s SHOW', [Caption]);
+
+    pcMdl.ActivePageIndex := 0;
+
+
+    TLangTran.ChangeCaption(self);
+end;
+
+procedure TfrmEdit.SetFrm(aIndex: integer);
+var
+    iDx: integer;
+begin
+    mInit := true;
+    Init;
+
+    labIndex.Tag := aIndex;
+
+    gLog.ToFiles('%s Call Setfrm', [Caption]);
+    iDx := labIndex.Tag;
+    mModels := gModels.GetModels(iDx);
+
+    labIndex.Caption := IntToStr(labIndex.Tag);
+    TransModels(false);
+
+    mInit := false;
+    if Assigned(mChangeEvent) then
+        OnUserChange(Self, 0);
+end;
+
+function TfrmEdit.TransModels(aIsEdit: boolean): boolean;
+label
+    EDIT_ERROR;
+var
+    iTm: integer;
+    sTm: string;
+    Buf: TMotorDeliveryPos;
+    MdlExData: TMdlExData;
+    MtrIt: TMotorORD;
+begin
+    Result := false;
+    with mModels do
+    begin
+        if aIsEdit then
+        begin
+            rPartName := ShortString(edtPartName.Text);
+            //rPartNo   := ShortString(edtPartNo.Text) ;
+
+            rTypes.Clear;
+            rTypes.SetCarType(TCAR_TYPE(rdgCarType.ItemIndex));
+            if rdgPosType.ItemIndex  = 0 then  //LH
+            begin
+                rTypes.SetDrvType(rdgDrvPos.ItemIndex = 0);
+            end
+            else
+            begin
+                rTypes.SetDrvType(rdgDrvPos.ItemIndex = 1);
+            end;
+
+            rTypes.SetPosType(TPOS_TYPE(rdgPosType.ItemIndex));
+
+            for MtrIt := Low(TMotorOrd) to MtrOrdHI do
+            begin
+                case MtrIt of
+                    tmSlide:
+                        begin
+                            mModels.rConstraints[MtrIt].rLockedCurr := StrToFloatDef(edtCurrLimit_Slide.Text, 10.0);
+                            mModels.rConstraints[MtrIt].rOperTIme := StrToFloatDef(edtTimeLimit_Slide.Text, 10.0);
+                        end;
+                    tmTilt:
+                        begin
+                            mModels.rConstraints[MtrIt].rLockedCurr := StrToFloatDef(edtCurrLimit_TILT.Text, 10.0);
+                            mModels.rConstraints[MtrIt].rOperTIme := StrToFloatDef(edtTimeLimit_TILT.Text, 10.0);
+
+                        end;
+                    tmHeight:
+                        begin
+                            mModels.rConstraints[MtrIt].rLockedCurr := StrToFloatDef(edtCurrLimit_Height.Text, 10.0);
+                            mModels.rConstraints[MtrIt].rOperTIme := StrToFloatDef(edtTimeLimit_Height.Text, 10.0);
+
+                        end;
+                    tmLegSupt:
+                        begin
+                            mModels.rConstraints[MtrIt].rLockedCurr := StrToFloatDef(edtCurrLimit_CushExt.Text, 10.0);
+                            mModels.rConstraints[MtrIt].rOperTIme := StrToFloatDef(edtTimeLimit_CushExt.Text, 10.0);
+                        end;
+
+                    tmSwivel:
+                        begin
+                            mModels.rConstraints[MtrIt].rLockedCurr := StrToFloatDef(edtCurrLimit_Swivel.Text, 10.0);
+                            mModels.rConstraints[MtrIt].rOperTIme := StrToFloatDef(edtTimeLimit_Swivel.Text, 10.0);
+
+                        end;
+                end;
+            end;
+
+            rSpecs.rMotors[tmSlide].rBrnCount := StrToIntDef(edtBrnCnt_Slide.Text, 1);
+            rSpecs.rMotors[tmHeight].rBrnCount := StrToIntDef(edtBrnCnt_Height.Text, 1);
+            rSpecs.rMotors[tmTilt].rBrnCount := StrToIntDef(edtBrnCnt_TILT.Text, 1);
+            rSpecs.rMotors[tmLegSupt].rBrnCount := StrToIntDef(edtBrnCnt_CushExt.Text, 1);
+            rSpecs.rMotors[tmSwivel].rBrnCount := StrToIntDef(edtBrnCnt_Swivel.Text, 1);
+
+        end
+        else
+        begin
+            edtPartName.Text := string(rPartName);
+
+            rdgCarType.ItemIndex := integer(rTypes.GetCarType);
+            rdgPosType.Itemindex := Integer(rTypes.GetPosType);
+            rdgDrvPos.ItemIndex := Integer(rTypes.GetDrvType);
+
+            for MtrIt := Low(TMotorOrd) to MtrOrdHI do
+            begin
+                case MtrIt of
+                    tmSlide:
+                        begin
+                            edtTimeLimit_Slide.Text := GetUsrFloatToStr(mModels.rConstraints[MtrIt].rOperTIme, 0);
+                            edtCurrLimit_Slide.Text := GetUsrFloatToStr(mModels.rConstraints[MtrIt].rLockedCurr, 0);
+                        end;
+                    tmTilt:
+                        begin
+                            edtTimeLimit_TILT.Text := GetUsrFloatToStr(mModels.rConstraints[MtrIt].rOperTIme);
+                            edtCurrLimit_TILT.Text := GetUsrFloatToStr(mModels.rConstraints[MtrIt].rLockedCurr);
+
+                        end;
+                    tmHeight:
+                        begin
+                            edtTimeLimit_Height.Text := GetUsrFloatToStr(mModels.rConstraints[MtrIt].rOperTIme);
+                            edtCurrLimit_Height.Text := GetUsrFloatToStr(mModels.rConstraints[MtrIt].rLockedCurr);
+
+                        end;
+                    tmLegSupt:
+                        begin
+                            edtTimeLimit_CushExt.Text := GetUsrFloatToStr(mModels.rConstraints[MtrIt].rOperTIme);
+                            edtCurrLimit_CushExt.Text := GetUsrFloatToStr(mModels.rConstraints[MtrIt].rLockedCurr);
+                        end;
+
+                    tmSwivel:
+                        begin
+                            edtTimeLimit_Swivel.Text := GetUsrFloatToStr(mModels.rConstraints[MtrIt].rOperTIme);
+                            edtCurrLimit_Swivel.Text := GetUsrFloatToStr(mModels.rConstraints[MtrIt].rLockedCurr);
+                        end;
+                end;
+            end;
+
+
+            edtBrnCnt_Slide.Text := IntToStr(rSpecs.rMotors[tmSlide].rBrnCount);
+            edtBrnCnt_Height.Text := IntToStr(rSpecs.rMotors[tmHeight].rBrnCount);
+            edtBrnCnt_TILT.Text := IntToStr(rSpecs.rMotors[tmTilt].rBrnCount);
+            edtBrnCnt_CushExt.Text := IntToStr(rSpecs.rMotors[tmLegSupt].rBrnCount);
+            edtBrnCnt_Swivel.Text := IntToStr(rSpecs.rMotors[tmSwivel].rBrnCount);
+
+            // PWR BIT인 Way 검색
+            //rdgSeatOpType.ItemIndex := IfThen(GetOnBitIdx(rTypes.mDataBits, MDL_BIT_WAY_TYPE, 3) < 0, 0, 1);
+        end;
+    end;
+    Result := true;
+    Exit;
+
+EDIT_ERROR:
+    Application.MessageBox(PChar(sTm + _TR(' 입력오류 확인하세요!')), PChar(Caption), MB_ICONERROR + MB_OK);
+    gLog.ToFiles('%s', [sTm]);
+end;
+
+procedure TfrmEdit.edtPartNameChange(Sender: TObject);
+begin
+    if mInit then
+        Exit;
+
+    TWinControl(Sender).Tag := 1;
+
+    if Assigned(mChangeEvent) then
+        OnUserChange(Self, 1);
+end;
+
+procedure TfrmEdit.Save(AItems: array of boolean; IsMotor, IsDelivery, IsSwIo, IsUsrType, IsMdlSync: boolean);
+var
+    i, Cnt: integer;
+    Buf: TModels;
+    dPos: TMotorDeliveryPos;
+begin
+    if TransModels(true) then
+    begin
+        gModels.EditModel(mModels, false);
+
+        if Assigned(mChangeEvent) then
+            mChangeEvent(Self, 0);
+    end;
+end;
+
+function GetUsrIoTxt(CH: integer): string;
+var
+    ID: integer;
+    sTm: string;
+    Ini: TIniFile;
+begin
+    sTm := Format('%s\IoList.Ini', [GetUsrDir(udENV, Now())]);
+    Ini := TIniFile.Create(sTm);
+    try
+        if CH >= _DIO_CH_COUNT div 2 then
+        begin
+            ID := CH - 32 + 1;
+            Result := Ini.ReadString('PCOUT_IO' + IntToStr(0), 'INDEX ' + IntToStr(ID), '');
+        end
+        else
+        begin
+            ID := CH + 1;
+            Result := Ini.ReadString('PCIN_IO' + IntToStr(0), 'INDEX ' + IntToStr(ID), '');
+        end;
+
+    finally
+        Ini.Free;
+    end;
+end;
+
+procedure TfrmEdit.Init;
+var
+    i: integer;
+    CbxRect: TRect;
+begin
+
+    labIndex.Caption := IntToStr(1);
+    for i := 0 to ComponentCount - 1 do
+    begin
+        if Components[i] is TEdit then
+        begin
+            with Components[i] as TEdit do
+                Text := '';
+        end;
+    end;
+    FillChar(mModels, sizeof(TModels), 0);
+
+    WriteAsCarType(rdgCarType, true);
+
+end;
+
+procedure TfrmEdit.SpecCheckBoxMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+    TCheckBox(Sender).Checked := not TCheckBox(Sender).Checked;
+    if Assigned(mChangeEvent) then
+        OnUserChange(Self, 1);
+end;
+
+procedure TfrmEdit.ReadMessage(var myMsg: TMessage);
+begin
+    case myMsg.WParam of
+        SYS_MODEL:
+            begin
+                SetFrm(myMsg.LParam);
+            end;
+        SYS_SAVE_DATA:
+            begin
+                Save([], false, false, false, false, false);
+            end;
+    end;
+end;
+
+procedure TfrmEdit.rgPos4OutPClick(Sender: TObject);
+begin
+    {   // 차후 LH/RH 구분시 살릴것
+    with mModels do
+    begin
+        rTypes.Clear;
+        rTypes.SetCarType(TCAR_TYPE(rdgCarType.ItemIndex));
+        rTypes.SetAreaType(TAREA_TYPE(rgArea.ItemIndex));
+        rTypes.SetPosType(TPOS_TYPE(rgPos4OutP.ItemIndex));
+
+        DisplayOutPosSpec(rTypes.rDataBits, MDL_MASK_CAR_N_POS);     // MDL_MASK_CAR_TYPE
+    end;
+    }
+end;
+
+
+procedure TfrmEdit.cbxSwIoFw_SlideChange(Sender: TObject);
+begin
+
+    if Assigned(mChangeEvent) then
+        OnUserChange(Self, 1);
+end;
+
+end.
+

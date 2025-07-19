@@ -1,0 +1,72 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{938212AC-B6B8-4040-BA3F-043F1D1639AD}</ProjectGuid>
+		</PropertyGroup>
+		<ItemGroup>
+			<Projects Include="..\01.Limit\ProjectOfTest\LimitTester.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="..\02.Power Burnishing\ProjectOfTest\PwrBurnishingTester.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="..\03.Anti Pinch\ProjectOfTest\AntiPinchTester.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="..\04.SoundProof&amp;Elec\ProjectOfTest\SoundProofTester.dproj">
+				<Dependencies/>
+			</Projects>
+		</ItemGroup>
+		<ProjectExtensions>
+			<Borland.Personality>Default.Personality.12</Borland.Personality>
+			<Borland.ProjectType/>
+			<BorlandProject>
+				<Default.Personality/>
+			</BorlandProject>
+		</ProjectExtensions>
+		<Target Name="LimitTester">
+			<MSBuild Projects="..\01.Limit\ProjectOfTest\LimitTester.dproj"/>
+		</Target>
+		<Target Name="LimitTester:Clean">
+			<MSBuild Targets="Clean" Projects="..\01.Limit\ProjectOfTest\LimitTester.dproj"/>
+		</Target>
+		<Target Name="LimitTester:Make">
+			<MSBuild Targets="Make" Projects="..\01.Limit\ProjectOfTest\LimitTester.dproj"/>
+		</Target>
+		<Target Name="PwrBurnishingTester">
+			<MSBuild Projects="..\02.Power Burnishing\ProjectOfTest\PwrBurnishingTester.dproj"/>
+		</Target>
+		<Target Name="PwrBurnishingTester:Clean">
+			<MSBuild Targets="Clean" Projects="..\02.Power Burnishing\ProjectOfTest\PwrBurnishingTester.dproj"/>
+		</Target>
+		<Target Name="PwrBurnishingTester:Make">
+			<MSBuild Targets="Make" Projects="..\02.Power Burnishing\ProjectOfTest\PwrBurnishingTester.dproj"/>
+		</Target>
+		<Target Name="AntiPinchTester">
+			<MSBuild Projects="..\03.Anti Pinch\ProjectOfTest\AntiPinchTester.dproj"/>
+		</Target>
+		<Target Name="AntiPinchTester:Clean">
+			<MSBuild Targets="Clean" Projects="..\03.Anti Pinch\ProjectOfTest\AntiPinchTester.dproj"/>
+		</Target>
+		<Target Name="AntiPinchTester:Make">
+			<MSBuild Targets="Make" Projects="..\03.Anti Pinch\ProjectOfTest\AntiPinchTester.dproj"/>
+		</Target>
+		<Target Name="SoundProofTester">
+			<MSBuild Projects="..\04.SoundProof&amp;Elec\ProjectOfTest\SoundProofTester.dproj"/>
+		</Target>
+		<Target Name="SoundProofTester:Clean">
+			<MSBuild Targets="Clean" Projects="..\04.SoundProof&amp;Elec\ProjectOfTest\SoundProofTester.dproj"/>
+		</Target>
+		<Target Name="SoundProofTester:Make">
+			<MSBuild Targets="Make" Projects="..\04.SoundProof&amp;Elec\ProjectOfTest\SoundProofTester.dproj"/>
+		</Target>
+		<Target Name="Build">
+			<CallTarget Targets="LimitTester;PwrBurnishingTester;AntiPinchTester;SoundProofTester"/>
+		</Target>
+		<Target Name="Clean">
+			<CallTarget Targets="LimitTester:Clean;PwrBurnishingTester:Clean;AntiPinchTester:Clean;SoundProofTester:Clean"/>
+		</Target>
+		<Target Name="Make">
+			<CallTarget Targets="LimitTester:Make;PwrBurnishingTester:Make;AntiPinchTester:Make;SoundProofTester:Make"/>
+		</Target>
+		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+	</Project>

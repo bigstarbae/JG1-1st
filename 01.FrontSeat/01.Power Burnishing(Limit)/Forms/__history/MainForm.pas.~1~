@@ -1,0 +1,405 @@
+unit MainForm;
+{$I myDefine.inc}
+
+interface
+
+uses
+    Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+    Dialogs, ExtCtrls, ComCtrls, Grids, StdCtrls, ModelInfoFrame, Label3D,
+    _GClass, AbLED, pngimage, Buttons, TeEngine, Series, TeeProcs, Chart,
+    PwrSeatBurnishingForm;
+
+type
+    TfrmMain = class(TfrmPwrBurnishing)
+        abDiskC: TAbLED;
+        abDiskD: TAbLED;
+        lblWorkMonitor: TLabel;
+        lblCycleTime: TLabel;
+        lblMemory: TLabel;
+        tmrShow: TTimer;
+        tmrDiskChk: TTimer;
+        tmrMain: TTimer;
+        procedure FormShow(Sender: TObject);
+        procedure FormDestroy(Sender: TObject);
+        procedure FormCreate(Sender: TObject);
+        procedure FormClose(Sender: TObject; var Action: TCloseAction);
+        procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+        procedure Image1Click(Sender: TObject);
+        procedure tmrShowTimer(Sender: TObject);
+        procedure tmrDiskChkTimer(Sender: TObject);
+        procedure tmrMainTimer(Sender: TObject);
+    private
+    { Private declarations }
+        mState: Integer;
+        mScrIO, mSysIdle, mLock: Boolean;
+
+        procedure WorkError(Sender: TObject);
+        procedure WorkClose(Sender: TObject);
+        procedure GlobalExceptionHandler(Sender: TObject; E: Exception);
+        procedure ReadWorkCycleTime;
+        procedure DisplayDiskFree;
+
+    public
+    { Public declarations }
+    end;
+
+var
+    frmMain: TfrmMain;
+
+implementation
+
+uses
+    DataUnit, Work, Global, MyUtils, TsWorkUnit, Log, SysEnv, LangTran,
+    SysCheckForm, ErrorForm, NotifyForm, ExitForm, UserModelForm, UserReferForm;
+
+{$R *.dfm}
+
+procedure TfrmMain.FormCreate(Sender: TObject);
+begin
+    inherited;
+
+    if not gsysEnv.rUserScreenSaver then
+        SetsysSaverEnable(0);
+
+    mIsClose := False;
+    mSysIdle := True;
+    mScrIO := True;
+
+  //  gLog := TLog.Create(lbLog.Handle, 1, True);
+    // gLog.UseQueue := True;
+    gLog.ToFiles('------------>%s V%s START<------------', [PROJECT_NAME, gSysEnv.rVer]);
+{$IFNDEF VIRTUALIO}
+{
+    frmsysCheck := TfrmsysCheck.Create(Application);
+    with frmsysCheck do
+    begin
+        Execute();
+    end;
+}
+{$ENDIF}
+
+    frmNotify := TfrmNotify.Create(Application);
+    frmError := TfrmError.Create(Application);
+
+    Application.OnException := GlobalExceptionHandler;
+
+end;
+
+procedure TfrmMain.FormShow(Sender: TObject);
+var
+    i: Integer;
+    DevComOrd: TDevComORD;
+begin
+
+{$IFDEF VIRTUALIO}
+    Application.MessageBox(PWideChar(_TR('시뮬레이션 모드입니다.') + #13 + Format(_TR(
+                    'Mtr Spec:%d, Model:%d, MotorData:%d, IMS Data:%d, TResult:%d, TModels:%d 납품위치:%d'),
+                [sizeof(TMotorSpec), sizeof(TModel), sizeof(TMotorData), sizeof(TImsData), sizeof(TResult), sizeof(TModels),
+                sizeof(TMotorDeliveryPos)])), '');
+{$ENDIF}
+
+    gWork := TWork.Create(Self);
+
+    if Assigned(gWork) then
+    begin
+        gWork.Thread.OnTerminate := WorkClose;
+{$IFNDEF VIRTUALIO}
+        gWork.Thread.OnError := WorkError;
+{$ENDIF}
+    end;
+
+    for i := 1 to MAX_ST_COUNT - 1 do
+    begin
+        DevComOrd := Succ(DevComOrd);
+        AddSubForm(TfrmPwrBurnishing.Create(Self)).ShowPLCInfo(False);
+    end;
+
+    DevComOrd := dcPS_01;
+
+    AddDevComInfo(Ord(DevComOrd), GetDevComName(DevComOrd));
+
+    DisplayDiskFree;
+
+    tmrShow.Enabled := True;
+    tmrMain.Enabled := True;
+
+    inherited;      // 위치 사수
+
+end;
+
+procedure TfrmMain.FormDestroy(Sender: TObject);
+begin
+    if not GetsysSaverEnable then
+        SetsysSaverEnable(1);
+
+    inherited
+end;
+
+procedure TfrmMain.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+    inherited;
+
+    //
+    FreeAndNil(abPLC);
+    FreeAndNil(gWork);
+    gLog.Panel('------------>%s CLOSE<------------', [PROJECT_NAME]);
+
+end;
+
+procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+begin
+    inherited;
+
+    if not tmrMain.Enabled then
+        Exit;
+
+    mIsClose := True;
+
+    gLog.Debug('------------>%s 종료중...<------------', [PROJECT_NAME]);
+    tmrMain.Enabled := False;
+    abPLC.Checked := False;
+    abPLC.Flashing := False;
+
+    if Assigned(gWork) then
+    begin
+
+        gWork.Stop;
+
+        if Assigned(gWork.Thread) then
+        begin
+            gWork.Stop;
+            CanClose := False;
+        end;
+
+    end;
+
+end;
+
+procedure TfrmMain.Image1Click(Sender: TObject);
+begin
+  //  gWork.ComRefresh := True;
+
+end;
+
+procedure TfrmMain.ReadWorkCycleTime;
+const
+    _HiNLo: array[false..true] of string = ('Lo ', 'Hi');
+    _NorNIdle: array[false..true] of string = ('NOR ', 'IDLE');
+var
+    sTm: string;
+begin
+    if not Assigned(gWork) then
+        Exit;
+    sTm := Format('[P/C] %f >>%s | %s<< ', [gWork.LoopTime, _HiNLo[gWork.IsTesting], _NorNIdle[gWork.IsSystemIDLE]]);
+
+    lblWorkMonitor.Caption := sTm;
+end;
+
+procedure TfrmMain.DisplayDiskFree;
+var
+    dTm: double;
+    iTm, Total: int64;
+begin
+    if DirectoryExists('C:\') then
+    begin
+        iTm := GetDiskFreeSize('C:\', Total);
+        dTm := ((Total - iTm) / Total) * 100.0;
+
+        abDiskC.Caption := Format('Disk(C:) %0.0f %%', [dTm]);
+
+        abDiskC.Checked := True;
+        if dTm < 70.0 then
+            abDiskC.LED.ColorOn := clLime
+        else if dTm < 90.0 then
+            abDiskC.LED.ColorOn := clYellow
+        else
+            abDiskC.LED.ColorOn := clRed;
+
+        abDiskC.Flashing := abDiskC.LED.ColorOn = clRed;
+    end
+    else
+    begin
+        abDiskC.Checked := False;
+    end;
+
+    if DirectoryExists('D:\') then
+    begin
+        iTm := GetDiskFreeSize('D:\', Total);
+        dTm := ((Total - iTm) / Total) * 100.0;
+        abDiskD.Caption := Format('Disk(D:) %0.0f %%', [dTm]);
+
+        abDiskD.Checked := True;
+        if dTm < 70.0 then
+            abDiskD.LED.ColorOn := clLime
+        else if dTm < 90.0 then
+            abDiskD.LED.ColorOn := clYellow
+        else
+            abDiskD.LED.ColorOn := clRed;
+
+        abDiskD.Flashing := abDiskD.LED.ColorOn = clRed;
+    end
+    else
+    begin
+        abDiskD.Checked := False;
+    end;
+end;
+
+procedure TfrmMain.tmrDiskChkTimer(Sender: TObject);
+begin
+    DisplayDiskFree;
+
+end;
+
+procedure TfrmMain.tmrMainTimer(Sender: TObject);
+var
+    dTm: double;
+    sTm: string;
+begin
+
+    if mIsClose then
+        Exit;
+    mLock := True;
+
+    if Assigned(gWork) then
+    begin
+        gWork.SetUsrFileUpdates();
+    end;
+
+    case mState of
+        0:
+            begin
+                labDate.Caption := FormatDateTime('ddddd hh:nn:ss', Now());
+            end;
+        1:
+            begin
+                ReadWorkCycleTime();
+                if Assigned(gWork) then
+                    lblMemory.Caption := gWork.GetUsrBuffCounts();
+            end;
+        2:
+            begin
+                if gsysEnv.rUserScreenSaver and Assigned(gWork) and (gWork.IsSystemIDLE <> mscrIO) then
+                begin
+                    mScrIO := gWork.IsSystemIDLE;
+                    SetsysSaverEnable(integer(mScrIO));
+                    if not mScrIO then
+                    begin
+                        SaverTurnOff;
+                        gLog.Panel('SCREEN SET OFF');
+                    end
+                    else
+                    begin
+                        gLog.Panel('SCREEN SET ON');
+                    end;
+                end;
+            end;
+        3:
+            begin
+                SysEnvUpdates;
+            end;
+        4:
+            begin
+                if not mIsClose and Assigned(gWork) and (gWork.IsSystemIDLE <> mSysIdle) then
+                begin
+                    mSysIdle := gWork.IsSystemIDLE;
+                end;
+            end;
+        5:
+            begin
+
+                // 오래된 그래프 파일 제거 2012.08.29
+                if not mIsClose and (Now() > gsysEnv.rGraphCheckTime[0]) then
+                begin
+
+                    if gWork.IsSystemIDLE then
+                    begin
+                        try
+                            if gsysEnv.rKeepGraphTime > 0 then
+                            begin
+                                frmNotify.Caption := Caption + _TR(' 그래프 파일 정리 시작');
+                                frmNotify.SetFrm(_TR('그래프 파일 정리중...'));
+                                frmNotify.Show;
+
+                                gLog.Panel('그래프 파일 정리 중...', []);
+                                dTm := IncMonth(Now(), -gsysEnv.rKeepGraphTime);
+                                SetGraphFileDelete(dTm);
+                                gLog.Panel('그래프 파일 정리 끝', []);
+                            end;
+                        finally
+                            gsysEnv.rGraphCheckTime[0] := Trunc(Now() + 1) + Frac(gsysEnv.rGraphCheckTime[0]);
+                            gsysEnv.rGraphCheckTime[1] := Trunc(Now() + 1) + Frac(gsysEnv.rGraphCheckTime[1]);
+                            frmNotify.Close;
+                        end;
+                    end
+                    else if (Now() > gsysEnv.rGraphCheckTime[1]) then
+                    begin
+                        gsysEnv.rGraphCheckTime[0] := Trunc(Now() + 1) + Frac(gsysEnv.rGraphCheckTime[0]);
+                        gsysEnv.rGraphCheckTime[1] := Trunc(Now() + 1) + Frac(gsysEnv.rGraphCheckTime[1]);
+                    end;
+
+                end;
+
+            end;
+        6:
+            begin
+                sTm := GetUsrFloatToStr(GetSeconds(gCycleTime[0]), 1);
+                if MAX_ST_COUNT > 1 then
+                begin
+                    sTm := sTm + '  /  ';
+                    sTm := sTm + GetUsrFloatToStr(GetSeconds(gCycleTime[1]), 1);
+                end;
+
+                if lblCycleTime.Caption <> sTm then
+                begin
+                    lblCycleTime.Caption := sTm;
+                end;
+            end;
+    end;
+    Inc(mState);
+    mState := mState mod 7;
+    mLock := False;
+
+end;
+
+procedure TfrmMain.tmrShowTimer(Sender: TObject);
+begin
+    tmrShow.Enabled := false;
+
+    ShowAllForms;
+
+    if Assigned(gWork) then
+        gWork.ComRefresh := True;
+
+    { Thread Run }
+    if gsysEnv.rEnabled and Assigned(gWork) then
+        gWork.Start;
+
+end;
+
+procedure TfrmMain.WorkClose(Sender: TObject);
+begin
+    gWork.Thread := nil;
+    Close;
+end;
+
+procedure TfrmMain.WorkError(Sender: TObject);
+begin
+    gWork.Thread := nil;
+    SetErrorTxt(Caption, '메인 프로세스 오류발생', '프로그램을 종료후 다시 실행하십시요!', umtError);
+
+    mTsWork.ShowProcState;
+
+    gWork.Stop;
+end;
+
+procedure TfrmMain.GlobalExceptionHandler(Sender: TObject; E: Exception);
+begin
+    gLog.Error('예외 발생: %s', [E.Message]);
+    if E.StackTrace <> '' then         // 유레카 로그 활성화한 경우 StackTrace 가능
+        gLog.Error('호출 경로: %s', [E.StackTrace]);
+
+    Application.ShowException(E);
+end;
+
+end.
+

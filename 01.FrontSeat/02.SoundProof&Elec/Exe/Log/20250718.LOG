@@ -1,0 +1,88 @@
+[19:19:49:999] ------------>POWER SEAT TESTER V250626.00 START<------------
+[19:19:50:075] DEBUG: WORK CREATED
+[19:19:50:076] EtherCAT: SOEM 사용
+[19:19:50:455] Ethercat: Open Failed
+[19:19:50:455] EtherCAT 장치 열기 실패!
+[19:19:50:513] Pwr.Sply1 디바이스 포트할당 -> COM6
+[19:19:50:514] DC POWER CREATE
+[19:19:50:514] create
+[19:19:50:514] POP SYSTEMS CREATE
+[19:19:50:514] TSWORKS CREATE
+[19:19:50:583] A parameter contains an invalid value
+[19:19:50:583] 18th: Create
+[19:19:50:584] DEBUG: 18th: 커넥터 전류 핀 ZERO
+[19:19:50:586] GrpExt[Slide] = Grps[0] 연결
+[19:19:50:590] GrpExt[Tilt] = Grps[1] 연결
+[19:19:50:592] GrpExt[Height] = Grps[2] 연결
+[19:19:50:594] GrpExt[Cush.Ext] = Grps[3] 연결
+[19:19:50:596] GrpExt[Swivel] = Grps[4] 연결
+[19:19:50:608] CAN이 열리지 않았습니다.
+[19:19:50:608] UDS ID 설정 : (Req:797, Resp:79F)
+[19:19:50:609] 모터 사용: S:True, T:True, H:True, C:False, SW: False
+[19:19:50:609] DEBUG: DTC Reader ID 변경 - ReqID: $709, RespID: $764
+[19:19:50:609] AD CH2 Zero: 0.00
+[19:19:50:609] AD CH2 Zero: 0.00
+[19:19:50:609] AD CH2 Zero: 0.00
+[19:19:50:609] AD CH2 Zero: 0.00
+[19:19:50:610] DEBUG: 18th: 커넥터 전류 핀 ZERO
+[19:19:50:611] 18th: initial(단동: JG1)
+[19:19:53:616] start port processor(192.25.61.99:8006)
+[19:19:53:618] start port processor(192.25.61.99:8007)
+[19:19:53:620] Start Socket Manager
+[19:19:53:621] PLC READ_IO START
+[19:19:53:622] PLC WRITE_IO START
+[19:19:53:624] Start Monitor Manager
+[19:19:53:738] Pwr.Sply1(COM6) start
+[19:19:53:739] DC POWER START
+[19:19:53:739] POP work start
+[19:19:53:740] POP SYSTEMS SATRT
+[19:19:53:740] CAN이 열리지 않았습니다.
+[19:19:53:741] UDS ID 설정 : (Req:797, Resp:79F)
+[19:19:53:743] 모터 사용: S:True, T:True, H:True, C:False, SW: False
+[19:19:53:745] DEBUG: DTC Reader ID 변경 - ReqID: $709, RespID: $764
+[19:19:53:746] AD CH2 Zero: 0.00
+[19:19:53:748] AD CH2 Zero: 0.00
+[19:19:53:749] AD CH2 Zero: 0.00
+[19:19:53:751] AD CH2 Zero: 0.00
+[19:19:53:752] DEBUG: 18th: 커넥터 전류 핀 ZERO
+[19:19:53:753] 18th: initial(단동: JG1)
+[19:19:53:757] DEBUG: 18th: 메인 전류 핀 ZERO
+[19:19:53:759] TSWORK START
+[19:19:53:769] 192.25.61.99 접속시도(0x8006)...
+[19:19:53:794] CONNECTING....... 8006
+[19:19:53:794] 192.25.61.99 접속시도(0x8007)...
+[19:19:53:808] CONNECTING....... 8007
+[19:19:53:808] CycleOver: 45505626.49
+[19:19:53:808] 디바이스 포트변경 작업 시작
+[19:19:53:852] Pwr.Sply1(COM6) stop
+[19:19:53:853] DC POWER STOP
+[19:19:53:876] Pwr.Sply1(COM6) start
+[19:19:53:877] DC POWER START
+[19:19:53:877] 
+[19:19:53:878] -------------------------------------------- END
+[19:19:53:878] 디바이스 포트변경 작업 완료
+[19:19:58:385] 18th  POWER SEAT TESTER프로그램 종료중...
+[19:19:58:386] -------------------------------------------- BEGIN
+[19:19:58:392] DEBUG: MEASURE FORM CLOSE
+[19:19:58:401] DEBUG: ------------>POWER SEAT TESTER 종료중...<------------
+[19:19:58:404] POP work stop
+[19:19:58:405] POP SYSTEMS STOP
+[19:19:58:405] TSWORK STOP
+[19:19:58:446] Pwr.Sply1(COM6) stop
+[19:19:58:447] DC POWER STOP
+[19:19:58:447] PLC READ_IO STOP
+[19:19:58:948] PLC WRITE_IO STOP
+[19:19:58:949] Stop Monitor Manager
+[19:19:58:949] stop port processor(192.25.61.99:8006)
+[19:19:58:950] stop port processor(192.25.61.99:8007)
+[19:19:58:951] Stop Socket Manager
+[19:19:58:953] Pwr.Sply1(COM6) Input check(0 <= A < 50)
+[19:19:58:955] Pwr.Sply1(COM6) Input check(V >= 0)
+[19:19:58:955] 18th: Destroy
+[19:19:58:956] TSWORKS DESTROY
+[19:19:58:956] POP SYSTEMS DESTROY
+[19:19:58:961] destroy
+[19:19:58:961] DC POWER DESTROY
+[19:19:58:962] DEBUG: WORK DESTROIED
+[19:19:58:963] ------------>POWER SEAT TESTER CLOSE<------------
+[19:19:58:977] ------------>POWER SEAT TESTER CLOSE<------------

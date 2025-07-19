@@ -1,0 +1,544 @@
+unit ReferenceForm;
+{$I myDefine.inc}
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, ReferBaseForm, StdCtrls, Buttons, ComCtrls, ExtCtrls, DataUnit,
+  Grids, KiiMessages ;
+
+type
+  TfrmReference = class(TfrmReferBase)
+    pgcReference: TPageControl;
+    TabSheet1: TTabSheet;
+    Shape3: TShape;
+    Shape5: TShape;
+    Label16: TLabel;
+    Shape24: TShape;
+    Label28: TLabel;
+    Shape1: TShape;
+    Label1: TLabel;
+    Shape2: TShape;
+    Shape6: TShape;
+    Label3: TLabel;
+    Shape7: TShape;
+    Label6: TLabel;
+    Shape4: TShape;
+    Label74: TLabel;
+    Label76: TLabel;
+    Label77: TLabel;
+    Label2: TLabel;
+    Label26: TLabel;
+    Label5: TLabel;
+    Shape16: TShape;
+    Shape17: TShape;
+    Label9: TLabel;
+    Label10: TLabel;
+    Label11: TLabel;
+    Label17: TLabel;
+    edtStNo: TEdit;
+    dtpWorkTime: TDateTimePicker;
+    ckbUsePasswd: TCheckBox;
+    ckbUseScreenSaver: TCheckBox;
+    bbtnPasswdChange: TBitBtn;
+    bbtnResetCount: TBitBtn;
+    edtAlarmsize: TEdit;
+    edtEmergySize: TEdit;
+    ckbAutoDel: TCheckBox;
+    ckbTesDebugMode: TCheckBox;
+    ckbPwrDebugMode: TCheckBox;
+    ckbCanDebugMode: TCheckBox;
+    edtKeepGraphData: TEdit;
+    dtpGraphCheckTimeStart: TDateTimePicker;
+    dtpGraphCheckTimeEnd: TDateTimePicker;
+    btnResultDir: TButton;
+    edtResultDir: TEdit;
+    Button1: TButton;
+    edtGraphDir: TEdit;
+    TabSheet3: TTabSheet;
+    Label38: TLabel;
+    Label39: TLabel;
+    Label40: TLabel;
+    Label41: TLabel;
+    Label22: TLabel;
+    Shape11: TShape;
+    Shape18: TShape;
+    Label23: TLabel;
+    Shape8: TShape;
+    Label7: TLabel;
+    Shape9: TShape;
+    Label30: TLabel;
+    Label31: TLabel;
+    Label36: TLabel;
+    edtHostIp: TEdit;
+    edtHostPort01: TEdit;
+    edtConnectTime: TEdit;
+    edtSendTerm: TEdit;
+    ckbReConnect: TCheckBox;
+    ckbUsePop: TCheckBox;
+    edtWaitTime: TEdit;
+    ckbsndDataToPop: TCheckBox;
+    edtWaitTimeTes: TEdit;
+    edtWaitTimePwr: TEdit;
+    edtWaitTimeCan: TEdit;
+    Button2: TButton;
+    TabSheet2: TTabSheet;
+    Shape12: TShape;
+    Shape13: TShape;
+    Label4: TLabel;
+    Label12: TLabel;
+    Label8: TLabel;
+    Label18: TLabel;
+    Label19: TLabel;
+    Label20: TLabel;
+    Label33: TLabel;
+    Shape25: TShape;
+    Label13: TLabel;
+    Label14: TLabel;
+    Label24: TLabel;
+    Label29: TLabel;
+    Shape26: TShape;
+    edtMotorMinAmpare1: TEdit;
+    edtLoadReleaseTime: TEdit;
+    edtLimitAmps: TEdit;
+    edtMoveGapTime: TEdit;
+    edtMoveCheckTime: TEdit;
+    edtReadDelayTime: TEdit;
+    edtTestAmp: TEdit;
+    edtTestVolt: TEdit;
+    edtCheckAmp: TEdit;
+    edtLimitAmpsOffset: TEdit;
+    cbxEachMtrInitMove: TCheckBox;
+    rgLang: TRadioGroup;
+    ckbUseLimitDel: TCheckBox;
+    ckbUseLimit: TCheckBox;
+    ckbUseStartAlign: TCheckBox;
+    lblNoiseOffset: TLabel;
+    edtRefVolt: TEdit;
+    btnApplyRefVolt: TBitBtn;
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure dtpWorkTimeChange(Sender: TObject);
+    procedure btnResultDirClick(Sender: TObject);
+    procedure bbtnPasswdChangeClick(Sender: TObject);
+    procedure bbtnResetCountClick(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
+    procedure edtHostIpChange(Sender: TObject);
+    procedure btnApplyRefVoltClick(Sender: TObject);
+  private
+    { Private declarations }
+
+    function TransDatas(IsEdit: boolean=false) : boolean ;
+    procedure ReadMessage(var myMsg: TMessage); Message WM_SYS_CODE ;
+  public
+    { Public declarations }
+    function Save : boolean ; override ;
+
+    property  OnUserChange : TNotifyStatus read mChangeEvent write mChangeEvent ;
+  end;
+
+var
+  frmReference: TfrmReference;
+
+implementation
+uses
+    ShlObj, Math,
+    Global, Log, myUtils, ComReferForm, PopWork, IniFiles, SeatMotorType, IODef, SysEnv , BaseCAN, SeatMotor, LangTran,
+    PasswdForm;
+{$R *.dfm}
+function  GetDecimalPos(aVal: string): integer ;
+begin
+    Result := 0 ;
+    if Pos('.', aVal) < 1 then Exit ;
+    Result := Length(aVal) - Pos('.', aVal) ;
+    if Result < 0 then Result := 0 ;
+end ;
+// Height : 640 Width : 1017 ;
+procedure TfrmReference.FormClose(Sender: TObject;
+  var Action: TCloseAction);
+begin
+  inherited;
+    Action := caFree ;
+end;
+
+procedure TfrmReference.FormCloseQuery(Sender: TObject;
+  var CanClose: Boolean);
+begin
+  inherited;
+//
+end;
+
+procedure TfrmReference.FormCreate(Sender: TObject);
+begin
+  inherited;
+    gLog.ToFiles('%s CREATE', [Self.Name]) ;
+
+    mEdit := true ;
+    mIsChanged := false ;
+end;
+
+procedure TfrmReference.FormDestroy(Sender: TObject);
+begin
+  inherited;
+    gLog.ToFiles('%s DESTROY', [Self.Name]) ;
+end;
+
+procedure TfrmReference.FormShow(Sender: TObject);
+var
+    i : integer ;
+begin
+  inherited;
+    gLog.ToFiles('%s SHOW', [Self.Name]) ;
+
+    for i := 0 to ComponentCount-1 do
+    begin
+        if Components[i] is TEdit then
+        begin
+            with Components[i] as TEdit do Text := '' ;
+        end ;
+    end ;
+
+    TransDatas ;
+    mEdit := false ;
+    mIsChanged := false ;
+
+
+    TLangTran.ChangeCaption(self);
+end;
+
+function TfrmReference.Save: boolean;
+begin
+    Result := true ;
+    if not mIsChanged then Exit ;
+
+    gSysEnv.DispatchPull(pgcReference.ActivePage);
+    gSysEnv.Save(TSysEnvItem(pgcReference.ActivePageIndex));
+
+    mIsChanged := not Result ;
+    if Assigned(mChangeEvent) then
+        OnUserChange(Self, integer(mIsChanged)) ;
+
+    if Result then SendToForm(gUsrMsg, SYS_BASE, 0);
+end;
+
+procedure TfrmReference.dtpWorkTimeChange(Sender: TObject);
+begin
+  inherited;
+    if mEdit then Exit ;
+
+    mIsChanged := true ;
+    if Assigned(mChangeEvent) then
+        OnUserChange(Self, integer(mIsChanged)) ;
+end;
+
+function TfrmReference.TransDatas(IsEdit: boolean): boolean;
+var
+    Ini: TIniFile ;
+begin
+    if IsEdit then
+    begin
+        if StrToInt(edtStNo.Text) = 0 then
+        begin
+            ShowMessage(_TR('올바른 공정 번호를 입력 하세요'));
+            Exit(false);
+        end;
+        gsysEnv.rStNo := StrToInt(edtStNo.Text);
+
+        gsysEnv.rWorkTime := dtpWorkTime.DateTime ;
+        gsysEnv.rUsePasswd := ckbUsePasswd.Checked ;
+        gsysEnv.rUserScreenSaver := ckbUseScreenSaver.Checked ;
+
+        gsysEnv.rWarning := StrToIntDef(edtAlarmsize.Text, gsysEnv.rWarning div 1024)* 1024 ;
+        gsysEnv.rDelete  := StrToIntDef(edtEmergySize.Text, gsysEnv.rDelete div 1024)* 1024 ;
+        gsysEnv.rAutoDel := ckbAutoDel.Checked ;
+
+        gsysEnv.rResultDir := ShortString(edtResultDir.Text) ;
+        gsysEnv.rGraphDir  := ShortString(edtGraphDir.Text) ;
+
+        gsysEnv.rKeepGraphTime:= WORD(StrToIntDef(edtKeepGraphData.Text,0)) ;
+        gsysEnv.rGraphCheckTime[0]:= Trunc(Now)+Frac(dtpGraphCheckTimeStart.Time) ;
+        gsysEnv.rGraphCheckTime[1]:= Trunc(Now)+Frac(dtpGraphCheckTimeEnd.Time) ;
+        if gsysEnv.rGraphCheckTime[0] >= gsysEnv.rGraphCheckTime[1] then
+        begin
+            gsysEnv.rGraphCheckTime[0]:= gsysEnv.rGraphCheckTime[1] ;
+            gsysEnv.rGraphCheckTime[1]:= gsysEnv.rGraphCheckTime[0]+EncodeTime(0,30,0,0) ;
+        end ;
+
+        gsysEnv.rTesWaitTime:= StrToFloatDef(edtWaitTimeTes.Text,2.0) ;
+        gsysEnv.rPwrWaitTime:= StrToFloatDef(edtWaitTimePwr.Text,2.0) ;
+        gsysEnv.rCanWaitTime:= StrToFloatDef(edtWaitTimeCan.Text,2.0) ;
+
+
+        gPwrDebugMode:= ckbPwrDebugMode.Checked ;
+
+        gsysEnv.rCanDebugMode:= ckbCanDebugMode.Checked ;
+
+        TBaseCan.mRDebug := gSysEnv.rCanDebugMode;
+        TBaseCan.mWDebug := gSysEnv.rCanDebugMode;
+
+
+
+//        gsysEnv.rFilter[AI_SLIDE_LH_CURR]:= StrToIntDef(edtFilterPwr1.Text, 0) ;
+//        gsysEnv.rFilter[AI_SLIDE_RH_CURR]:= StrToIntDef(edtFilterPwr1.Text, 0) ;
+//        gsysEnv.rFilter[_AD_PWR2]:= StrToIntDef(edtFilterPwr2.Text, 0) ;
+
+        gsysEnv.rLoadReleaseTime:= StrToFloatDef(edtLoadReleaseTime.Text, 0) ;
+        gsysEnv.rLimitAmpsOffset:= StrToFloatDef(edtLimitAmpsOffset.Text, 0.0) ;
+        gsysEnv.rLimitAmps:= StrToFloatDef(edtLimitAmps.Text, 30.0) ;
+
+        gSysEnv.rUseStartAlign := ckbUseStartAlign.Checked;
+        gSysEnv.rUseLimitDel := ckbUseLimitDel.Checked;
+        gSysEnv.rUseAllLimitSet := ckbUseLimit.Checked;
+
+
+        //모터 검사 설정
+        //-----------------------------------------------------------------------
+
+        gsysEnv.rTestVolt := StrToFloatDef(edtTestVolt.Text, gsysEnv.rTestVolt) ;
+        gsysEnv.rTestAmp := StrToFloatDef(edtTestAmp.Text, gsysEnv.rTestAmp) ;
+        gsysEnv.rCheckAmp := StrToFloatDef(edtCheckAmp.Text, gsysEnv.rCheckAmp) ;
+        gsysEnv.rLimitAmps:= StrToFloatDef(edtLimitAmps.Text, 30.0) ;
+
+        TSMParam.mMoveMinCurr := StrToFloatDef(edtMotorMinAmpare1.Text, 0.2) ;
+        TSMParam.mMoveGapTime:= StrToFloatDef(edtMoveGapTime.Text, 0.1) ;
+        TSMParam.mMoveCheckTime:= StrToFloatDef(edtMoveCheckTime.Text, 0.8) ;
+        TSMParam.mReadDelayTime := StrToFloatDef(edtReadDelayTime.Text,0);
+
+        gsysEnv.rEachMtrInitMove := cbxEachMtrInitMove.Checked;
+
+
+        //-----------------------------------------------------------------------
+        //전장 검사 설정
+        //-----------------------------------------------------------------------
+
+        gSysEnv.rIsKor := rgLang.ItemIndex = 0;
+
+        if edtHostIP.Tag > 0 then
+        begin
+            with gPopsys do
+            begin
+                Items[0].ConnectWaitTime:= StrToIntDef(edtConnectTime.Text, 300) ;
+                Items[0].Intervalofsend := StrToIntDef(edtSendTerm.Text,5) ;
+                Items[0].ReConOfSndFault:= ckbReConnect.Checked ;
+                Items[0].UsePop:= ckbUsePop.Checked ;
+                Items[0].ResponseTime:= StrToIntDef(edtWaitTime.Text, 2) ;
+                Items[0].NotSndResult:= not ckbsndDataToPop.Checked ;
+                Items[0].SaveEnv ;
+
+            end ;
+            Ini := GetPopEnvFile ;
+            try
+                Ini.WriteString('POP SYSTEM 0', '_HOST', edtHostIp.Text) ;
+                Ini.WriteInteger('POP SYSTEM 0', '_PORT', StrToIntDef(edtHostPort01.Text, 8000)) ;
+
+            finally
+                Ini.Free ;
+            end ;
+            edtHostIP.Tag := 0 ;
+            gpopsys.Reset ;
+            SendToForm(gUsrMsg, SYS_POP_CHANGE, 0) ;
+        end ;
+    end
+    else
+    begin
+        edtStNo.Text := IntToStr(gsysEnv.rStNo);
+
+        dtpWorkTime.DateTime:= gsysEnv.rWorkTime ;
+        ckbUsePasswd.Checked:= gsysEnv.rUsePasswd ;
+        ckbUseScreenSaver.Checked:= gsysEnv.rUserScreenSaver ;
+
+        ckbAutoDel.Checked    := gsysEnv.rAutoDel ;
+        edtAlarmSize.Text     := IntToStr(gsysEnv.rWarning div 1024) ;
+        edtEmergySize.Text    := IntToStr(gsysEnv.rDelete div 1024) ;
+
+        edtResultDir.Text:= String(gsysEnv.rResultDir) ;
+        edtGraphDir.Text := String(gsysEnv.rGraphDir) ;
+
+        edtKeepGraphData.Text:= IntToStr(gsysEnv.rKeepGraphTime) ;
+        dtpGraphCheckTimeStart.DateTime:= gsysEnv.rGraphCheckTime[0] ;
+        dtpGraphCheckTimeEnd.DateTime:= gsysEnv.rGraphCheckTime[1] ;
+
+        edtWaitTimeTes.Text:= GetUsrFloatToStr(gsysEnv.rTesWaitTime) ;
+        edtWaitTimePwr.Text:= GetUsrFloatToStr(gsysEnv.rPwrWaitTime) ;
+        edtWaitTimeCan.Text:= GetUsrFloatToStr(gsysEnv.rCanWaitTime) ;
+
+
+        ckbPwrDebugMode.Checked:= gPwrDebugMode ;
+        ckbCanDebugMode.Checked:= gsysEnv.rCanDebugMode ;
+
+        //-------------------------------------------------------------------
+        //모터 검사 설정.
+        //-------------------------------------------------------------------
+        edtTestVolt.Text := FloatToStr(gsysEnv.rTestVolt) ;
+        edtTestAmp.Text := FloatToStr(gsysEnv.rTestAmp) ;
+        edtCheckAmp.Text := FloatToStr(gsysEnv.rCheckAmp) ;
+        edtLimitAmps.Text:= GetUsrFloatToStr(gsysEnv.rLimitAmps) ;
+
+
+        edtMotorMinAmpare1.Text:= GetUsrFloatToStr(TSMParam.mMoveMinCurr, 1);
+        edtMoveCheckTime.Text:= GetUsrFloatToStr(TSMParam.mMoveCheckTime) ;
+        edtMoveGapTime.Text:= GetUsrFloatToStr(TSMParam.mMoveGapTime) ;
+        edtReadDelayTime.Text:= FloatToStr(TSMParam.mReadDelayTime) ;
+
+
+        cbxEachMtrInitMove.Checked := gsysEnv.rEachMtrInitMove;
+
+
+
+//        edtFilterPwr1.Text:= IntToStr(gsysEnv.rFilter[AI_SLIDE_LH_CURR]) ;
+//        edtFilterPwr2.Text:= IntToStr(gsysEnv.rFilter[_AD_PWR2]) ;
+
+        edtLoadReleaseTime.Text:= GetUsrFloatToStr(gsysEnv.rLoadReleaseTime) ;
+        edtLimitAmps.Text:= GetUsrFloatToStr(gsysEnv.rLimitAmps) ;
+        edtLimitAmpsOffset.Text:= GetUsrFloatToStr(gsysEnv.rLimitAmpsOffset) ;
+
+
+
+        ckbUseStartAlign.Checked := gsysenv.rUseStartAlign;
+        ckbUseLimitDel.Checked := gSysEnv.rUseLimitDel;
+        ckbUseLimit.Checked := gSysEnv.rUseAllLimitSet;
+
+
+//        ckbTiltTester.Checked := gSysEnv.rUseMotors[tmLSlideLH];
+//        ckbReclTester.Checked := gSysEnv.rUseMotors[tmLSlideRH];
+
+        //전장 검사 설정.
+
+        rgLang.ItemIndex := integer(not gSysEnv.rIsKor);
+
+        edtRefVolt.Text := GetUsrFloatToStr(gSysEnv.rRefVoltSetter.GetVolt(0), 1);
+
+        with gPopsys do
+        begin
+            edtHostIp.Text := Items[0].Host ;
+            edtHostPort01.Text := IntToStr(Items[0].Port) ;
+
+            edtConnectTime.Text := InttoStr(Items[0].ConnectWaitTime) ;
+            edtSendTerm.Text := IntToStr(Items[0].IntervalOfSend) ;
+            ckbReConnect.Checked := Items[0].ReConOfSndFault ;
+            ckbUsePop.Checked := Items[0].UsePop ;
+            edtWaitTime.Text := IntToStr(Items[0].ResponseTime) ;
+            ckbsndDataToPop.Checked := not Items[0].NotSndResult ;
+        end ;
+
+
+    end ;
+    Result := true ;
+end;
+
+var lpCallBackDir : string ;
+function BrowserCallBackProc(Wnd: HWND; uMsg: UINT; lParam, lpData: LPARAM): Integer stdcall ;
+begin
+    Result := 1 ;
+    case uMsg of
+        BFFM_INITIALIZED :
+        begin
+            SendMessage(Wnd,
+                        BFFM_SETSELECTION,
+                        integer(true),
+                        integer(PChar(lpCallBackDir))) ;
+            // wParam 이 true 이면 lParam 경로
+            // wParam 이 false이면 lParam PIDL
+        end ;
+    end ;
+end ;
+
+procedure TfrmReference.bbtnPasswdChangeClick(Sender: TObject);
+begin
+  inherited;
+    frmPasswd := TfrmPasswd.Create(Application) ;
+    with frmPasswd do
+    begin
+        ModifyMode := true ;
+        ShowModal() ;
+    end ;
+end;
+
+procedure TfrmReference.bbtnResetCountClick(Sender: TObject);
+begin
+  inherited;
+    if Application.MessageBox(PChar(_TR('현재 생산수량을 초기화 하시겠습니까?')),
+        PChar(Caption), MB_ICONQUESTION+MB_YESNO)<>ID_YES then Exit ;
+
+    SetResultReset ;
+end;
+
+procedure TfrmReference.btnApplyRefVoltClick(Sender: TObject);
+var
+    i: Integer;
+begin
+    for i := 0 to MAX_ST_COUNT - 1 do
+        gSysEnv.rRefVoltSetter.SetRefVolt(i, StrToFloat(edtRefVolt.Text));
+end;
+
+procedure TfrmReference.btnResultDirClick(Sender: TObject);
+var
+    sTm : string ;
+begin
+    lpCallBackDir := edtResultDir.Text ;
+
+    sTm := GetUserFolderEx(Self.Handle, BrowserCallBackProc, 'Data folder') ;
+    if (sTm = '')
+        or not DirectoryExists(sTm) then Exit ;
+
+    if edtResultDir.Text <> sTm then
+    begin
+       edtResultDir.Text := sTm ;
+    end ;
+
+    mIsChanged := true ;
+    if Assigned(mChangeEvent) then
+        OnUserChange(Self, integer(mIsChanged)) ;
+end;
+
+procedure TfrmReference.ReadMessage(var myMsg: TMessage);
+begin
+    case myMsg.WParam of
+        SYS_SAVE_DATA : Save ;
+    end ;
+end;
+
+procedure TfrmReference.Button2Click(Sender: TObject);
+begin
+  inherited;
+    frmComsRefer := TfrmComsRefer.Create(Self);
+    frmComsRefer.ShowModal ;
+end;
+
+procedure TfrmReference.Button1Click(Sender: TObject);
+var
+    sTm : string ;
+begin
+    lpCallBackDir := edtGraphDir.Text ;
+
+    sTm := GetUserFolderEx(Self.Handle, BrowserCallBackProc, 'Graph folder') ;
+    if (sTm = '')
+        or not DirectoryExists(sTm) then Exit ;
+
+    if edtGraphDir.Text <> sTm then
+    begin
+       edtGraphDir.Text := sTm ;
+    end ;
+
+    mIsChanged := true ;
+    if Assigned(mChangeEvent) then
+        OnUserChange(Self, integer(mIsChanged)) ;
+end;
+
+procedure TfrmReference.edtHostIpChange(Sender: TObject);
+begin
+  inherited;
+    if mEdit then Exit ;
+
+    edtHostIp.Tag:= 1 ;
+
+    mIsChanged := true ;
+    if Assigned(mChangeEvent) then
+        OnUserChange(Self, integer(mIsChanged)) ;
+end;
+
+end.

@@ -1,0 +1,1217 @@
+object frmBaseMain: TfrmBaseMain
+  Left = 0
+  Top = 58
+  ClientHeight = 1041
+  ClientWidth = 1904
+  Color = clWhite
+  Constraints.MaxHeight = 1080
+  Constraints.MaxWidth = 1920
+  Constraints.MinHeight = 1080
+  Constraints.MinWidth = 1920
+  Ctl3D = False
+  Font.Charset = HANGEUL_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -13
+  Font.Name = #47569#51008' '#44256#46357
+  Font.Style = []
+  KeyPreview = True
+  OldCreateOrder = False
+  WindowState = wsMaximized
+  OnClose = FormClose
+  OnCloseQuery = FormCloseQuery
+  OnCreate = FormCreate
+  OnShow = FormShow
+  PixelsPerInch = 96
+  TextHeight = 17
+  object pnlTitle: TPanel
+    Left = 0
+    Top = 0
+    Width = 1904
+    Height = 46
+    Align = alTop
+    BevelOuter = bvNone
+    Caption = 'Ass'#39'y '#51312#47549#46972#51064
+    Color = 4013373
+    FullRepaint = False
+    Font.Charset = HANGEUL_CHARSET
+    Font.Color = 9830399
+    Font.Height = -27
+    Font.Name = #45796#51020'_Regular'
+    Font.Style = [fsBold]
+    ParentBackground = False
+    ParentFont = False
+    TabOrder = 0
+    OnClick = pnlTitleClick
+    OnDblClick = pnlTitleDblClick
+    OnMouseDown = pnlTitleMouseDown
+    OnMouseMove = pnlTitleMouseMove
+    OnMouseUp = pnlTitleMouseUp
+    object Shape1: TShape
+      Left = 0
+      Top = 0
+      Width = 185
+      Height = 46
+      Align = alLeft
+      Brush.Color = 4013373
+      Pen.Color = 4013373
+    end
+    object lblSimLanInMode: TLabel3D
+      Left = 703
+      Top = -2
+      Width = 1126
+      Height = 42
+      ShowTitle = False
+      TitleColor = 33023
+      TitleFont.Charset = ANSI_CHARSET
+      TitleFont.Color = clWhite
+      TitleFont.Height = -19
+      TitleFont.Name = #47569#51008' '#44256#46357
+      TitleFont.Style = [fsBold]
+      Title = #44032#49345' PLC IN '#47784#46300' :  '#53364#47533#49884' '#54644#51228'(CTRL-F8)'
+      TitleHeightRatio = 0.500000000000000000
+      BorderColor = 33023
+      BorderPenStyle = psSolid
+      Border = False
+      BorderType = btBorderLine
+      BorderLineT = True
+      BorderLineR = True
+      BorderLineB = True
+      BorderLineL = True
+      Escapement = 0
+      TextStyle = tsShadow
+      LabelStyle = lsDefault
+      EllipsesStyle = esNone
+      Shift = 1
+      Alignment = taCenter
+      AutoSize = False
+      Caption = #9654#9654' '#44032#49345' PLC IN '#47784#46300' :  '#53364#47533#49884' '#54644#51228'(CTRL-F8)'
+      Color = 33023
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clYellow
+      Font.Height = -16
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      Layout = tlCenter
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+      Visible = False
+    end
+    object Image1: TImage
+      Left = 16
+      Top = 12
+      Width = 131
+      Height = 26
+      Picture.Data = {
+        0954506E67496D61676589504E470D0A1A0A0000000D49484452000000820000
+        0017080200000048CA005A0000001974455874536F6674776172650041646F62
+        6520496D616765526561647971C9653C00000DAF4944415478DAEDDA79B497E3
+        1607F0DF49C81811511195A158229A2953549639118912A12825F39029636627
+        114B992B4208D1C0D2A02253A994A11299879B4CDDCFFA6D9EFBF69E732CEBDE
+        BBD65DEB2ECF1FBFDEDFFB7BDEE7D9FBFBDDFBBBF7F39E4A1A376E5C2833AA56
+        AD5ABB76ED3A75EAD4AD5B77DD75D7FDF9E79FDF78E38DB973E77EF5D5573FFC
+        F043E1EFF1DF1E25391A36DA68A3EDB7DFBE65CB965B6EB9E55A6BADF58FE2A8
+        5CB9B2FB7EFDF4D34F9F7CF2C90F3EF8E0BBEFBEFB5F5BFE7F3556A361BBEDB6
+        EBDAB5ABF0AF54A9D22FBFFC820079505252B26AD52AF9B1C61A6B98B3F6DA6B
+        23E3AEBBEE5AB264496E2D3F6DBAE9A666FEFAEBAFE9A6A7BEFDF65B6964C195
+        2B57FE89299EDD7CF3CD4DF3C88A152B162D5A94B7B5A4649B6DB6B1CB6FBFFD
+        56EE0A1EB4C5871F7E6811D3A4324BDC14341F7FFC71CC11525B6FBDB55F5D2F
+        5BB6ECCB2FBF8CFBBC96FD3CB58BDD859AEBB4F2C61B6FDCA04103BB13032BBC
+        F9E69B8B172FCE098307B7D8620BF16A77116CC76FBEF9263BA1468D1AD5AA55
+        633C783DCBCE726860C4D9679F0D774620E095575E0174EBD6AD39E39971E3C6
+        31AB55AB56A6D98FD137DD74D33BEFBC93DB66BFFDF6DB69A79DB230D992ABF3
+        E6CDFBECB3CFA64D9B9665283B4C3BECB0C39A366DFAD34F3FADB9E69ADF7FFF
+        FDD5575FCD98DC9C3E7DFA6CB6D966E5D2C03C88F3BCB4B4F4EBAFBF96CD679E
+        7966F8BC74E9D25B6FBD359EC2F429A79CB2DE7AEB99FFD24B2F3DFFFCF3F1F8
+        CE3BEF7CECB1C7069AB366CD7AE49147D2CA1B6EB8E121871C02286B32CF84F7
+        DE7B8F2F93264DFAF1C71FD334D07361B7DD76430317264C9810A0A5097E6DD6
+        AC1904ACF0D1471FB1334F834A70D96597890ED76FBDF5D6D34F3F1D4C76E9D2
+        05AC88B9E28A2BAC0EFDDD77DFDD727CAB52A5CA9D77DEC9E2B456C3860D1199
+        A321E0F329244D1E31628432531644B8D874FDF5D7F76C49711C7FFCF1EFBEFB
+        6E768E301C3B76ACA4A9281B6C042636BFFFFEFBE22E205E551C471D759400F7
+        B5458B16B7DC724BCC9F316346CF9E3DE3BA77EFDE9420AE870C1972F7DD77C7
+        7593264DBA75EBB6EBAEBB8618A401933973E69C7FFEF99F7FFE79DCD960830D
+        AEBFFE7A78460A8AA4238F3C32FDCAB6EBAEBB4E5887F142F3C0030F5C8D0680
+        5E78E185B2C96F38A0FEA11E28E552FDFAF5B971F9E597DB389E41A9E800993B
+        575E79654A3D33055A9B366D62A74033879495D9FAF8E38FE7EEEFB5D75E8307
+        0F7611CF32FAFEFBEF87571671BE3DFCF0C39421CD29CB8458E9DCB9F3C2850B
+        4D8626F84267183673E64C130E3DF450CEC64D4D07E8A1C6D38B2EBAA87DFBF6
+        81EFC5175F2C96C353D189D1302CED188FBBA03C724E6847245D70C1056DDBB6
+        4DE63DF1C413C23712C257BFC22D7E456162FD771AC46FDFBE7D293E219247C9
+        734F1E73CC3111DD964B3418CA388604E6D8E248349C7CF2C97BEFBD77B24306
+        084FC21A0E8427144F3E7DF1C51759F8AEBAEAAAE4403C3B7BF66CD881B5221A
+        08C2F2E5CB83EF348191E79C730ED975CDC25EBD7AC5A6FDFAF5A321E07687F8
+        24B172CD4842C7417A621186411643D5AB5717193BEEB863224092913BF1C7FD
+        4832F79F7BEE39B4E1729D75D6B9F4D24BF7DD77DF6C941C7DF4D10B162C284B
+        033D3FF1C413FF458334E9DFBF3F26E12548854C56CE4416E3D486418306251D
+        E40CB9F4D3B6DB6E6B750921F5AC9EA5C17D3BDD7CF3CD96755FB0EFB9E79EB1
+        32D4C68F1F7FEEB9E7A65DF004DF4D36D9244B8CED6C118196A32182916E50F0
+        4AC591540B1C708C0AC4F2A14387C6E46BAFBDF6D1471F15371439888C28516C
+        F00D56020BDF88D3EEDDBB33FBB4D34E23472192A2E185175EB8E1861BB41BA6
+        0154154CEEF4E8D1E3F5D75F571B6846A221A057C90F3FFCF058C45372B17C1A
+        88E659679DF5C9279F98C74F85D48CF9F3E78B947AF5EA9D7AEAA981FEF4E9D3
+        9F79E6193B35280E2942FBD8A16A3DF8E08344DFD71C0D52127911CE98A345FA
+        E0F849E609D5D4A53074C0800140D450C1DDBE8A90C5EFB9E71EC2529686F81A
+        015EA878B04D6085A66B28A85CAD5AB5468F1EED4E98812DF1FBECB3CF6EB5D5
+        568F3DF6583C3566CC1899C10032B5FFFEFBC74C28DB0E073147A2205531885F
+        55B5A89D3E0F38E0802C0D8562D59932658A6B85A4421A689F84906B1ACD20CD
+        03A25B5E6BECA2000048BA2898FA3C28841B6002BDA7DCD736BCFDF6DB391AC8
+        AB44B172ECA4B6C3347584C2F3A9A79E8A9F6071D04107B9F0C835D75C4337E2
+        2B5B059AC02C4B0304A5947D6D14A2C442367338E998F4BAF1C61B054DACAC7D
+        60E1430F3D9494DD90049A6FD831356453E8204F43A8322132F6A24ED9DEC990
+        46C71D775C78AAB7A69FA26AE0C0811D3A7448A5313E93F4A94915D2F0C0030F
+        E87625F2D4A95305CB0E3BEC0074C16BF515C5C1F9B09BF6C98668FF89B28584
+        2D73F5B59A9F975F7E3947837690E2271AB2116711808AD0800F16F6754D6765
+        AE8224F47C25864249935EB636447B5AF8A3A4C790C4679C7146AA3A94D36A54
+        A2503C22A0D6C148EEFAFADA6BAF11284B053DAAA58D0AC576EE84134E402741
+        6355402909A88226354B834AC6BBF09496D03142221BF43FD9DA10D0E991B068
+        E5A855E5D0001AE662ECDE7BEFB59F0CD032EDB2CB2E30CDF6F8E1B646FED557
+        5FD5F981DEB582A3D3277F12E2C5175F2C4B43B68F6AD4A891D894C885623762
+        3B9AE3DA0A9AFA305A60725E9F47A3DCB12957535B952BD171AECC42C3300D68
+        D2BAE87A035F48B156BDBDEFBEFB7CEDD8B1A35A8533D173DE79E79D7EFAE9B8
+        2FFCD1C0581F6772341C812F047D66F702D1B061C30265E4D15838445AC7537E
+        350DD6AE19E6825F362A9F061AE744C3748A919ADCA8C00E6E36888820478A84
+        D4D12DA47A68DD3DF6D8434A0AD8C99327FF390D4449F86B8E5DA370D4A8512A
+        9E6B58002B98264112CB3A6ABBEEC54D0546DDFB8BD90044752EDB83E99ED524
+        175CE3B6331A5E5520D52840D1A0331288C4C43468885C8BAB0AE49A8FDC37FF
+        A4934ECA1E7A8D7DF6D987AE86A782D2040A6129FA16E706CCC10A2C016094D2
+        2827E5D020EE84863CB8EDB6DB525B427C8E38E20810A38716414D91B0D91D77
+        DC915E48D8492F414C00E71CA488E568503F21984449672CD2237EC93DB5552D
+        4500980469C4324BA211D40569F9DDE41B150E41C8D506A733DA92AD0DBA78D1
+        9D254624C93051C5053DA844775095B8C2561724F0B9C37E6BD6A851C37CD0AB
+        580C7014758C27D711345A529D5296062A44A9C253E6511B6C79DCE123684092
+        5093640E03A91A25DBF234B46BD74E4BE06AF8F0E1BC8ABB8A04C58420BB6351
+        A9808FDB6FBF3D49240475BA3A0AC73D0F222C4783964364056D8CB0A0AE2C89
+        A9FA2651A4300F4391D04CB5E06E659D7B94470FE2524E84DA52D8D42981321D
+        592A1AA20734DAE56C59C6B1D477536644762611974CE2D757473634A81061B0
+        8851BAD3B2EE50D43851B976DE7258115B4C551B02B1388ACB277D94662177F2
+        CFD3D0BC7973E1A6D8FAC163AA22B8A1000BE72C4B6881448A5A0F717D91721F
+        2A2994C8BA0BE642D0DE391AF843765C2B8652D5914D9205B20AA32C8C770C71
+        1147A1ACA1A9D011B74B2EB94439F1201A1C5602B2E841B3EE459B972B18AA05
+        C5C86E61476BD6AC59537D0277F627D2A4998EA5F84224A37B040B1BA23FC65C
+        A74E9D847FDA545A08447D8D12AD23081A345A615E0863EC52210DB482629217
+        0F63D809C0C10F378A81F44443CC53D04086DB850B179226A6081C246B10A551
+        6C903B455B305E52E195B7FC0C7A4CE686759CDA50C880B2EF09E233EE6BAB98
+        44B25C13253404342454316027ABD283B01098D9779F70D10417326F2308859E
+        4AA22875C8487CD33486A5FE583A8E1C39325EE8C683E3C68D93AC92200433EE
+        6B4FE81B2361A2614D34286F9AE378CD27E3A94E3662CAA1014CE48568828610
+        B1CC8AC484A4A4022B908586F634DE24C76B640F8A91081F434A893BC7CB72DF
+        F92467B02B797DD53E022240B7ACE36160CA747788064D0F70E398FA57DE2919
+        1C8E971C298004A9CA110670903C5A2DF2294E9449F1E2D89F9ECDBEE98AEDFC
+        0A8A94401057E795C642F155B9A6CBEE391A0AC5138C43620462ACAC35505D56
+        A3C13F6A11A91544F1471E954063977BE32F7845A560049939A486DDD9C2A5AC
+        C9779F1529B5C5A9BC02637D86E20CBEF193763E1C4E83306A60E25A974C39F9
+        603B6614FE7450E7D4F2158A2FF0A56FF45D85CC2BA3C2EA6F550DB55485CFAD
+        26663572D167E786EC71BE11BBF135BD618DAFA485C827527987D4F46C9C63F2
+        34148A7FF341A6BE8AA13E29BBAC57FDF50920134DFCD12C9B66B28C217C5A8E
+        ACDE112546EB9DB2012504A4148235B513274E4C4657AF5E7DE8D0A182256247
+        AB977B012E3B89898C86BEE274F0C1075B4782CAB98AFE7C642FF984BCF4D621
+        8254F83BB5784AC7A12A50ED7843D3AC593332C08068B7C475CAECEC20414EBF
+        CAB5C83313205A8CD9B36743205E9EC70011A1364D194389381673E94F26C4C3
+        5E70138B9C72508B034D9E86C0510363330EC79F5098E593F8A8D8F197231B80
+        5E77A4CCE68AA1092C765AB6533ACA1B9A28B8D0509F292B094E344BF19ED9F9
+        39773E02A8A63912190DA5A5A5DC13E924DBFA65C1628C1C65EA881123B23C71
+        4418C61FCE783175EAD4E9D3A7C74F3C5593058D39365209B26F91D3A0429021
+        5F3EC9359BD5243579C1820559B9E785393612C4A09058722E4DF06BEBD6AD69
+        89A39805394BA6CAA721D031DB72FC812013052CF7C250830E0AEADC59E6EFF1
+        1F8E92B2FF3303FA429EFE2056A2496AC1254C88D5B469D3E447457FFCFA7BFC
+        DBE39F32ACD66DFAF2E1EF0000000049454E44AE426082}
+      OnClick = Image1Click
+    end
+  end
+  object pnlStatus: TPanel
+    Left = 0
+    Top = 1017
+    Width = 1904
+    Height = 24
+    Align = alBottom
+    BevelOuter = bvNone
+    Color = 3682350
+    Font.Charset = HANGEUL_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    ParentBackground = False
+    ParentFont = False
+    TabOrder = 6
+    ExplicitTop = 1016
+    object labDate: TLabel
+      Left = 0
+      Top = 0
+      Width = 147
+      Height = 24
+      Align = alLeft
+      Alignment = taCenter
+      AutoSize = False
+      Caption = '2024.02.03 12:12:12'
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -12
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = []
+      ParentFont = False
+      Layout = tlCenter
+      OnDblClick = labDateDblClick
+      ExplicitLeft = 17
+    end
+    object lblLanTitle: TLabel
+      Left = 147
+      Top = 0
+      Width = 48
+      Height = 24
+      Align = alLeft
+      Alignment = taCenter
+      AutoSize = False
+      Caption = '[LAN]'
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -12
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = []
+      ParentFont = False
+      Layout = tlCenter
+      ExplicitLeft = 157
+      ExplicitTop = -8
+    end
+    object pnlCommStatus: TPanel
+      Left = 275
+      Top = 0
+      Width = 264
+      Height = 24
+      Align = alLeft
+      BevelOuter = bvNone
+      Color = 3682350
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -13
+      Font.Name = #44404#47548
+      Font.Style = []
+      ParentBackground = False
+      ParentFont = False
+      TabOrder = 1
+      object Label2: TLabel
+        Left = 0
+        Top = 0
+        Width = 36
+        Height = 15
+        Align = alLeft
+        Caption = ' ['#53685#49888']'
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = clWhite
+        Font.Height = -12
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = []
+        ParentFont = False
+        Layout = tlCenter
+      end
+      object abCOM2: TAbLED
+        Left = 405
+        Top = 1
+        Width = 121
+        Height = 23
+        Visible = False
+        Caption = 'DEVICE (COM2)'
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = clWhite
+        Font.Height = -12
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = []
+        ParentFont = False
+        LED_Position = lpLeft
+        Spacing = 5
+        Checked = False
+        Flashing = False
+        Frequency = ff1Hz
+        StatusInt = 0
+        StatusBit = 0
+        GroupIndex = 0
+        Mode = mIndicator
+      end
+      object abPLC: TAbLED
+        Left = 49
+        Top = 1
+        Width = 55
+        Height = 23
+        Caption = 'PLC'
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = clYellow
+        Font.Height = -12
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = [fsBold]
+        ParentFont = False
+        LED_Position = lpLeft
+        Spacing = 5
+        Checked = False
+        Flashing = False
+        Frequency = ff1Hz
+        StatusInt = 0
+        StatusBit = 0
+        GroupIndex = 0
+        Mode = mIndicator
+      end
+      object abCOM1: TAbLED
+        Left = 278
+        Top = 1
+        Width = 121
+        Height = 23
+        Visible = False
+        Caption = 'DEVICE (COM1)'
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = clWhite
+        Font.Height = -12
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = []
+        ParentFont = False
+        LED_Position = lpLeft
+        Spacing = 5
+        Checked = False
+        Flashing = False
+        Frequency = ff1Hz
+        StatusInt = 0
+        StatusBit = 0
+        GroupIndex = 0
+        Mode = mIndicator
+      end
+      object abCOM3: TAbLED
+        Left = 532
+        Top = 0
+        Width = 121
+        Height = 23
+        Visible = False
+        Caption = 'DEVICE (COM3)'
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = clWhite
+        Font.Height = -12
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = []
+        ParentFont = False
+        LED_Position = lpLeft
+        Spacing = 5
+        Checked = False
+        Flashing = False
+        Frequency = ff1Hz
+        StatusInt = 0
+        StatusBit = 0
+        GroupIndex = 0
+        Mode = mIndicator
+      end
+      object abECat: TAbLED
+        Left = 111
+        Top = 1
+        Width = 55
+        Height = 23
+        Caption = 'E.CAT'
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = 16777088
+        Font.Height = -12
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = []
+        ParentFont = False
+        LED_Position = lpLeft
+        Spacing = 5
+        Checked = False
+        Flashing = False
+        Frequency = ff1Hz
+        StatusInt = 0
+        StatusBit = 0
+        GroupIndex = 0
+        Mode = mIndicator
+      end
+      object abCAN: TAbLED
+        Left = 184
+        Top = 1
+        Width = 55
+        Height = 23
+        Caption = 'CAN'
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = 14280447
+        Font.Height = -12
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = []
+        ParentFont = False
+        LED_Position = lpLeft
+        Spacing = 5
+        Checked = False
+        Flashing = False
+        Frequency = ff1Hz
+        StatusInt = 0
+        StatusBit = 0
+        GroupIndex = 0
+        Mode = mIndicator
+      end
+    end
+    object pnlPLCStatus: TPanel
+      Left = 195
+      Top = 0
+      Width = 80
+      Height = 24
+      Align = alLeft
+      BevelOuter = bvNone
+      Color = 3682350
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = #44404#47548
+      Font.Style = []
+      ParentBackground = False
+      ParentFont = False
+      TabOrder = 0
+      object abLan1: TAbLED
+        Left = 0
+        Top = 1
+        Width = 15
+        Height = 21
+        LED_Position = lpLeft
+        Spacing = 5
+        Checked = False
+        Flashing = False
+        Frequency = ff1Hz
+        StatusInt = 0
+        StatusBit = 0
+        GroupIndex = 0
+        Mode = mIndicator
+      end
+      object abLan2: TAbLED
+        Left = 16
+        Top = 1
+        Width = 15
+        Height = 21
+        LED_Position = lpLeft
+        Spacing = 5
+        Checked = False
+        Flashing = False
+        Frequency = ff1Hz
+        StatusInt = 0
+        StatusBit = 0
+        GroupIndex = 0
+        Mode = mIndicator
+      end
+      object abLan3: TAbLED
+        Left = 32
+        Top = 1
+        Width = 15
+        Height = 21
+        LED_Position = lpLeft
+        Spacing = 5
+        Checked = False
+        Flashing = False
+        Frequency = ff1Hz
+        StatusInt = 0
+        StatusBit = 0
+        GroupIndex = 0
+        Mode = mIndicator
+      end
+    end
+    object pnlExtra: TPanel
+      Left = 1844
+      Top = 0
+      Width = 60
+      Height = 24
+      Align = alRight
+      AutoSize = True
+      BevelOuter = bvNone
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -13
+      Font.Name = #44404#47548
+      Font.Style = []
+      ParentColor = True
+      ParentFont = False
+      TabOrder = 2
+    end
+  end
+  object pnlTop: TPanel
+    Left = 0
+    Top = 80
+    Width = 1904
+    Height = 114
+    Align = alTop
+    BevelOuter = bvNone
+    Caption = 'pnlTop'
+    TabOrder = 2
+    object lblResult: TLabel3D
+      Left = 1624
+      Top = 0
+      Width = 280
+      Height = 114
+      ShowTitle = False
+      TitleColor = clGray
+      TitleFont.Charset = DEFAULT_CHARSET
+      TitleFont.Color = clWindowText
+      TitleFont.Height = -11
+      TitleFont.Name = 'Tahoma'
+      TitleFont.Style = []
+      TitleHeightRatio = 0.200000000000000000
+      BorderColor = clBlack
+      BorderPenStyle = psSolid
+      Border = False
+      BorderType = btBorderLine
+      BorderLineT = True
+      BorderLineR = True
+      BorderLineB = True
+      BorderLineL = True
+      Escapement = 0
+      TextStyle = tsNone
+      LabelStyle = lsDefault
+      Address = 'OK'
+      EllipsesStyle = esNone
+      Shift = 1
+      Align = alRight
+      Alignment = taCenter
+      AutoSize = False
+      Color = 5592405
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = 14811135
+      Font.Height = -83
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      Layout = tlCenter
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+      ExplicitLeft = 1630
+    end
+    object lblMode: TLabel3D
+      Left = 1486
+      Top = 0
+      Width = 138
+      Height = 114
+      ShowTitle = False
+      TitleColor = clGray
+      TitleFont.Charset = DEFAULT_CHARSET
+      TitleFont.Color = clWindowText
+      TitleFont.Height = -11
+      TitleFont.Name = 'Tahoma'
+      TitleFont.Style = []
+      TitleHeightRatio = 0.200000000000000000
+      BorderColor = clGray
+      BorderPenStyle = psSolid
+      Border = True
+      BorderType = btBorderLine
+      BorderLineT = True
+      BorderLineR = True
+      BorderLineB = True
+      BorderLineL = False
+      Escapement = 0
+      TextStyle = tsNone
+      LabelStyle = lsDefault
+      Address = 'OK'
+      EllipsesStyle = esNone
+      Shift = 1
+      Align = alRight
+      Alignment = taCenter
+      AutoSize = False
+      Caption = 'AUTO'
+      Color = 10722979
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = 14811135
+      Font.Height = -24
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      Layout = tlCenter
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+    end
+  end
+  object pnlBottom: TPanel
+    Left = 0
+    Top = 909
+    Width = 1904
+    Height = 108
+    Align = alBottom
+    BevelOuter = bvNone
+    Color = 2763306
+    Ctl3D = False
+    ParentBackground = False
+    ParentCtl3D = False
+    TabOrder = 5
+    object Label35: TLabel
+      Left = 928
+      Top = 127
+      Width = 68
+      Height = 13
+      Caption = '[ '#49324#50857#47049' ]'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = #44404#47548
+      Font.Style = [fsBold]
+      ParentFont = False
+    end
+    object pnlRTVals: TPanel
+      Left = 0
+      Top = 0
+      Width = 521
+      Height = 108
+      Align = alClient
+      BevelOuter = bvNone
+      Color = 2763306
+      ParentBackground = False
+      TabOrder = 0
+    end
+    object pnlLog: TPanel
+      Left = 1073
+      Top = 0
+      Width = 631
+      Height = 108
+      Align = alRight
+      BevelOuter = bvNone
+      Caption = 'pnlLog'
+      TabOrder = 2
+      object Label3: TLabel
+        Left = 0
+        Top = 0
+        Width = 631
+        Height = 22
+        Align = alTop
+        Alignment = taCenter
+        AutoSize = False
+        Caption = 'LOG'
+        Color = 2763306
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = clWhite
+        Font.Height = -15
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = [fsBold]
+        ParentColor = False
+        ParentFont = False
+        Transparent = False
+        Layout = tlCenter
+        ExplicitLeft = 32
+        ExplicitTop = -6
+        ExplicitWidth = 624
+      end
+      object lbLog: TListBox
+        Tag = 999
+        Left = 0
+        Top = 22
+        Width = 631
+        Height = 86
+        Align = alClient
+        BevelInner = bvNone
+        BevelOuter = bvNone
+        BorderStyle = bsNone
+        Color = 2763306
+        Ctl3D = False
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = 15856113
+        Font.Height = -12
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = []
+        ImeName = 'Microsoft Office IME 2007'
+        ItemHeight = 15
+        ParentCtl3D = False
+        ParentFont = False
+        TabOrder = 0
+        OnDblClick = lbLogDblClick
+      end
+    end
+    object pnlWorkStatus: TPanel
+      Left = 521
+      Top = 0
+      Width = 552
+      Height = 108
+      Align = alRight
+      BevelOuter = bvNone
+      Caption = 'pnlWorkStatus'
+      ParentBackground = False
+      TabOrder = 1
+      object lblStatus: TLabel3D
+        Left = 0
+        Top = 22
+        Width = 552
+        Height = 86
+        ShowTitle = False
+        TitleColor = clGray
+        TitleFont.Charset = DEFAULT_CHARSET
+        TitleFont.Color = clWindowText
+        TitleFont.Height = -11
+        TitleFont.Name = 'Tahoma'
+        TitleFont.Style = []
+        TitleHeightRatio = 0.200000000000000000
+        BorderColor = clBlack
+        BorderPenStyle = psSolid
+        Border = False
+        BorderType = btDefault
+        BorderLineT = True
+        BorderLineR = True
+        BorderLineB = True
+        BorderLineL = True
+        Escapement = 0
+        TextStyle = tsNone
+        LabelStyle = lsDefault
+        EllipsesStyle = esNone
+        Shift = 1
+        Align = alClient
+        Alignment = taCenter
+        AutoSize = False
+        BiDiMode = bdLeftToRight
+        Caption = '-'
+        Color = 4144959
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = 9961471
+        Font.Height = -19
+        Font.Name = #50640#49828#53076#50612' '#46300#47548' 3 Light'
+        Font.Style = []
+        Layout = tlCenter
+        ParentBiDiMode = False
+        ParentColor = False
+        ParentFont = False
+        Transparent = False
+        ExplicitLeft = -6
+        ExplicitTop = 17
+      end
+      object pnlWorkStatusTitle: TPanel
+        Left = 0
+        Top = 0
+        Width = 552
+        Height = 22
+        Align = alTop
+        BevelOuter = bvNone
+        Caption = #51089#50629' '#49345#53468
+        Color = 2763306
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = clWhite
+        Font.Height = -15
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = [fsBold]
+        ParentBackground = False
+        ParentFont = False
+        TabOrder = 0
+        object btnCanRDebug: TSpeedButton
+          Left = 0
+          Top = 0
+          Width = 24
+          Height = 22
+          Align = alLeft
+          Caption = 'R'
+          Flat = True
+          Font.Charset = HANGEUL_CHARSET
+          Font.Color = clGray
+          Font.Height = -11
+          Font.Name = #47569#51008' '#44256#46357
+          Font.Style = []
+          ParentFont = False
+          ExplicitLeft = 366
+          ExplicitHeight = 18
+        end
+        object btnCanWDebug: TSpeedButton
+          Left = 24
+          Top = 0
+          Width = 24
+          Height = 22
+          Align = alLeft
+          Caption = 'W'
+          Flat = True
+          Font.Charset = HANGEUL_CHARSET
+          Font.Color = clGray
+          Font.Height = -11
+          Font.Name = #47569#51008' '#44256#46357
+          Font.Style = []
+          ParentFont = False
+          ExplicitLeft = 186
+          ExplicitHeight = 18
+        end
+      end
+    end
+    object pnlPdtCnt: TPanel
+      Left = 1704
+      Top = 0
+      Width = 200
+      Height = 108
+      Align = alRight
+      BevelOuter = bvNone
+      TabOrder = 3
+      object Panel3: TPanel
+        Left = 0
+        Top = 0
+        Width = 200
+        Height = 36
+        Align = alBottom
+        BevelOuter = bvNone
+        Color = 2763306
+        Padding.Right = 8
+        ParentBackground = False
+        TabOrder = 0
+        object lblOK: TLabel
+          Left = 75
+          Top = 0
+          Width = 117
+          Height = 36
+          Align = alRight
+          Alignment = taRightJustify
+          AutoSize = False
+          Caption = '0'
+          Color = clBtnFace
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = 16759739
+          Font.Height = -34
+          Font.Name = 'NI7SEG'
+          Font.Style = [fsBold]
+          ParentColor = False
+          ParentFont = False
+          Transparent = True
+          Layout = tlCenter
+          ExplicitLeft = 61
+        end
+        object Label4: TLabel
+          Left = 0
+          Top = 0
+          Width = 64
+          Height = 36
+          Align = alLeft
+          Alignment = taRightJustify
+          AutoSize = False
+          Caption = 'OK'
+          Color = clGreen
+          Font.Charset = HANGEUL_CHARSET
+          Font.Color = 14869218
+          Font.Height = -16
+          Font.Name = #47569#51008' '#44256#46357
+          Font.Style = [fsBold]
+          ParentColor = False
+          ParentFont = False
+          Transparent = True
+          Layout = tlCenter
+        end
+      end
+      object Panel6: TPanel
+        Left = 0
+        Top = 36
+        Width = 200
+        Height = 36
+        Align = alBottom
+        BevelOuter = bvNone
+        Color = 2763306
+        Padding.Right = 8
+        ParentBackground = False
+        TabOrder = 1
+        object lblNG: TLabel
+          Left = 79
+          Top = 0
+          Width = 113
+          Height = 36
+          Align = alRight
+          Alignment = taRightJustify
+          AutoSize = False
+          Caption = '0'
+          Color = clBtnFace
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = 7697919
+          Font.Height = -34
+          Font.Name = 'NI7SEG'
+          Font.Style = [fsBold]
+          ParentColor = False
+          ParentFont = False
+          Transparent = True
+          Layout = tlCenter
+          ExplicitLeft = 71
+          ExplicitTop = 6
+        end
+        object Label8: TLabel
+          Left = 0
+          Top = 0
+          Width = 65
+          Height = 36
+          Align = alLeft
+          Alignment = taRightJustify
+          AutoSize = False
+          Caption = 'NG'
+          Color = clGreen
+          Font.Charset = HANGEUL_CHARSET
+          Font.Color = 14869218
+          Font.Height = -16
+          Font.Name = #47569#51008' '#44256#46357
+          Font.Style = [fsBold]
+          ParentColor = False
+          ParentFont = False
+          Transparent = True
+          Layout = tlCenter
+          ExplicitHeight = 41
+        end
+      end
+      object Panel4: TPanel
+        Left = 0
+        Top = 72
+        Width = 200
+        Height = 36
+        Align = alBottom
+        BevelOuter = bvNone
+        Color = 2763306
+        Padding.Right = 8
+        ParentBackground = False
+        TabOrder = 2
+        object lblTot: TLabel
+          Left = 79
+          Top = 0
+          Width = 113
+          Height = 36
+          Align = alRight
+          Alignment = taRightJustify
+          AutoSize = False
+          Caption = '0'
+          Color = clBtnFace
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWhite
+          Font.Height = -34
+          Font.Name = 'NI7SEG'
+          Font.Style = [fsBold]
+          ParentColor = False
+          ParentFont = False
+          Transparent = True
+          Layout = tlCenter
+          ExplicitLeft = 66
+          ExplicitTop = -6
+          ExplicitHeight = 41
+        end
+        object Label5: TLabel
+          Left = 0
+          Top = 0
+          Width = 65
+          Height = 36
+          Align = alLeft
+          Alignment = taRightJustify
+          AutoSize = False
+          Caption = ' TOTAL'
+          Color = clGreen
+          Font.Charset = HANGEUL_CHARSET
+          Font.Color = 14869218
+          Font.Height = -16
+          Font.Name = #47569#51008' '#44256#46357
+          Font.Style = [fsBold]
+          ParentColor = False
+          ParentFont = False
+          Transparent = True
+          Layout = tlCenter
+          ExplicitHeight = 41
+        end
+      end
+    end
+  end
+  object pnlSysStatus: TPanel
+    Left = 0
+    Top = 890
+    Width = 1904
+    Height = 19
+    Align = alBottom
+    BevelOuter = bvNone
+    Color = 14933725
+    ParentBackground = False
+    TabOrder = 4
+    object abCable: TAbLED
+      Left = 191
+      Top = -1
+      Width = 84
+      Height = 22
+      Visible = False
+      Caption = #52964#45349#53552' '#44208#54633
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clBlack
+      Font.Height = -12
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = []
+      ParentFont = False
+      LED_Position = lpLeft
+      Spacing = 5
+      Checked = False
+      Flashing = False
+      Frequency = ff1Hz
+      StatusInt = 0
+      StatusBit = 0
+      GroupIndex = 0
+      Mode = mIndicator
+    end
+    object abPop: TAbLED
+      Left = 10
+      Top = -5
+      Width = 84
+      Height = 26
+      Caption = 'POP'
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clBlack
+      Font.Height = -12
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = []
+      ParentFont = False
+      LED_Position = lpLeft
+      Spacing = 5
+      Checked = False
+      Flashing = False
+      Frequency = ff1Hz
+      StatusInt = 0
+      StatusBit = 0
+      GroupIndex = 0
+      Mode = mIndicator
+    end
+  end
+  object pnlMsg: TPanel
+    Left = 381
+    Top = 295
+    Width = 972
+    Height = 324
+    BorderStyle = bsSingle
+    DoubleBuffered = True
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clRed
+    Font.Height = -43
+    Font.Name = #44404#47548
+    Font.Style = [fsBold]
+    ParentDoubleBuffered = False
+    ParentFont = False
+    TabOrder = 3
+    Visible = False
+    object imgMsg: TImage
+      Left = 1
+      Top = 39
+      Width = 968
+      Height = 282
+      Align = alClient
+      ExplicitLeft = -1
+      ExplicitTop = 42
+      ExplicitWidth = 872
+      ExplicitHeight = 225
+    end
+    object imgIcon: TImage
+      Left = 19
+      Top = 76
+      Width = 190
+      Height = 208
+      Transparent = True
+    end
+    object pnlMsgTitle: TPanel
+      Left = 1
+      Top = 1
+      Width = 968
+      Height = 38
+      Align = alTop
+      BevelOuter = bvNone
+      Caption = #50508#47548
+      Color = 4013373
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = 4227327
+      Font.Height = -29
+      Font.Name = #44404#47548
+      Font.Style = [fsBold]
+      ParentBackground = False
+      ParentFont = False
+      TabOrder = 0
+      OnMouseDown = pnlMsgTitleMouseDown
+      object sbtnErrorClose: TSpeedButton
+        Left = 926
+        Top = 3
+        Width = 40
+        Height = 31
+        Caption = 'X'
+        Flat = True
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWhite
+        Font.Height = -27
+        Font.Name = #44404#47548
+        Font.Style = [fsBold]
+        ParentFont = False
+        OnClick = sbtnErrorCloseClick
+      end
+    end
+  end
+  object pnlMenu: TPanel
+    Left = 0
+    Top = 46
+    Width = 1904
+    Height = 34
+    Align = alTop
+    BevelOuter = bvNone
+    Color = 1842204
+    ParentBackground = False
+    TabOrder = 1
+    object sbtnModel: TSpeedButton
+      Left = 1360
+      Top = 0
+      Width = 120
+      Height = 34
+      Align = alRight
+      Caption = #47784#45944
+      Flat = True
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -13
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      ParentFont = False
+      ExplicitTop = -6
+    end
+    object sbtnReference: TSpeedButton
+      Left = 1480
+      Top = 0
+      Width = 120
+      Height = 34
+      Align = alRight
+      Caption = #49444#51221
+      Flat = True
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -13
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      ParentFont = False
+      ExplicitLeft = 1604
+    end
+    object sbtnRetrieve: TSpeedButton
+      Left = 1600
+      Top = 0
+      Width = 120
+      Height = 34
+      Align = alRight
+      Caption = #51312#54924
+      Flat = True
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = 15007692
+      Font.Height = -13
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      ParentFont = False
+      ExplicitLeft = 1704
+    end
+    object sbtnExit: TSpeedButton
+      Left = 1720
+      Top = 0
+      Width = 184
+      Height = 34
+      Align = alRight
+      Caption = #51333#47308
+      Flat = True
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = 13421823
+      Font.Height = -13
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      ParentFont = False
+    end
+    object lblVer: TLabel
+      Left = 0
+      Top = 0
+      Width = 85
+      Height = 34
+      Align = alLeft
+      AutoSize = False
+      Caption = 'ver:'
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = 7829367
+      Font.Height = -12
+      Font.Name = #44404#47548
+      Font.Style = []
+      ParentFont = False
+      Layout = tlCenter
+      ExplicitLeft = 1265
+      ExplicitTop = 16
+      ExplicitHeight = 12
+    end
+  end
+  object tmrHideMsg: TTimer
+    Enabled = False
+    Interval = 30000
+    Left = 24
+    Top = 264
+  end
+end

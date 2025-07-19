@@ -1,0 +1,258 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{2B9776B7-A2C3-48A3-9BAE-F1163FF14778}</ProjectGuid>
+			<ProjectVersion>12.0</ProjectVersion>
+			<MainSource>AntiPinchTester.dpr</MainSource>
+			<Config Condition="'$(Config)'==''">Release</Config>
+			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_1)'!=''">
+			<Cfg_1>true</Cfg_1>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_2)'!=''">
+			<Cfg_2>true</Cfg_2>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_ExeOutput>..\Exe\</DCC_ExeOutput>
+			<DCC_UnitSearchPath>..\Libs;..\Forms;..\..\Common\Libs;..\..\Common\Forms;..\..\..\Common\Form;..\..\..\Common\Lib;..\..\..\Common\Lib\SOEM;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<DCC_DependencyCheckOutputName>..\Exe\AntiPinchTester.exe</DCC_DependencyCheckOutputName>
+			<DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;$(DCC_UnitAlias)</DCC_UnitAlias>
+			<DCC_UsePackage>vclx;vcl;vclimg;dbrtl;Rave77VCL;bdertl;rtl;vclactnband;xmlrtl;vcldb;TeeUI;TeeDB;Tee;IndyCore;IndySystem;IndyProtocols;inet;DbxCommonDriver;DbxClientDriver;PNGDelphiD2010;AbkStdD2010;FaAsKiiD2010;RbControlsD2010;adortl;vclie;inetdbbde;inetdbxpress;DBXInterBaseDriver;DBXMySQLDriver;webdsnap;VclSmp;frx14;frxe14;EhLib140</DCC_UsePackage>
+			<DCC_ImageBase>00400000</DCC_ImageBase>
+			<DCC_Platform>x86</DCC_Platform>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_1)'!=''">
+			<DCC_Optimize>true</DCC_Optimize>
+			<DCC_MapFile>3</DCC_MapFile>
+			<DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
+			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+			<DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_2)'!=''">
+			<DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
+			<DCC_Optimize>false</DCC_Optimize>
+			<DCC_MapFile>3</DCC_MapFile>
+			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
+		</PropertyGroup>
+		<ItemGroup>
+			<DelphiCompile Include="AntiPinchTester.dpr">
+				<MainSource>MainSource</MainSource>
+			</DelphiCompile>
+			<DCCReference Include="..\..\Common\Forms\BaseMainForm.pas">
+				<Form>frmBaseMain</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Forms\ModelSelSimForm.pas">
+				<Form>frmModelSelSim</Form>
+			</DCCReference>
+			<DCCReference Include="..\Forms\EditForm.pas">
+				<Form>frmEdit</Form>
+			</DCCReference>
+			<DCCReference Include="..\Forms\AntiPinchForm.pas">
+				<Form>frmAntiPinch</Form>
+			</DCCReference>
+			<DCCReference Include="..\Libs\DataUnit.pas"/>
+			<DCCReference Include="..\Libs\DIOChs.pas"/>
+			<DCCReference Include="..\Libs\IODef.pas"/>
+			<DCCReference Include="..\Libs\TsWorkUnit.pas"/>
+			<DCCReference Include="..\Libs\Work.pas"/>
+			<DCCReference Include="..\..\Common\Libs\DataUnitHelper.pas"/>
+			<DCCReference Include="..\..\Common\Libs\ModelType.pas"/>
+			<DCCReference Include="..\..\Common\Libs\ModelUnit.pas"/>
+			<DCCReference Include="..\..\Common\Libs\SeatConnector.pas"/>
+			<DCCReference Include="..\..\Common\Libs\SeatMotorType.pas"/>
+			<DCCReference Include="..\..\Common\Libs\SeatType.pas"/>
+			<DCCReference Include="..\..\Common\Libs\SeatTypeUI.pas"/>
+			<DCCReference Include="..\..\Common\Libs\SeatIMSCtrler.pas"/>
+			<DCCReference Include="..\..\Common\Libs\SeatMoveCtrler.pas"/>
+			<DCCReference Include="..\..\Common\Forms\SeatMtrCtrlForm.pas">
+				<Form>frmSeatMtrCtrl</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Forms\CanCtrlForm.pas">
+				<Form>frmCanCtrl</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Forms\CanOperForm.pas">
+				<Form>frmCanOper</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Forms\ReferenceForm.pas">
+				<Form>frmReference</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Forms\UserReferForm.pas">
+				<Form>frmUserRefer</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Libs\SysEnv.pas"/>
+			<DCCReference Include="..\..\Common\Libs\DataUnitOrd.pas"/>
+			<DCCReference Include="..\Libs\DataBox.pas"/>
+			<DCCReference Include="..\..\Common\Frames\AntiPinchTestFrame.pas">
+				<Form>AntipinchTestFrme</Form>
+				<DesignClass>TFrame</DesignClass>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Frames\ModelInfoFrame.pas">
+				<Form>MdllInfoFrame</Form>
+				<DesignClass>TFrame</DesignClass>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Libs\SubDataBox4AP.pas"/>
+			<None Include="myDefine.INC"/>
+			<BuildConfiguration Include="Base">
+				<Key>Base</Key>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Release">
+				<Key>Cfg_1</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Debug">
+				<Key>Cfg_2</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+		</ItemGroup>
+		<Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
+		<ProjectExtensions>
+			<Borland.Personality>Delphi.Personality.12</Borland.Personality>
+			<Borland.ProjectType/>
+			<BorlandProject>
+				<Delphi.Personality>
+					<Source>
+						<Source Name="MainSource">AntiPinchTester.dpr</Source>
+					</Source>
+					<Parameters>
+						<Parameters Name="UseLauncher">False</Parameters>
+						<Parameters Name="LoadAllSymbols">True</Parameters>
+						<Parameters Name="LoadUnspecifiedSymbols">False</Parameters>
+						<Parameters Name="DebugSourceDirs">D:\Project\DM\2405.LX3_PWR_LEG_ASSY_LINE\Src\Common\Form\</Parameters>
+					</Parameters>
+					<VersionInfo>
+						<VersionInfo Name="IncludeVerInfo">False</VersionInfo>
+						<VersionInfo Name="AutoIncBuild">False</VersionInfo>
+						<VersionInfo Name="MajorVer">1</VersionInfo>
+						<VersionInfo Name="MinorVer">0</VersionInfo>
+						<VersionInfo Name="Release">0</VersionInfo>
+						<VersionInfo Name="Build">0</VersionInfo>
+						<VersionInfo Name="Debug">False</VersionInfo>
+						<VersionInfo Name="PreRelease">False</VersionInfo>
+						<VersionInfo Name="Special">False</VersionInfo>
+						<VersionInfo Name="Private">False</VersionInfo>
+						<VersionInfo Name="DLL">False</VersionInfo>
+						<VersionInfo Name="Locale">1042</VersionInfo>
+						<VersionInfo Name="CodePage">949</VersionInfo>
+					</VersionInfo>
+					<VersionInfoKeys>
+						<VersionInfoKeys Name="CompanyName"/>
+						<VersionInfoKeys Name="FileDescription"/>
+						<VersionInfoKeys Name="FileVersion">1.0.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="InternalName"/>
+						<VersionInfoKeys Name="LegalCopyright"/>
+						<VersionInfoKeys Name="LegalTrademarks"/>
+						<VersionInfoKeys Name="OriginalFilename"/>
+						<VersionInfoKeys Name="ProductName"/>
+						<VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="Comments"/>
+					</VersionInfoKeys>
+					<Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\dclDBXDriversEnt140.bpl">Embarcadero Enterprise Driver Components</Excluded_Packages>
+						<Excluded_Packages Name="D:\Project\KWANGMYUNG\SeqManageSystem\Src\Lib\XLS\XLSSpreadSheet2_D2010.bpl">XLSSpreadSheet 2</Excluded_Packages>
+						<Excluded_Packages Name="C:\Users\Public\Documents\RAD Studio\7.0\Bpl\htmlcomp_d2010.bpl">HTML Component Library - VCL package</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\dclmlwiz140.bpl">Embarcadero Markup Language Wizards</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\dcldbxcds140.bpl">Embarcadero SimpleDataset Component (DBX)</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\dclbde140.bpl">Embarcadero BDE DB Components</Excluded_Packages>
+						<Excluded_Packages Name="D:\Project\Lib\VCL\TMS Component Pack v6.0.2.0\tmsd2010.bpl">TMS Component Pack</Excluded_Packages>
+						<Excluded_Packages Name="C:\Users\Public\Documents\RAD Studio\7.0\Bpl\dclfrxe14.bpl">FastReport 4.0 Exports</Excluded_Packages>
+						<Excluded_Packages Name="C:\Users\Public\Documents\RAD Studio\7.0\Bpl\dclunidac140.bpl">Uni Access Components</Excluded_Packages>
+						<Excluded_Packages Name="C:\Users\Public\Documents\RAD Studio\7.0\Bpl\dclfrx14.bpl">FastReport 4.0 Components</Excluded_Packages>
+						<Excluded_Packages Name="C:\Users\Public\Documents\RAD Studio\7.0\Bpl\CoolTrayIcon_D2010.bpl">CoolTrayIcon and Friends</Excluded_Packages>
+						<Excluded_Packages Name="C:\Users\Public\Documents\RAD Studio\7.0\Bpl\dclDelphiModbus2010.bpl">Delphi Modbus components</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\bcbofficexp140.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\dcloffice2k140.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\dclofficexp140.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+					</Excluded_Packages>
+				</Delphi.Personality>
+			</BorlandProject>
+			<ProjectFileVersion>12</ProjectFileVersion>
+		</ProjectExtensions>
+	</Project>
+
+<!-- EurekaLog First Line
+[Exception Log]
+EurekaLog Version=7001
+Activate=0
+AutoCrashOperation=2
+boHandleSafeCallExceptions=1
+boUseMainModuleOptions=1
+CompatibilityMode=1
+csoAllowedRenderMethods=64
+csoDisabledRenderMethods=-2
+csoShowWindowsThreads=1
+DeleteMapAfterCompile=1
+Email Address=""
+Email Object=""
+Encrypt Password=""
+Errors Number=32
+Errors Terminate=3
+Foreground Tab=0
+Freeze Timeout=1
+loCatchLeaks=0
+loEnableMMDebugMode=0
+loFreeAllLeaks=1
+loHideRTLLeaks=0
+loMaxLeaks=1024
+loOnlyUnderIDE=0
+loProcessesSection=1
+Output Path=""
+SMTP From="eurekalog@email.com"
+SMTP Host=""
+SMTP UserID=""
+sndAddDateInFileName=0
+sndScreenshot=3
+sndShowSuccessMsg=0
+soActCtlsControlClass=1
+soActCtlsControlText=1
+soActCtlsFormClass=1
+soActCtlsFormText=1
+soAppCompilationDate=1
+soAppName=1
+soAppParameters=1
+soAppStartDate=1
+soAppUpTime=1
+soAppVersionNumber=1
+soCmpDisplayDPI=1
+soCmpDisplayMode=1
+soCmpFreeDisk=1
+soCmpFreeMemory=1
+soCmpName=1
+soCmpPrinter=1
+soCmpProcessor=1
+soCmpSysUpTime=1
+soCmpTotalDisk=1
+soCmpTotalMemory=1
+soCmpVideoCard=1
+soCustomData=1
+soExcCount=1
+soExcDate=1
+soExcModuleName=1
+soExcModuleVersion=1
+soExcNote=1
+soExcStatus=1
+soNetDHCP=1
+soNetDNS1=1
+soNetDNS2=1
+soNetGateway=1
+soNetIP=1
+soNetSubmask=1
+soOSBuildN=1
+soOSCharset=1
+soOSLanguage=1
+soOSType=1
+soOSUpdate=1
+soUserCompany=1
+soUserID=1
+soUserPrivileges=1
+TextsCollection=""
+TrakerUser=""
+WebPort=0
+WebURL=""
+EurekaLog Last Line -->

@@ -1,0 +1,1075 @@
+{
+	Ver.250619.01
+}
+unit SubDataBox4Elec;
+
+interface
+
+uses
+    BaseDataBox, DataBox, DataUnit, DataUnitOrd, HVTester;
+
+type
+    TSubDataBox4Elec = class(TBaseDataBox)
+    private
+        mParent: TDataBox;
+        function GetTag: Integer; override;
+
+        procedure SetValidity; override;
+        function ConvertHVStateToTsOrd(HVPos: THVPosType; HVTestType: THVTestType): TTsORD;
+
+    public
+        constructor Create(Parent: TDataBox);
+
+        procedure InitData(AReadEnv: Boolean = False); override;
+        procedure SetDataInit(ATsMode: TTsORD); override;
+
+        function IsExists(AORD: TResultORD): Boolean; overload; override;
+        function IsTested(AORD: TResultORD): Boolean; overload; override;
+
+        function GetData(AORD: TResultORD; ADigit: Integer = 0): Double; overload; override;
+        function GetResult(AORD: TResultORD): Boolean; overload; override;
+        function GetResult(ATsMode: TTsORD): Boolean; overload; override;
+        function GetResultToATxt(APos: Integer; IsUnit: Boolean; IsResult: Boolean = False): string; override;
+
+        procedure SetData(AORD: TResultORD; const Value: Double); overload; override;
+        procedure SetData(AORD: TResultORD; const Value: string); overload; override;
+        procedure SetData(AORD: TResultORD; const Value: Boolean); overload; override;
+        procedure SetData(AORD: TResultOrd; const Value: Integer); overload; override;
+    end;
+
+implementation
+
+uses
+    SysEnv, SeatType, ModelUnit;
+
+{ TSubDataBox4Elec }
+
+constructor TSubDataBox4Elec.Create(Parent: TDataBox);
+begin
+    inherited Create;
+    mParent := Parent
+
+end;
+
+function TSubDataBox4Elec.GetData(AORD: TResultORD; ADigit: Integer): Double;
+begin
+    mIsProcessDone := True;
+    with mParent.RsBuf^ do
+    begin
+
+        case AORD of
+
+            roDatBuckle:
+                Result := rModel.rSpecs.rBuckleCurr.rHi;
+            roSpecHeatOnLo:
+                Result := rModel.rspecs.rOnCurr[hvtHeat].rLo;
+            roSpecHeatOnHi:
+                Result := rModel.rspecs.rOnCurr[hvtHeat].rHi;
+            roSpecHeatOffLo:
+                Result := rModel.rspecs.rOffCurr[hvtHeat].rLo;
+            rospecHeatOffHi:
+                Result := rModel.rspecs.rOffCurr[hvtHeat].rHi;
+
+            roSpecVentOnLo:
+                Result := rModel.rspecs.rOnCurr[hvtVent].rLo;
+            rospecVentOnHi:
+                Result := rModel.rspecs.rOnCurr[hvtVent].rHi;
+            roSpecVentOffLo:
+                Result := rModel.rspecs.rOffCurr[hvtVent].rLo;
+            rospecVentOffHi:
+                Result := rModel.rspecs.rOffCurr[hvtVent].rHi;
+
+            roDatOnCurr:
+                Result := rDatHVs[rCurHVPos, rCurHVTestType].rOnCurr;
+            roDatOffCurr:
+                Result := rDatHVs[rCurHVPos, rCurHVTestType].rOffCurr;
+
+            roDatAncPT:
+                Result := rAncPTVal;
+
+        else
+            mIsProcessDone := False;
+            Result := 0.0;
+
+        end;
+    end;
+end;
+
+function TSubDataBox4Elec.GetResult(ATsMode: TTsORD): Boolean;
+begin
+    mIsProcessDone := True;
+    with mParent.RsBuf^ do
+    begin
+        case ATsMode of
+
+            tsHeatDrv:
+                begin
+                    SetCurHVIdx(hvpDrv, hvtHeat);
+                    Result := GetResult(roRsHeatByPos);
+                end;
+            tsHeatPsg:
+                begin
+                    SetCurHVIdx(hvpPsg, hvtHeat);
+                    Result := GetResult(roRsHeatByPos);
+                end;
+            tsVentDrv:
+                begin
+                    SetCurHVIdx(hvpDrv, hvtVent);
+                    Result := GetResult(roRsVentByPos);
+                end;
+            tsVentPsg:
+                begin
+                    SetCurHVIdx(hvpPsg, hvtVent);
+                    Result := GetResult(roRsVentByPos);
+                end;
+
+            tsBlow:
+                Result := GetResult(roRsOnBlow);
+            tsBuckle:
+                Result := GetResult(roRsBuckle);
+            tsDTCClear:
+                Result := GetResult(roRsDTCClear);
+            tsAncPT:
+                Result := GetResult(roRsAncPT);
+            tsElec:
+                Result := GetResult(roRsElec); // and GetResult(roRsConn);
+            tsEcuInfo:
+                Result := GetResult(roRsEcuInfo);
+            tsFlowTest:
+                Result := GetResult(roRsFlowTest);
+
+            tsECUPartNo:
+                Result := GetResult(roRsEcuPartNo);
+
+            tsECUHWVer:
+                Result := GetResult(roRsECUHWVer);
+
+            tsECUSWVer:
+                Result := GetResult(roRsECUSWVer);
+
+
+        else
+            mIsProcessDone := False;
+            Result := False;
+        end;
+    end;
+end;
+
+function TSubDataBox4Elec.ConvertHVStateToTsOrd(HVPos: THVPosType; HVTestType: THVTestType): TTsORD;
+begin
+    if HVPos = hvpDrv then
+    begin
+        if HVTestType = hvtHeat then
+            Result := tsHeatDrv
+        else
+            Result := tsVentDrv;
+    end
+    else // hvpPsg
+    begin
+        if HVTestType = hvtHeat then
+            Result := tsHeatPsg
+        else
+            Result := tsVentPsg;
+    end;
+end;
+
+function TSubDataBox4Elec.GetResult(AORD: TResultORD): Boolean;
+begin
+    mIsProcessDone := True;
+
+    with mParent.RsBuf^ do
+    begin
+
+        case AORD of
+            roDatOnCurr:
+                begin
+                    Result := rModel.rSpecs.rOnCurr[rCurHVTestType].IsIn(GetData(AORD));
+                end;
+
+            roRsOnCurr:
+                begin
+                    Result := GetResult(roDatOnCurr);
+                end;
+
+            roDatOffCurr:
+                begin
+                    Result := rModel.rSpecs.rOffCurr[rCurHVTestType].IsIn(GetData(AORD));
+                end;
+
+            roRsOffCurr:
+                begin
+                    Result := GetResult(roDatOffCurr);
+                end;
+
+            roDatLedOffBit, roRsLedOff:
+                begin
+                    Result := rDatHVs[rCurHVPos, rCurHVTestType].rLedOffBit = $00;
+                end;
+            roDatLedHiBit, roRsLedHi:
+                begin
+                    Result := rDatHVs[rCurHVPos, rCurHVTestType].rLedHiBit = $07;
+                end;
+            roDatLedMidBit, roRsLedMid:
+                begin
+                    Result := rDatHVs[rCurHVPos, rCurHVTestType].rLedMidBit = $03;
+                end;
+            roDatLedLoBit, roRsLedLo:
+                begin
+                    Result := rDatHVs[rCurHVPos, rCurHVTestType].rLedLoBit = $01;
+                end;
+
+            roRsIgn:
+                Result := rDatHVs[rCurHVPos, rCurHVTestType].rIgn;
+
+            roRsHeatByPos:
+                begin
+                    rCurHVTestType := hvtHeat;
+                    Result := mParent.GetCompoJudge([roRsOnCurr, roRsOffCurr, roRsLedOff, roRsLedHi, roRsLedMid, roRsLedLo]);
+                end;
+
+            roRsVentByPos:
+                begin
+                    rCurHVTestType := hvtVent;
+                    Result := mParent.GetCompoJudge([roRsOnCurr, roRsOffCurr, roRsLedOff, roRsLedHi, roRsLedMid, roRsLedLo]);
+                end;
+
+            roDatOnBlow:
+                begin
+                    SetCurHVIdx(GetBlowPos, hvtVent);
+                    Result := GetResult(roDatOnCurr);
+                end;
+
+            roRsOnBlow:
+                Result := GetResult(roDatOnBlow);
+
+            roRsHeat:
+                begin
+                    SetCurHVIdx(hvpDrv, hvtHeat);
+                    Result := GetResult(roRsHeatByPos);
+                    SetCurHVIdx(hvpPsg, hvtHeat);
+                    Result := Result and GetResult(roRsHeatByPos);
+                end;
+
+            roRsVent:
+                begin
+                    SetCurHVIdx(hvpDrv, hvtVent);
+                    Result := GetResult(roRsVentByPos);
+                    SetCurHVIdx(hvpPsg, hvtVent);
+                    Result := Result and GetResult(roRsVentByPos);
+                end;
+
+            roRsODS:
+                begin
+                    Result := GetResult(tsODS);
+                end;
+
+            roDatBuckle, roRsBuckle:
+                begin
+                    if rModel.rTypes.GetBuckleType = btIO then
+                        Result := rValidity[tsBuckle]
+                    else
+                        Result := rModel.rspecs.rBuckleCurr.IsIn(GetData(roDatBuckle));
+                end;
+
+            roRsWalkIn:
+                begin
+                    Result := rValidity[tsWalkIn]
+                end;
+
+            roRsDTCClear:
+                begin
+                    Result := rValidity[tsDTCClear];
+                end;
+
+            roRsAncPT:
+                begin
+                    Result := rValidity[tsAncPT];
+                end;
+
+            roRsEcuInfo:
+                begin
+                    Result := rValidity[tsEcuInfo];
+                end;
+            roRsFlowTest:
+                begin
+                    Result := rValidity[tsFlowTest];
+                end;
+
+            roRsEcuPartNo, roDataEcuPartNo:
+                begin
+                    Result := rValidity[tsECUPartNo];
+                end;
+
+            roRsEcuHwVer, roDataEcuHwVer:
+                begin
+                    Result := rValidity[tsECUHWVer];
+                end;
+
+            roRsECUSWVer, roDataEcuSwVer:
+                begin
+                    Result := rValidity[tsECUSWVer];
+                end;
+
+            roRsElec:
+                begin
+                    Result := mParent.GetCompoJudge([roRsHeat, roRsVent, roRsBuckle, roRsODS, roRsAncPT, roRsEcuInfo, roRsDTCClear, roRsFlowTest]);
+                end;
+
+        else
+            mIsProcessDone := False;
+            Result := False;
+        end;
+    end;
+
+end;
+
+function TSubDataBox4Elec.GetResultToATxt(APos: Integer; IsUnit, IsResult: Boolean): string;
+var
+    i: Integer;
+
+    procedure InsertResultTag;
+    begin
+{$IFDEF _VIEWER}
+        if IsResult and IsTested(TResultORD(APos)) then
+        begin
+            Result := ARY_TAG[GetResult(TResultORD(APos))] + Result;
+        end;
+{$ENDIF}
+    end;
+
+begin
+    mIsProcessDone := True;
+    with mParent.RsBuf^ do
+    begin
+
+        case APos of
+            ord(roHVDrvHtr_CTRL):
+                begin
+                    rCurHVPos := hvpDrv;
+                    rCurHVTestType := hvtHeat;
+                end;
+            ord(roHVDrvVnt_CTRL):
+                begin
+                    rCurHVPos := hvpDrv;
+                    rCurHVTestType := hvtVent;
+
+                end;
+            ord(roSpecHeatOnLo)..ord(rospecAncPT):
+                begin
+                    Result := GetModelToTxt(rModel, APos, IsUnit);
+                end;
+
+            ord(roDatOnCurr), ord(roDatOffCurr), ord(roDatOnBlow), ord(roDatOffBlow), ord(roDatBuckle):
+                begin
+                    if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                        Exit;
+
+                    if not IsExists(TResultOrd(APos)) or (abs(GetData(TResultOrd(APos))) = 999) then
+                        Result := '--'
+                    else
+                        Result := GetFloatToStr(GetData(TResultOrd(APos), 1), 1);
+
+                    if IsUnit and (Result <> '--') then
+                    begin
+                        if APos = ord(roDatBuckle) then
+                            Result := Result + ' mA'
+                        else
+                            Result := Result + ' A';
+                    end;
+{$IFDEF _VIEWER}
+                    if IsResult and IsTested(TResultOrd(APos)) then
+                    begin
+                        // --SJD 이부분은 결과조회 컴파일시만 주석해제 할것
+                        // Result := ARY_TAG[GetResult(TResultORD(APos))]+Result ;
+                    end;
+{$ENDIF}
+                end;
+
+            ord(roDatLedOffBit):
+                begin
+                    if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                        Exit;
+
+                    for i := 0 to 2 do
+                    begin
+                        if (rDatHVs[rCurHVPos, rCurHVTestType].rLedOffBit shr i and $01) = $01 then
+                        begin
+                            Result := Result + '1';
+                        end
+                        else
+                        begin
+                            Result := Result + '0';
+                        end;
+                    end;
+                end;
+            ord(roDatLedHiBit):
+                begin
+                    if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                        Exit;
+
+                    for i := 0 to 2 do
+                    begin
+                        if (rDatHVs[rCurHVPos, rCurHVTestType].rLedHiBit shr i and $01) = $01 then
+                        begin
+                            Result := Result + '1';
+                        end
+                        else
+                        begin
+                            Result := Result + '0';
+                        end;
+                    end;
+                end;
+            ord(roDatLedMidBit):
+                begin
+                    if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                        Exit;
+
+                    for i := 0 to 2 do
+                    begin
+                        if (rDatHVs[rCurHVPos, rCurHVTestType].rLedMidBit shr i and $01) = $01 then
+                        begin
+                            Result := Result + '1';
+                        end
+                        else
+                        begin
+                            Result := Result + '0';
+                        end;
+                    end;
+                end;
+            ord(roDatLedLoBit):
+                begin
+                    if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                        Exit;
+
+                    for i := 0 to 2 do
+                    begin
+                        if (rDatHVs[rCurHVPos, rCurHVTestType].rLedLoBit shr i and $01) = $01 then
+                        begin
+                            Result := Result + '1';
+                        end
+                        else
+                        begin
+                            Result := Result + '0';
+                        end;
+                    end;
+                end;
+            ord(roDatAncPT):  // 이 케이스 추가
+                begin
+                    if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                        Exit;
+
+                    if not IsExists(TResultOrd(APos)) or (rAncPTVal = 0) then
+                        Result := '--'
+                    else
+                        Result := GetFloatToStr(rAncPTVal, 1);
+
+                    if IsUnit and (Result <> '--') then
+                        Result := Result + ' Ω';  // 저항 단위 추가
+
+                    InsertResultTag;  // 결과 태그 추가 (Viewer용)
+                end;
+
+            ord(roDataEcuPartNo):
+                begin
+                    if not IsExists(TResultOrd(APos)) or (rEcuInfo.rPartNo = '') then
+                        Result := '--'
+                    else
+                        Result := string(rEcuInfo.rPartNo);
+
+                    InsertResultTag;
+                end;
+
+            ord(roDataEcuSwVer):
+                begin
+                    if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                        Exit;
+
+                    if not IsExists(TResultOrd(APos)) or (rEcuInfo.rSwVer = '') then
+                        Result := '--'
+                    else
+                        Result := string(rEcuInfo.rSwVer);
+
+                    InsertResultTag;
+                end;
+
+            ord(roDataEcuHwVer):
+                begin
+                    if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                        Exit;
+
+                    if not IsExists(TResultOrd(APos)) or (rEcuInfo.rHwVer = '') then
+                        Result := '--'
+                    else
+                        Result := string(rEcuInfo.rHwVer);
+
+                    InsertResultTag;
+                end;
+
+            ord(roRsEcuInfo):
+                begin
+                    if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                        Exit;
+
+                    Result := JUDGE_TXT[GetResult(TResultOrd(APos))];
+
+                    if IsResult and IsTested(TResultOrd(APos)) then
+                    begin
+                        Result := ARY_TAG[GetResult(TResultOrd(APos))] + Result;
+                    end;
+                end;
+
+            ord(roRsElec),
+            ord(roRsOnCurr), ord(roRsOffCurr),
+            ord(roRsLedOff), ord(roRsLedHi), ord(roRsLedMid), ord(roRsLedLo),
+            ord(roRsIgn), ord(roRsHeatByPos), ord(roRsVentByPos), ord(roRsHeat),
+            ord(roRsVent), ord(roRsAccessory), ord(roRsSmart), ord(roRsODS), ord(roRsAncPT), Ord(roRsDTCClear), ord(roRsOnBlow),
+            ord(roRsBuckle), ord(roRsFlowTest), ord(roRsECUPartNo), ord(roRsECUSWVer), ord(roRsECUHWVer):
+                begin
+                    if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                        Exit;
+
+                    Result := JUDGE_TXT[GetResult(TResultOrd(APos))];
+
+                    if IsResult and IsTested(TResultOrd(APos)) then
+                    begin
+                        Result := ARY_TAG[GetResult(TResultOrd(APos))] + Result;
+                    end;
+                end;
+        else
+
+        end;
+
+    end;
+
+end;
+
+function TSubDataBox4Elec.GetTag: Integer;
+begin
+    Result := mParent.Tag;
+end;
+
+procedure TSubDataBox4Elec.InitData(AReadEnv: Boolean);
+begin
+
+    SetDataInit(tsHeatDrv);
+    SetDataInit(tsHeatPsg);
+    SetDataInit(tsVentDrv);
+    SetDataInit(tsVentPsg);
+
+    SetDataInit(tsBuckle);
+    SetDataInit(tsWalkIn);
+    SetDataInit(tsDTCClear);
+    SetDataInit(tsAncPT);
+    SetDataInit(tsEcuInfo);
+    SetDataInit(tsFlowTest);
+    SetDataInit(tsECUPartNo);
+    SetDataInit(tsECUHWVer);
+    SetDatainit(tsECUSWVer);
+
+    with mParent.RsBuf^ do
+    begin
+        if rModel.rTypes.IsECU then
+        begin
+            rTested[tsHeatDrv] := False; //rModel.rTypes.CanDrvHeatTest;
+            rTested[tsVentDrv] := False; //rModel.rTypes.CanDrvVentTest;
+
+            rTested[tsHeatPsg] := False; //rModel.rTypes.CanPsgHeatTest;
+            rTested[tsVentPsg] := False; //rModel.rTypes.CanPsgVentTest;
+        end;
+
+    end;
+
+end;
+
+function TSubDataBox4Elec.IsExists(AORD: TResultORD): Boolean;
+begin
+    mIsProcessDone := True;
+
+    with mParent do
+    begin
+
+        case AORD of
+            roDatOnCurr, roRsOnCurr, roDatOffCurr, roRsOffCurr, roDatLedOffBit, roDatLedHiBit, roDatLedMidBit, roDatLedLoBit, roRsLedOff, roRsLedHi, roRsLedMid, roRsLedLo:
+                begin
+                    if RsBuf.rCurHVPos = hvpDrv then
+                        if RsBuf.rCurHVTestType = hvtHeat then
+                            Result := IsExists(tsHeatDrv)
+                        else
+                            Result := IsExists(tsVentDrv)
+                    else if RsBuf.rCurHVTestType = hvtHeat then
+                        Result := IsExists(tsHeatPsg)
+                    else
+                        Result := IsExists(tsVentPsg);
+                end;
+
+            roRsHeat:
+                begin
+                    Result := IsExists(tsHeatDrv) or IsExists(tsHeatPsg);
+                end;
+
+            roRsVent:
+                begin
+                    Result := IsExists(tsVentDrv) or IsExists(tsVentPsg);
+                end;
+
+            roDatOffBlow, roRsOffBlow, roDatOnBlow, roRsOnBlow:
+                Result := IsExists(tsBlow);
+
+            roDatBuckle, roRsBuckle:
+                Result := IsExists(tsBuckle);
+
+            roRsODS:
+                Result := IsExists(tsODS);
+
+            roDatAncPT, roRsAncPT:
+                Result := IsExists(tsAncPT);
+
+            roRsWalkIn:
+                Result := IsExists(tsWalkIn);
+
+            roRsDTCClear:
+                Result := IsExists(tsDTCClear);
+
+            roRsFlowTest:
+                Result := IsExists(tsFlowTest);
+
+            roDataEcuPartNo, roRsEcuPartNo :
+                Result := IsExists(tsECUPartNo);
+
+            roDataEcuHwVer, roRsEcuHwVer:
+                Result := IsExists(tsECUPartNo);
+
+            roDataEcuSwVer, roRsEcuSwVer:
+                Result := isExists(tsECUSWVer);
+
+            roRsElec:
+                begin
+                    Result := IsExists(tsHeatDrv) or IsExists(tsHeatPsg) or IsExists(tsVentDrv) or IsExists(tsVentPsg) or IsExists(tsBlow);
+                    Result := Result or IsExists(tsElec);
+                    // if not gSysEnv.rIsTestElec then Result := True
+                    // else
+                end;
+
+        else
+            mIsProcessDone := False;
+            Result := False;
+        end;
+    end;
+
+end;
+
+function TSubDataBox4Elec.IsTested(AORD: TResultORD): Boolean;
+begin
+    mIsProcessDone := True;
+
+    with mParent do
+    begin
+
+        case AORD of
+
+            roRsElec:
+                begin
+                    Result := IsTested(tsHeatDrv) or IsTested(tsHeatPsg) or IsTested(tsVentDrv) or IsTested(tsVentPsg) or IsTested(tsBlow);
+
+                    Result := Result or IsTested(tsElec);
+                end;
+
+            roDatOnCurr, roRsOnCurr, roDatOffCurr, roRsOffCurr, roDatLedOffBit, roDatLedHiBit, roDatLedMidBit, roDatLedLoBit, roRsLedOff, roRsLedHi, roRsLedMid, roRsLedLo:
+                begin
+                    if RsBuf.rCurHVPos = hvpDrv then
+                        if RsBuf.rCurHVTestType = hvtHeat then
+                            Result := IsTested(tsHeatDrv)
+                        else
+                            Result := IsTested(tsVentDrv)
+                    else if RsBuf.rCurHVTestType = hvtHeat then
+                        Result := IsTested(tsHeatPsg)
+                    else
+                        Result := IsTested(tsVentPsg);
+                end;
+
+            roRsHeat:
+                begin
+                    Result := IsTested(tsHeatDrv) or IsTested(tsHeatPsg);
+                end;
+
+            roRsVent:
+                begin
+                    Result := IsExists(tsVentDrv) or IsTested(tsVentPsg);
+                end;
+
+            roDatOffBlow, roRsOffBlow, roDatOnBlow, roRsOnBlow:
+                Result := IsTested(tsBlow);
+
+            roDatBuckle, roRsBuckle:
+                begin
+                    Result := IsTested(tsBuckle);
+                end;
+
+            roRsODS:
+                Result := IsTested(tsODS);
+
+            roDatAncPT, roRsAncPT:
+                Result := IsTested(tsAncPT);
+
+            roRsDTCClear:
+                Result := IsTested(tsDTCClear);
+
+            roRsEcuInfo:
+                Result := IsTested(tsEcuInfo);
+
+            roRsWalkIn:
+                Result := IsTested(tsWalkIn);
+
+            roRsFlowTest:
+                Result := IsTested(tsFlowTest);
+
+            roRsECUPartNo, roDataECUPartNo:
+                Result := IsTested(tsECUPartNo);
+
+            roRsECUHWVer, roDataECUHWVer:
+                Result := IsTested(tsECUHWVer);
+
+            roRsECUSWVer, roDataECUSWVer:
+                Result := IsTested(tsECUSWVer);
+
+        else
+            mIsProcessDone := False;
+            Result := False;
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4Elec.SetData(AORD: TResultOrd; const Value: Integer);
+begin
+    mIsProcessDone := True;
+
+    with mParent.RsBuf^ do
+    begin
+
+        case AORD of
+            roHVType:
+                rModel.rTypes.SetHVType(rModel.rTypes.GetHVType);
+
+            roDatLedOffBit:
+                rDatHVs[rCurHVPos, rCurHVTestType].rLedOffBit := BYTE(Value);
+            roDatLedHiBit:
+                rDatHVs[rCurHVPos, rCurHVTestType].rLedHiBit := BYTE(Value);
+            roDatLedMidBit:
+                rDatHVs[rCurHVPos, rCurHVTestType].rLedMidBit := BYTE(Value);
+            roDatLedLoBit:
+                rDatHVs[rCurHVPos, rCurHVTestType].rLedLoBit := BYTE(Value);
+
+            roHVDrvHtr_CTRL:
+                begin
+                    rCurHVPos := hvpDrv;
+                    rCurHVTestType := hvtHeat;
+                end;
+
+            roHVDrvVnt_CTRL:
+                begin
+                    rCurHVPos := hvpDrv;
+                    rCurHVTestType := hvtVent;
+                end
+
+        else
+            mIsProcessDone := False;
+
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4Elec.SetDataInit(ATsMode: TTsORD);
+var
+    Buf: PResult;
+begin
+    mIsProcessDone := True;
+
+    Buf := mParent.GetPResultBuffer;
+
+    with mParent do
+    begin
+        case ATsMode of
+            tsHeatDrv:
+                begin
+                    Buf.rValidity[ATsMode] := False;
+                    Buf.rExists[ATsMode] := False;
+                end;
+            tsHeatPsg:
+                begin
+                    Buf.rValidity[ATsMode] := False;
+                    Buf.rExists[ATsMode] := False;
+                end;
+            tsVentDrv:
+                begin
+                    Buf.rValidity[ATsMode] := False;
+                    Buf.rExists[ATsMode] := False;
+                end;
+            tsVentPsg:
+                begin
+                    Buf.rValidity[ATsMode] := False;
+                    Buf.rExists[ATsMode] := False;
+                end;
+            tsBlow:
+                begin
+                    Buf.rValidity[ATsMode] := False;
+                    Buf.rExists[ATsMode] := False;
+                end;
+
+            tsBuckle:
+                begin
+                    Buf.rBuckleVal := 0;
+                    Buf.rValidity[tsBuckle] := False;
+                    Buf.rTested[tsBuckle] := False; // (Buf.rModel.rTypes.GetBuckleType <> btNone);
+                    Buf.rExists[ATsMode] := False;
+                end;
+
+            tsAncPT:
+                begin
+                    Buf.rAncPTVal := 0;
+                    Buf.rValidity[tsAncPT] := False;
+                    Buf.rTested[tsAncPT] := False;
+                    Buf.rExists[tsAncPT] := False;
+                end;
+
+            tsODS:
+                begin
+                    Buf.rValidity[tsODS] := False;
+                    Buf.rTested[tsODS] := False;
+                    Buf.rExists[tsODS] := False;
+                end;
+
+            tsDTCClear:
+                begin
+                    Buf.rValidity[tsDTCClear] := False;
+                    Buf.rTested[tsDTCClear] := False;
+                    Buf.rExists[tsDTCClear] := False;
+                end;
+            tsFlowTest:
+                begin
+                    Buf.rValidity[tsFlowTest] := false;
+                    Buf.rTested[tsFlowTest] := false;
+                    Buf.rExists[tsFlowTest] := false;
+                end;
+
+            tsECUPartNo:
+                begin
+                    Buf.rEcuInfo.rPartNo := '';
+                    Buf.rValidity[tsECUPartNo] := false;
+                    Buf.rTested[tsECUPartNo] := false;
+                    Buf.rExists[tsECUPartNo] := false;
+                end;
+
+            tsECUHWVer:
+                begin
+                    Buf.rEcuInfo.rHwVer := '';
+                    Buf.rValidity[tsECUHWVer] := false;
+                    Buf.rTested[tsECUHWVer] := false;
+                    Buf.rExists[tsECUHWVer] := false;
+                end;
+
+            tsECUSWVer:
+                begin
+                    Buf.rEcuInfo.rSwVer := '';
+                    Buf.rValidity[tsECUSWVer] := false;
+                    Buf.rTested[tsECUSWVer] := false;
+                    Buf.rExists[tsECUSWVer] := false;
+                end;
+
+            tsEcuInfo:
+                begin
+                    Buf.rValidity[tsEcuInfo] := False;
+                    Buf.rTested[tsEcuInfo] := False;
+                    Buf.rExists[tsEcuInfo] := False;
+                end;
+
+        else
+            mIsProcessDone := False;
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4Elec.SetValidity;
+begin
+    with mParent.RsBuf^ do
+    begin
+
+        rValidity[tsHeatDrv] := GetResult(tsHeatDrv);
+        rValidity[tsHeatPsg] := GetResult(tsHeatPsg);
+        rValidity[tsHeatDrv] := GetResult(tsVentDrv);
+        rValidity[tsVentPsg] := GetResult(tsVentPsg);
+
+        rValidity[tsBuckle] := GetResult(tsBuckle);
+        rValidity[tsODS] := GetResult(roRsODS);
+        rValidity[tsAncPT] := GetResult(roRsAncPT);
+        rValidity[tsDTCClear] := GetResult(roRsDTCClear);
+        rValidity[tsEcuInfo] := GetResult(roRsEcuInfo);
+        rValidity[tsFlowTest] := GetResult(roRsFlowTest);
+        rValidity[tsECUPartNo] := GetResult(roRsEcuPartNo);
+        rValidity[tsECUHWVer] := GetResult(roRsEcuHwVer);
+        rValidity[tsECUSWVer] := GetResult(roRsECUSWVer);
+    end;
+
+end;
+
+procedure TSubDataBox4Elec.SetData(AORD: TResultORD; const Value: Boolean);
+begin
+
+    mIsProcessDone := True;
+
+    with mParent.RsBuf^ do
+    begin
+        case AORD of
+            roRsBuckle:
+                begin
+                    rExists[tsBuckle] := True;
+                    rValidity[tsBuckle] := Value;
+                    rTested[tsBuckle] := True;
+                end;
+
+            roRsWalkIn:
+                begin
+                    rValidity[tsWalkIn] := Value;
+                    rExists[tsWalkIn] := True;
+                    rTested[tsWalkIn] := True;
+                end;
+
+            roRsDTCClear:
+                begin
+                    rValidity[tsDTCClear] := Value;
+                    rExists[tsDTCClear] := True;
+                    rTested[tsDTCClear] := True;
+                end;
+
+            roRsAncPT:
+                begin
+                    rValidity[tsAncPT] := Value;
+                    rExists[tsAncPT] := True;
+                    rTested[tsAncPT] := True;
+                end;
+
+            roRsEcuInfo:
+                begin
+                    rValidity[tsEcuInfo] := Value;
+                    rExists[tsEcuInfo] := True;
+                    rTested[tsEcuInfo] := True;
+                end;
+            roRsFlowTest:
+                begin
+                    rValidity[tsFlowTest] := Value;
+                    rExists[tsFlowTest] := True;
+                    rTested[tsFlowTest] := true;
+                end;
+            roRsEcuPartNo:
+                begin
+                    rValidity[tsECUPartNo] := Value;
+                    rExists[tsECUPartNo] := True;
+                    rTested[tsECUPartNo] := true;
+                end;
+            roRsEcuSwVer:
+                begin
+                    rValidity[tsECUSWVer] := Value;
+                    rExists[tsECUSWVer] := True;
+                    rTested[tsECUSWVer] := true;
+                end;
+            roRsEcuHwVer:
+                begin
+                    rValidity[tsECUHWVer] := Value;
+                    rExists[tsECUHWVer] := True;
+                    rTested[tsECUHWVer] := true;
+                end;
+
+        else
+            mIsProcessDone := False;
+        end;
+
+    end;
+
+end;
+
+procedure TSubDataBox4Elec.SetData(AORD: TResultORD; const Value: Double);
+begin
+    mIsProcessDone := True;
+
+    with mParent.RsBuf^ do
+    begin
+        case AORD of
+            roDatOnCurr:
+                begin
+                    rDatHVs[rCurHVPos, rCurHVTestType].rOnCurr := Value + mParent.Offset.GetHVOffset(rCurHVTestType);
+                    rExists[ConvertHVStateToTsOrd(rCurHVPos, rCurHVTestType)] := True;
+                end;
+            roDatOffCurr:
+                begin
+                    rDatHVs[rCurHVPos, rCurHVTestType].rOffCurr := Value + mParent.Offset.GetHVOffset(rCurHVTestType);
+                    rExists[ConvertHVStateToTsOrd(rCurHVPos, rCurHVTestType)] := True;
+                end;
+
+            roDatOnBlow:
+                begin
+                    SetCurHVIdx(GetBlowPos, hvtVent);
+                    rDatHVs[GetBlowPos, hvtVent].rOnCurr := Value;
+                    rExists[tsBlow] := True;
+                end;
+            roDatOffBlow:
+                begin
+                    SetCurHVIdx(GetBlowPos, hvtVent);
+                    rDatHVs[GetBlowPos, hvtVent].rOffCurr := Value;
+                    rExists[tsBlow] := True;
+                end;
+
+            roDatBuckle:
+                begin
+                    //rBuckleCurr := Value;
+                    rExists[tsBuckle] := True;
+                end;
+
+            roDatAncPT:
+                begin
+                    rAncPTVal := Value;
+                    rExists[tsAncPT] := True;
+                end
+        else
+            mIsProcessDone := False;
+
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4Elec.SetData(AORD: TResultORD; const Value: string);
+begin
+    with mParent.RsBuf^ do
+    begin
+        mIsProcessDone := False;
+
+        case AORD of
+            roDataEcuPartNo:
+                begin
+                    rEcuInfo.rPartNo := Value;
+                    rExists[tsECUPartNo] := True;
+                    rTested[tsECUPartNo] := True;
+                end;
+
+            roDataEcuHwVer:
+                begin
+                    rEcuInfo.rHwVer := Value;        // rHWVer -> rHwVer (대소문자 일치)
+                    rExists[tsECUHWVer] := True;      // 추가
+                    rTested[tsECUHWVer] := True;      // 추가
+                end;
+
+            roDataEcuSwVer:
+                begin
+                    rEcuInfo.rSwVer := Value;
+                    rExists[tsECUSWVer] := True;      // 추가
+                    rTested[tsECUSWVer] := True;      // 추가
+                end;
+        end;
+    end;
+
+end;
+
+end.
+

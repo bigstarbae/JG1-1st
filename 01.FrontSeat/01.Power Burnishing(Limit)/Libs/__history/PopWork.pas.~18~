@@ -1,0 +1,1622 @@
+
+{
+    Ver.220223.00
+}
+unit PopWork;
+
+{$INCLUDE myDefine.inc}
+
+interface
+uses
+    Windows, Messages, SysUtils, Classes, ScktComp, KiiMessages, IniFiles,
+    LanIoUnit, DataUnit,  Generics.Collections, ModelType, SeatType, BlckSock, TimeChecker, DataUnitOrd;
+{
+사양정보
+구분자	"@"
+0	STX
+1	CMD	    모델정보='14'; => ACK='15'; 검사결과:'17=> ACK='15'; PING='16'=> ACK='21
+2	Part No
+3	Pallet No
+4	작업	0:공파레트; 1:작업; 2:작업없음
+5	drive
+6	Pos	LH=0; RH=1
+7	Type	0:NORMAL; 1:HEIGHT; 2:Power
+8	Win
+9	Heat	0:없음; 1:히터; 2:통풍;
+10	Pods
+11	차종	TLE,QLE,1,2
+12	LUMB	0:없음; 1:있음
+13	ECU	0:없음; 1:있음
+14	local
+15	Color
+16	ETX
+}
+
+{
+: AD/MD Line
+0	STX
+1	CMD	    모델정보='14'; => ACK='15'; 검사결과:'17=> ACK='15'; PING='16'=> ACK='21
+2	Part No
+3	Pallet No
+4	작업	0:공파레트; 1:작업; 2:작업없음
+5	drive	LHD=0; RHD=1
+6	Pos	LH=0; RH=1
+7	Type	0:NORMAL; 1:HEIGHT; 2:POWER
+8	IMS	0:없음; 1:있음
+9	Heat(운전석/MD)	0:없음; 1:히터; 2:통풍;
+10	Pods	0:없음; 1:있음
+11	차종	MD,AD,1,2
+12	LUMB	0:없음; 1:2WAY, 2:4WAY
+13	ECU	0:없음; 1:있음  % ECU 있으면 조수석, ECU 없으면 운전석
+14	local	string
+15	Color	String
+16	Heat(조수석)	0:없음; 1:히터; 2:통풍;
+17	CKD	0:없음; 1:있음
+16	모터	0000:슬라이드모터+하이트모트+틸트모터+SP모터
+17	전장검사결과	전체OK
+
+}
+
+const
+    // COMMAND
+    SYS_REQ_MODEL      = 13 ;
+    SYS_CMD_RCV_MODEL  = 14 ;
+    SYS_CMD_PING       = 16 ;
+    SYS_CMD_WRITE_DATA = 17 ;
+    // INTERNAL COMMAND
+    SYS_CMD_RCV_ACK      = 15 ;
+    SYS_CMD_RCV_EX_ACK   = 21 ;
+    SYS_CMD_RCV_NAK      = 22 ;
+    SYS_CMD_RCV_ERROR    = 0 ;
+
+    RCV_ACK  = '15' ;
+    RCV_PING = '16';
+    RCV_EX_ACK = '21';
+
+    _TOKEN = '@' ;
+    _MNR_COUNT = 8;    //슬라이드 검사 결과, 데이터 개수
+    _MAX_TOKEN_COUNT =100;
+
+type
+TUsrPwrType = (utMNL,ut4WAY,ut8WAY,utIMS) ;
+TUsrHeatType = (utNONE,utNOR,ut2STEP,ut3STEP, utVENT) ;
+TRcvPopData = procedure (Sender:TObject; ACommand:integer) of Object ;
+TPassPallet = procedure of Object;
+TTsOrdList = TList<TTsOrd>;
+
+TPopSystem = class
+private
+    mTag: integer;
+    mHandle : HWND ;
+    mClient : TTCPBlockSocket ;
+
+    mProc     : integer ;
+    mWaitTime : double ;
+    mRepeat   : integer ;
+    mOldBit,
+    mReset    : boolean ;
+    mConnectTime : integer ;
+    mSendTerm    : integer ;
+    mReConOfSndFault : boolean ; // 3회전송 실패시 재연결 유무
+
+    mList : TList ;
+
+    mReworkList : TTsOrdJudgeList;
+
+    mLastError  : string ;
+    //EVENT
+    mRcvNotify  : TRcvPopData ;
+    //RcvDatas -----------------
+
+    mrcvCommand  : integer ;
+    mrcvsysCode,                 //Channel(고정) : 1
+    mrcvPartNo,                  //PartNo  : xxxx~~
+    mrcvLotNo,
+    mrcvLclPartNo,              // 자체 품번
+    mrcvPalletNo,                //PalletNo: xxxx~~
+    mrcvWorkType,                //0-NONE, 1-Exists, 2: Rework ,3: 통과
+    mrcvWorkDetail,
+
+
+    mrcvDrive,
+    mrcvPosType,
+    mrcvSeatType,
+    mrcvImsType,
+    mrcvOptType, mrcvOptType2,  // 운전, 조수석 히터/밴트
+    mrcvPodsType,
+    mrcvCarType,
+    mrcvLumbType,
+    mrcvEcuType,
+    mrcvLocal,                   //지역
+    mrcvColor,                   //색상
+    mrcvMotor,                   // 모터 사용 유무 : 0000
+    mrcWorkIn,
+    mrcvElecResult              // 전장 검사 결과  :
+
+                  : string ;
+
+    mTypes : TModelType;
+
+    mLastMessage  : integer ;
+
+    mLatencyTime,
+    mPoprcvTime   : double ;
+    //------------------------
+    //2007.06.11
+    mUsePop : boolean ;
+    //2008.06.16
+    mResponseTime : integer ;
+    mNotsndResult : boolean ;
+
+
+    mTokens   : array [0 .. _MAX_TOKEN_COUNT] of string;
+
+    mPassNotify : TPassPallet;
+
+    mTC:    TTimeChecker;
+
+    mEnablePING: boolean;
+
+    function  LoadData(var IsReturn:boolean): string ;
+    function  SendData(AData: string): boolean ;
+
+    //event
+    procedure OnUsrSocketConnect();
+    procedure OnUsrSocketConnecting();
+    procedure OnUsrSocketDisconnect();
+    procedure OnUsrSocketError(ErrorEvent: TErrorEvent);
+    procedure OnUsrSocketRead();
+    procedure OnUsrSocketWrite();
+
+    procedure LoadEnv ;
+
+    procedure SetMessage(ACode: integer) ;
+    procedure ClearList ;
+    function  AnalysisDatas(var AData: string): boolean;
+    procedure RecvDatas(AData: string);
+    procedure SetNakData;
+
+    function GetHostIP : string ;
+    function GetPort : integer ;
+
+
+protected
+    mConTime: double ;
+
+public
+    constructor Create(AOwner:HWND; Index:integer);
+    destructor  Destroy; override ;
+
+    procedure Initial ;
+    procedure Reset ;  //IP, Port등의 정보 변경시...
+    procedure Start ;
+    procedure Stop ;
+
+    function  ParseData(Packet: string; ItemCount : integer): integer;
+
+    procedure SaveEnv ;
+    function  IsConnected : boolean ;
+    function  Count : integer ;
+    function  AddData(const AOnReceive: TRcvPopData; ACommand:integer; const AData: string): boolean ;
+
+    procedure WorkProcess(Sender: TObject) ;
+
+    property LastError: string read mLastError ;
+    property Proc : integer read mProc ;
+    property Host : string  read GetHostIp ;
+    property Port : integer read GetPort ;
+    property ConnectWaitTime : integer read mConnectTime write mConnectTime ;
+    property IntervalOfSend : integer  read mSendTerm write mSendTerm ;
+    property ReConOfSndFault : boolean read mReConOfSndFault write mReConOfSndFault ;
+    property UsePop : boolean read mUsePop write mUsePop ;
+    property ResponseTime : integer read mResponseTime write mResponseTime ;
+    property NotsndResult : boolean read mNotsndResult write mNotsndResult ;
+    //
+    property DestHandle : HWND read mHandle write mHandle ;
+    property OnRcvData  : TRcvPopData read mRcvNotify write mRcvNotify ;
+    // recieved datas
+    function GetSysCode : string ;
+    function GetPartNo : string ;
+    function GetLclPartNo: string;
+    function GetPalletNo : string ;
+    function GetLotNo: string;
+    function GetWorkInfo(DefStr: string = '') : string;
+
+    function GetCarTypeStr : string ;
+    function GetPosTypeStr : string ;
+    function GetEcuTypeStr : string ;
+    function GetCarType : TCAR_TYPE ;
+    function GetPosType : TPOS_TYPE ;
+
+    function GetLastRcvTime: double ;
+
+    function IsExists: boolean ;
+    function IsRH : boolean ;
+    function IsHeight: boolean ;
+    function IsPoprcved:boolean ;
+    function IsRun: boolean ;
+
+    procedure OnSktStatus(Sender: TObject; Reason: THookSocketReason; const Value: String);
+
+    property rcvLotNo: string read mrcvLotNo;
+    property rcvCommand : integer read mrcvCommand ;
+    property rcvsysCode : string read mrcvsysCode ;
+    property rcvPartNo : string read mrcvPartNo;
+    property rcvPalletNo : string read mrcvPalletNo ;
+    property rcvWorkType : string read mrcvWorkType ;
+    property rcvWorkDetail: string read mrcvWorkDetail;
+    property rcvPosType: string read mrcvPosType ;
+    property rcvSeatType: string read mrcvSeatType ;
+    property rcvOptType: string read mrcvOptType ;
+    property rcvCarType: string read mrcvCarType ;
+    property rcvLumbType: string read mrcvLumbType ;
+    property rcvEcuType: string read mrcvEcuType ;
+    property rcvLocal : string read mrcvLocal ;
+    property rcvColor : string read mrcvColor ;
+    property rcvWorkIn : string read mrcWorkIn;
+    property ReworkList : TTsOrdJudgeList read mReworkList;
+
+    property OnPassPallet : TPassPallet read mPassNotify write mPassNotify;
+
+    property EnablePING: boolean read mEnablePING write mEnablePING;
+
+
+    procedure ClearRcvDatas;
+    procedure SetTest(AData: string) ;
+end ;
+
+    TPopSystems = class
+    private
+
+        mReady: boolean ;
+        mIndex: integer ;
+        mItems: array of TPopSystem ;
+
+        function GetItem(Index: integer): TPopSystem;
+    public
+        constructor Create(AOwner:HWND; ItemCount: integer) ;
+        destructor  Destroy ; override ;
+
+        procedure Start ;
+        procedure Stop ;
+        procedure Reset ;
+        function  IsRun: boolean ;
+        function  Count: integer ;
+        procedure WorkProcess(Sender: TObject) ;
+
+        property  Items[Index:integer]:TPopSystem read GetItem ;
+    end ;
+
+    function GetPopEnvFile : TIniFile ;
+    function GetUsrPwrTypeTxt(Value: TUsrPwrType): string;
+    function GetUsrHeatTypeTxt(Value: TUsrHeatType): string ;
+
+var
+    gPopsys : TPopSystems ;
+
+implementation
+uses
+    Global, Log, myUtils, DataUnitHelper, LangTran;
+
+const
+    _NONE_PROC     = 0 ;
+    _LOAD_ENV      = 1 ;
+    _CONNECTING    = 2 ;
+    _CONNECT_WAIT  = 3 ;
+    _CHECK_DATA    = 4 ;
+    _WRITE_DATA    = 5 ;
+    _RESPONSE_WAIT = 6 ;
+    _DELAY_TIME    = 7 ;
+    _FAULT_PROC    = 8 ;
+    _FAULT_PROC2    = 9 ;
+
+    _HEAD  = #02 ;
+    _TAIL  = #03 ;
+    _ACK   = #06 ;
+    _NAK   = #21 ;
+
+var
+    _RECV_CHECK,   _SEND_CHECK: string;
+
+
+type
+pPopData = ^TPopData ;
+TPopData = packed record  //512 byte
+    rOnReceive : TRcvPopData ;
+    rCommand   : integer ;
+    rWriteData : array[0..511]of CHAR ;
+end ;
+
+function GetPopEnvFile : TIniFile ;
+var
+    sTm : string ;
+begin
+    sTm := Format('%s\Env\Reference.ini', [GetHomeDirectory]) ;
+    if not DirectoryExists(ExtractFileDir(sTm)) then
+        ForceDirectories(ExtractFileDir(sTm)) ;
+
+    Result := TIniFile.Create(sTm);
+end ;
+
+function GetUsrPwrTypeTxt(Value: TUsrPwrType): string;
+begin
+    case Value of
+        utMNL: Result:= 'MNL' ;
+        ut4WAY: Result:= '4WAY' ;
+        ut8WAY: Result:= '8WAY' ;
+        //utIMS
+    else
+        Result:= 'IMS' ;
+    end ;
+end ;
+
+function GetUsrHeatTypeTxt(Value: TUsrHeatType): string ;
+begin
+    case Value of
+        utNONE: Result:= 'X' ;
+        utNOR : Result:= _TR('일반') ;
+        ut2STEP: Result:= _TR('2단') ;
+        ut3STEP: Result:= _TR('3단') ;
+    else
+        Result:= _TR('통풍') ;
+        //utVENT) ;
+    end;
+end ;
+//------------------------------------------------------------------------------
+// { TPopSystem }
+//------------------------------------------------------------------------------
+constructor TPopSystem.Create(AOwner:HWND; Index: integer);
+begin
+    mTag:= Index ;
+
+    mHandle := AOwner ;
+    mClient := TTCPBlockSocket.Create;
+    with mClient do
+    begin
+        NonBlockMode := true;
+        OnStatus := OnSktStatus;
+        SocksTimeout := 20;
+        NonblockSendTimeout := 20;
+    end ;
+
+    mProc     := 0 ;
+    mWaitTime := 0 ;
+    mRepeat   := 0 ;
+    mReset    := false ;
+    mReConOfSndFault := false ;
+    mUsePop := true ;
+
+    mConnectTime := 300 ;
+    mSendTerm    := 3 ;
+    mLastError   := '' ;
+    mPoprcvTime  := 0 ;
+
+
+    LoadEnv ;
+    mOldBit := false;
+    mReworkList := TTsOrdJudgeList.Create;
+
+    mList := TList.Create ;
+    mLastMessage := -1 ;
+
+    mEnablePING := true;
+
+    Initial() ;
+end;
+
+destructor TPopSystem.Destroy;
+begin
+    SaveEnv ;
+    //
+    if Assigned(mList) then
+    begin
+        ClearList ;
+        FreeAndNil(mList) ;
+        mList := nil ;
+    end ;
+
+    if Assigned(mReworkList) then FreeAndNil(mReworkList);
+    //
+    if Assigned(mClient) then
+    begin
+        with mClient do
+        begin
+
+        end ;
+
+        mClient.Close;
+        FreeAndNil(mClient) ;
+
+        FreeAndNil(mReworkList);
+    end ;
+end;
+
+procedure TPopSystem.ClearList ;
+var
+    i : integer ;
+begin
+    for i := mList.Count-1 downto 0 do
+    begin
+        try
+            if Assigned(mList.Items[i]) then
+            begin
+                with pPopData(mList.Items[i])^ do
+                begin
+                    if (rCommand In[SYS_CMD_WRITE_DATA])
+                        and Assigned(rOnReceive) then
+                    begin
+                        rOnReceive(Self, SYS_CMD_RCV_ERROR) ;
+                    end ;
+                end ;
+                Dispose(mList.Items[i]) ;
+            end ;
+        finally
+            mList.Delete(i) ;
+        end ;
+    end ;
+    SetMessage(SYS_POP_LIST_UPDATE) ;
+end ;
+
+function  TPopSystem.Count : integer ;
+begin
+    Result := mList.Count ;
+end ;
+
+function TPopSystem.AddData(const AOnReceive: TRcvPopData; ACommand:integer;
+    const AData: string): boolean ;
+var
+    pBuf : pPopData ;
+begin
+    Result := false ;
+    if not mClient.IsConnected then Exit ;
+
+    New(pBuf) ;
+    with pBuf^ do
+    begin
+        FillChar(rWriteData, sizeof(rWriteData),0) ;
+        rOnReceive := AOnReceive ;
+        rCommand   := ACommand ;
+        if AData <> '' then StrLCopy(rWriteData, PChar(AData), 511) ;
+    end ;
+
+    mList.Add(pBuf) ;
+    SetMessage(SYS_POP_LIST_UPDATE) ;
+    Result := true ;
+
+    // 빠른 전송을 위해 프로세스 수순을 변경한다
+    if mProc In[_DELAY_TIME] then mProc := _CHECK_DATA ;
+end ;
+
+function TPopSystem.IsConnected: boolean;
+begin
+    if mClient.LastError = 10053 then
+    begin
+        Result := False;
+        exit;
+    end;
+
+    Result := Assigned(mClient) and mClient.IsConnected;
+end;
+
+procedure TPopSystem.LoadEnv;
+var
+    Ini : TIniFile ;
+    sTm: string;
+begin
+    mClient.Close;
+
+    //sTm := Format('%s\Env\Popsystem.env', [GetHomeDirectory]) ;
+    Ini := GetPopEnvFile ;
+    sTm:= 'POP SYSTEM '+IntToStr(mTag) ;
+
+    try
+        mClient.IP := Ini.ReadString(sTm, 'HostIp', '192.168.210.10'+IntToStr(mTag)) ;
+        mClient.Port := Ini.ReadInteger(sTm, 'Port', 9003) ;
+        mConnectTime := Ini.ReadInteger(sTm, 'ConnectTime', 300) ;
+        mSendTerm    := Ini.ReadInteger(sTm, 'SendTerm', 3) ;
+        mReConOfSndFault := Ini.ReadBool(sTm, 'ReConnect', false) ;
+        mUsePop := Ini.ReadBool(sTm, 'Use', true) ;
+        mResponseTime := Ini.ReadInteger(sTm, '_POP 응답대기시간', 2) ;
+        if mResponseTime <= 0 then mResponseTime := 3 ;
+        mNotsndResult := Ini.ReadBool(sTm, 'SndData', true) ;
+    finally
+        Ini.Free ;
+    end ;
+end;
+
+procedure TPopSystem.SaveEnv;
+var
+    Ini : TIniFile ;
+    sTm: string;
+begin
+    mClient.Close;
+
+    Ini := GetPopEnvFile ;
+    sTm:= 'POP SYSTEM '+IntToStr(mTag) ;
+    try
+        Ini.WriteString(sTm, '_HOST', mClient.IP) ;
+        Ini.WriteInteger(sTm, '_PORT', mClient.Port) ;
+        Ini.WriteInteger(sTm, '_CONNECT_TIME', mConnectTime) ;
+        Ini.WriteInteger(sTm, '_WRITE_TERM', mSendTerm) ;
+        Ini.WriteBool(sTm, '_SEND_FAULT_AND_RECONNECT', mReConOfSndFault) ;
+        Ini.WriteBool(sTm, '_POP사용여부', mUsePop) ;
+        Ini.WriteInteger(sTm, '_POP 응답대기시간', mResponseTime) ;
+        Ini.WriteBool(sTm, '_POP 측정결과 전송여부', mNotsndResult) ;
+    finally
+        Ini.Free ;
+    end ;
+end;
+
+procedure TPopSystem.OnSktStatus(Sender: TObject; Reason: THookSocketReason; const Value: String);
+begin
+    case Reason of
+        HR_ResolvingBegin: ;
+        HR_ResolvingEnd: ;
+        HR_SocketCreate: ;
+        HR_SocketClose:
+        begin
+
+        end;
+        HR_Bind: ;
+        HR_Connect:
+        begin
+        end;
+        HR_CanRead: ;
+        HR_CanWrite: ;
+        HR_Listen: ;
+        HR_Accept: ;
+        HR_ReadCount: ;
+        HR_WriteCount: ;
+        HR_Wait: ;
+        HR_Error:
+        begin
+
+            case mClient.LastError of
+                10060:  ;// timeout
+                10101,  // 정상 종료
+                10050..10054 : // Network down
+                begin
+                    mClient.Close;
+                    OnUsrSocketDisconnect;
+                end;
+            end;
+        end;
+    end;
+end;
+
+
+procedure TPopSystem.OnUsrSocketConnect();
+begin
+    if mProc In[_CONNECT_WAIT] then mProc := _CHECK_DATA ;
+
+    mConTime:= GetAccurateTime ;
+    SetMessage(SYS_POP_CONNECTED) ;
+    gLog.ToFiles('IP:%s:%d POP%d connected', [mClient.IP, mClient.Port, mTag]) ;
+
+    if Assigned(mRcvNotify) then OnRcvData(Self, SYS_POP_CONNECTED) ;
+end;
+
+procedure TPopSystem.OnUsrSocketConnecting();
+begin
+    SetMessage(SYS_POP_CONNECTING) ;
+    gLog.ToFiles('IP:%s:%d POP%d, connecting.......', [mClient.IP, mClient.Port, mTag]) ;
+
+    if Assigned(mRcvNotify) then OnRcvData(Self, SYS_POP_CONNECTING) ;
+end;
+
+procedure TPopSystem.OnUsrSocketDisconnect();
+begin
+    SetMessage(SYS_POP_DISCONNECTED) ;
+    gLog.ToFiles('IP:%s:%d POP%d disconnect', [mClient.IP,mClient.Port, mTag]) ;
+
+    ClearList ;
+    if Assigned(mRcvNotify) then OnRcvData(Self, SYS_POP_DISCONNECTED) ;
+
+    mProc     := _DELAY_TIME ;
+    mWaitTime := GetAccurateTime ;
+end;
+
+procedure TPopSystem.OnUsrSocketError(ErrorEvent: TErrorEvent);
+var
+    sTm : string ;
+begin
+    sTm := '' ;
+    case ErrorEvent of
+        eeGeneral :
+        begin
+            sTm := 'The socket received an error message that does not fit into any of the following categories.' ;
+        end ;
+        eeSend	  :
+        begin
+            sTm := 'An error occurred when trying to write to the socket connection.' ;
+        end ;
+        eeReceive :
+        begin
+            sTm := 'An error occurred when trying to read from the socket connection.' ;
+        end;
+        eeConnect :
+        begin
+            sTm := 'A connection request that was already accepted could not be completed.' ;
+        end ;
+        eeDisconnect :
+        begin
+            sTm := 'An error occurred when trying to close a connection.' ;
+        end ;
+        eeAccept  :
+        begin
+            sTm := 'A problem occurred when trying to accept a client connection request.' ;
+        end ;
+    else
+        sTm := 'Unknown Code';
+    end ;
+    sTm := Format('%s (ErrorCode: %d)', [sTm, mClient.LastError]) ;
+
+    if mLastError <> sTm then
+    begin
+        mLastError := sTm ;
+        gLog.ToFiles('IP:%s:%d %s', [mClient.IP, mClient.Port, mLastError]) ;
+    end ;
+
+    if mProc In[_CONNECT_WAIT] then mProc := _DELAY_TIME
+    else                            mProc := _FAULT_PROC ;
+
+
+    mClient.Close ;
+
+    SetMessage(SYS_ETHERNET_ERROR) ;
+end;
+
+
+procedure TPopSystem.OnUsrSocketRead();
+var
+    sTm: string ;
+begin
+    try
+        sTm := mClient.RecvBufferStr(mClient.WaitingData, 100);
+    except
+        OnUsrSocketError(eeReceive);
+        Exit;
+    end;
+
+
+    if sTm <> _RECV_CHECK then
+        gLog.Panel('IP:%s:%d POP%d recieve: %s', [mClient.IP, mClient.Port,mTag, sTm]);
+
+    mConTime:= GetAccurateTime ;
+
+    RecvDatas(sTm) ;
+
+    mLastError := '' ;
+    SetMessage(SYS_POP_READ) ;
+end;
+
+procedure TPopSystem.OnUsrSocketWrite();
+begin
+    SetMessage(SYS_POP_WRITE) ;
+    //gLog.Panel('IP:%s:%d POP WRITE', [mClient.IP,mClient.Port]);
+end;
+
+procedure TPopSystem.Reset;
+begin
+    mReset := true ;
+end;
+
+function TPopSystem.SendData(AData: string): boolean;
+begin
+    Result   := false ;
+
+    if not mClient.IsConnected then Exit ;
+
+    try
+        mClient.SendString(AData);
+        OnUsrSocketWrite();
+        Inc(mRepeat) ;
+    except
+        OnUsrSocketError(eeSend);
+    end;
+
+    if AData <> _SEND_CHECK then gLog.Panel('IP:%s:%d POP%d send: %s', [mClient.IP,mClient.Port, mTag, AData]) ;
+
+    Result := true;
+end;
+
+procedure TPopSystem.Start;
+begin
+    mProc := _LOAD_ENV ;
+    gLog.Panel('POP work start');
+end;
+
+procedure TPopSystem.Stop;
+begin
+    mClient.Close;
+    mProc := _NONE_PROC ;
+    gLog.Panel('POP work stop');
+end;
+
+function TPopSystem.LoadData(var IsReturn:boolean) : string ;
+var
+    pBuf : pPopData ;
+begin
+    Result := '' ;
+    IsReturn:= false ;
+    if Count <= 0 then Exit ;
+
+    pBuf := mList.Items[0] ;
+    if not Assigned(pBuf) then
+    begin
+        mList.Delete(0) ;
+        SetMessage(SYS_POP_LIST_UPDATE) ;
+        Exit ;
+    end ;
+
+    case pBuf^.rCommand of
+        SYS_CMD_WRITE_DATA :
+        begin
+            Result := Format('%s%s%d%s%s%s%s', [_HEAD,_TOKEN,
+                                             pBuf^.rCommand,
+                                             _TOKEN,
+                                             pBuf^.rWriteData,
+                                             _TOKEN,_TAIL]) ;
+            IsReturn:= true ;
+        end ;
+        SYS_REQ_MODEL :
+        begin
+            Result := Format('%s%s%d%s%s%s%s', [_HEAD,_TOKEN,
+                                             pBuf^.rCommand,
+                                             _TOKEN,
+                                             pBuf^.rWriteData,
+                                             _TOKEN,_TAIL]) ;
+            IsReturn:= true ;
+        end ;
+        SYS_CMD_PING:
+        begin
+            Result := Format('%s%s%d%s%s%s%s', [_HEAD,_TOKEN,
+                                             pBuf^.rCommand,
+                                             _TOKEN,
+                                             pBuf^.rWriteData,
+                                             _TOKEN,_TAIL]) ;
+
+            IsReturn := true;
+        end;
+
+
+
+    end ;
+end ;
+
+procedure TPopSystem.SetNakData ;
+var
+    pBuf : pPopData ;
+begin
+    if mList.Count > 0 then
+    begin
+        pBuf := mList.Items[0] ;
+        try
+            if Assigned(pBuf) then
+            begin
+                with pBuf^ do
+                begin
+                    if (rCommand = SYS_CMD_WRITE_DATA)
+                        and Assigned(rOnReceive) then
+                    begin
+                        rOnReceive(Self, SYS_CMD_RCV_ERROR) ;
+                    end ;
+                end ;
+                Dispose(pBuf) ;
+            end ;
+        finally
+            mList.Delete(0) ;
+            SetMessage(SYS_POP_LIST_UPDATE) ;
+        end ;
+    end ;
+end ;
+
+procedure TPopSystem.WorkProcess(Sender: TObject);
+var
+    sTm : string ;
+    IsResp : boolean ;
+begin
+    case mProc of
+        _NONE_PROC     :;
+        _LOAD_ENV      :
+        begin
+            LoadEnv ;
+            Inc(mProc) ;
+        end ;
+        _CONNECTING    :
+        begin
+            if not mUsePop {or not gDio.IsIO(_IN_POP_MODE)} then
+            begin
+                mWaitTime := GetAccurateTime ;
+                mProc := _DELAY_TIME ;
+                Exit ;
+            end ;
+            //
+            Inc(mProc) ;
+            if mClient.IP = '' then
+            begin
+                if mLastError <> 'IP error' then
+                begin
+                    mLastError  := 'IP error' ;
+                    SetMessage(SYS_CMD_RCV_ERROR) ;
+                    gLog.Panel('POP system IP error!!!');
+                end ;
+                mProc := _DELAY_TIME ;
+                Exit ;
+            end ;
+            //
+            try
+                gLog.Panel('IP:%s:%d POP%d try connect...', [mClient.IP,mClient.Port, mTag]) ;
+                if not mClient.IsConnected then mClient.ConnectNB;
+                OnUsrSocketConnecting();
+                mProc := _CONNECT_WAIT;
+                mTC.Start(_DELAY_TIME * 1000);
+            finally
+            end ;
+            mWaitTime := GetAccurateTime ;
+        end ;
+        _CONNECT_WAIT  :
+        begin
+            if mTC.IsTimeOut then
+            begin
+                mProc := _CONNECTING;
+            end;
+
+            if mClient.IsConnected then
+                OnUsrSocketConnect();
+
+        end ;
+        _CHECK_DATA    :
+        begin
+            if mList.Count > 0 then
+            begin
+                mRepeat := 0 ;
+                Inc(mProc) ;
+            end
+            else
+            begin
+                SetMessage(SYS_POP_READY) ;
+                mProc := _DELAY_TIME ;
+            end ;
+
+            mWaitTime := GetAccurateTime ;
+        end ;
+        _WRITE_DATA    :
+        begin
+            sTm := LoadData(IsResp) ;
+
+            if (sTm <> '') and SendData(sTm) then
+            begin
+                gLog.Panel('POP%d send data: %s', [mTag, sTm]);
+                Inc(mProc);
+            end
+            else
+            begin
+                gLog.Panel('send fault or data error (전송 실패 혹은 데이터 오류)') ;
+                mProc := _FAULT_PROC ;
+            end ;
+
+            if not IsResp then
+            begin
+                mProc := _DELAY_TIME ;
+            end ;
+
+            mWaitTime := GetAccurateTime ;
+        end ;
+        _RESPONSE_WAIT :
+        begin
+            if mClient.WaitingData > 0 then
+            begin
+                OnUsrSocketRead();
+                Exit;
+            end;
+
+
+            //2008.06.16 측정결과 송신후 응답이 느림 시간을 맘대로 하도록 함.
+            if (GetAccurateTime - mWaitTime) > (mResponseTime * 1000.0) then // 1 sec
+            begin
+                if mRepeat > 3 then
+                begin
+                    if mReConOfSndFault then
+                    begin
+                        mClient.Close;
+                        mProc := _FAULT_PROC ;
+                        gLog.Panel('POP%d no response, and disconnect(응답 회수 3회 재 연결)', [mTag]);
+                    end
+                    else
+                    begin
+                        SetNakData ;
+                        SetMessage(SYS_CMD_RCV_ERROR) ;
+                        mProc := _DELAY_TIME ;
+                        gLog.Panel('POP%d 응답 회수 3회 -> 전송 오류 처리...', [mTag]);
+                    end ;
+                    mWaitTime := GetAccurateTime ;
+                end
+                else
+                begin
+                    mProc := _WRITE_DATA ;
+                    gLog.Panel('POP%d 응답 회수 %d회 재 전송...', [mTag, mRepeat]);
+                end ;
+            end ;
+        end ;
+        _DELAY_TIME    :
+        begin
+            if mClient.WaitingData > 0 then
+            begin
+                OnUsrSocketRead();
+                Exit;
+            end;
+
+            if (GetAccurateTime - mWaitTime) > (mSendTerm * 1000.0) then
+            begin
+                if mClient.IsConnected then
+                begin
+                    mProc := _CHECK_DATA ;
+                    mWaitTime:= GetAccurateTime ;
+
+                    // mConTime은 연결시, 소켓데이터를 Read시마다 갱신, 즉 POP에서 수신되는 PING이 설정시간 보다 지연된 경우
+                    // POP으로 _FAULT_PROC2에서 Ping을 전송 -> 전송 실패시 끊김으로 판단하고 재접속
+                    if ((GetAccurateTime - mConTime) >= (1000 * 20)) and mEnablePING then
+                    begin
+                        AddData(nil, SYS_CMD_PING, '');
+                    end ;
+                end
+                else
+                begin
+                    mProc := _CONNECTING ;
+                end ;
+
+            end ;
+        end ;
+        _FAULT_PROC:
+        begin
+            if (GetAccurateTime - mWaitTime) > 3000.0 then  // 3 sec
+            begin
+                mClient.Close;
+                OnUsrSocketDisconnect;
+                mProc := _LOAD_ENV ;
+            end ;
+        end ;
+
+    else
+    end ;
+
+    if mReset
+        and (mProc In[_CONNECTING.._DELAY_TIME]) then
+    begin
+        mReset := false ;
+        mProc  := _LOAD_ENV ;
+    end ;
+end;
+
+function TPopSystem.AnalysisDatas(var AData: string): boolean;  //수신과 파싱.
+var
+    iH, iT, Val : integer ;
+    sTm : string ;
+begin
+    Result := false ;
+
+    iH := Pos(_HEAD, AData) ;
+    iT := Pos(_TAIL, AData) ;
+    //gLog.ToFiles('POP 수신 패킷 : %s', [AData]);
+    if (iH > iT) then Delete(AData, 1, iH-1)
+    else
+    if (iH > 0) and (iT > iH) then
+    begin
+        AData  := Copy(AData, iH+1, iT-iH-1) ;
+        Result := true ;
+
+    end
+    else
+    if (iT <= 0) and (iH <= 0) then AData := '' ;
+
+
+    if not Result then Exit ;
+    mrcvCommand  := 0 ;
+
+{  AD/MD 토큰 순서
+3	Part No
+4	Pallet No
+5	작업	0:공파레트; 1:작업; 2:작업없음
+6	drive	LHD=0; RHD=1
+7	Pos	LH=0; RH=1
+8	Type	0:NORMAL; 1:HEIGHT; 2:POWER
+9	IMS	0:없음; 1:있음
+10	Heat(운전석/MD)	0:없음; 1:히터; 2:통풍;
+11	Pods	0:없음; 1:있음
+12	차종	MD,AD,1,2
+13	LUMB	0:없음; 1:2WAY, 2:4WAY
+14	ECU	0:없음; 1:있음  % ECU 있으면 조수석, ECU 없으면 운전석
+15	local	string
+16	Color	String
+17	Heat(조수석)	0:없음; 1:히터; 2:통풍;
+18	CKD	0:없음; 1:있음
+19	모터	0000:슬라이드모터+하이트모트+틸트모터+SP모터        //--work in , WCS
+20	전장검사결과	전체OK
+
+}
+
+    iT := 0 ;
+    for iH := 1 to Length(AData) do   //,ACK,
+    begin
+        case AData[iH] of
+            _TOKEN :
+            begin
+                case iT of
+                    1 :
+                    begin
+                        if sTm = RCV_ACK then //_ACK then
+                        begin
+                            mrcvCommand := SYS_CMD_RCV_ACK ;
+                            gLog.ToFiles('POP%d수신 COMMAND: ACK(%s)', [mTag, sTm]);
+                        end
+                        else
+                        if sTm = _NAK then
+                        begin
+                            mrcvCommand := SYS_CMD_RCV_NAK ;
+                            gLog.ToFiles('POP%d수신 COMMAND: NAK(%s)', [mTag, sTm]);
+                        end
+                        else
+                        if (sTm = RCV_PING) or (sTm = RCV_EX_ACK) then
+                        begin
+                            if Length(AData) > 5 then
+                            begin
+                                Val := StrToInt(Copy(AData,5,1));
+                                if (Val = 1) and not mOldBit   then
+                                begin
+                                    mOldBit := true;
+                                    SendMessage(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER,2);
+                                    gLog.Panel('슬립모드로 들어갑니다');
+
+                                end;
+                                if (Val = 0) and mOldBit then
+                                begin
+                                    mOldBit := false;
+                                    SendMessage(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, -1);
+                                    mouse_event(MOUSEEVENTF_ABSOLUTE or MOUSEEVENTF_MOVE,0,1,0,0);
+                                    gLog.Panel('일반모드로 들어갑니다');
+                                end;
+
+                            end;
+                            mrcvCommand := StrToIntDef(sTm, SYS_CMD_RCV_ERROR) ;
+                            //gLog.ToFiles('POP%d수신 COMMAND: %s', [mTag, sTm]);
+                            exit;
+                        end
+                        else
+                        begin
+                            mrcvCommand := StrToIntDef(sTm, SYS_CMD_RCV_ERROR) ;
+                            Initial() ;
+
+                            gLog.ToFiles('POP%d수신 COMMAND: %s', [mTag, sTm]);
+                        end ;
+                    end ;
+
+                    2 : mrcvsysCode  := Trim(sTm) ;
+                    3 : mrcvPartNo   := Trim(sTm) ;
+                    4 : mrcvLotNo := Trim(sTm) ;
+                    5 : mrcvWorkType := Trim(sTm) ;
+                    6 : mrcvWorkDetail := Trim(sTm);
+
+                    // 아래 사용 안 함...
+
+                    7 : mrcvDrive    := Trim(sTm) ;
+                    8 : mrcvPosType  := Trim(sTm) ;
+                    9 : mrcvSeatType := Trim(sTm) ;
+                    10 : mrcvImsType  := TRim(sTm);
+                    11 :
+                    begin
+                        mrcvOptType   := Trim(sTm) ;
+                    end;
+                    12 : mrcvPodsType := Trim(sTm);
+                    13 : mrcvCarType := Trim(sTm) ;
+                    14 : {mrcvLumbType := Trim(sTm)} ;
+                    15 : mrcvEcuType := Trim(sTm) ;
+                    16 : mrcvLocal := Trim(sTm) ;
+                    17 : mrcvColor := Trim(sTm) ;
+                    18 :
+                    begin
+                        mrcvOptType2 := Trim(sTm);
+                    end;
+                    19 :; // Count
+                    20 :
+                    begin
+
+                    end;
+                    21 : // 전장 실적 (콤마 구분)
+                    begin
+                        ParseData(sTm, 50);
+                    end;
+                    22:  // 파워 실적
+                    begin
+                        //ParseData(sTm, 33);
+                    end;
+                    100 :
+                    begin
+                        if sTm <> '' then
+                        begin
+                            mrcvCommand := SYS_CMD_RCV_ERROR ;
+                            mLastError  := _TR('수신포맷오류');
+                        end ;
+                    end ;
+                end ;
+                //gLog.Panel('iT : %d, sTm : %s', [it, sTm]);
+                sTm := '' ;
+                Inc(iT) ;
+            end ;
+        else
+            sTm := sTm + AData[iH] ;
+        end ;
+    end ;
+
+
+    Result := mrcvCommand > 0 ;
+end;
+
+function GetTsOrdByResultOrd(ResultOrd: TResultORD): TTsORD; // 더미
+begin
+    Result := High(TTsOrd); // 더미
+end;
+
+function TPopSystem.ParseData(Packet: string; ItemCount : integer): integer;
+var
+    Count : integer;
+    i, Idx: Integer;
+    TsOrd : TTsOrd ;
+    TsOrdJudge, TempTsOrdJudge : TTsOrdJudge;
+    IsFind : boolean;
+begin
+    Count := ParseByDelimiter(mTokens, _MAX_TOKEN_COUNT, Packet, ',');
+
+    if (Count <= 0) or (ItemCount > Count) then Exit(0);
+
+    mReworkList.Clear;
+
+    for i := 0 to ItemCount - 1 do
+    begin
+        TsOrd := GetTsOrdByResultOrd(PopDataOrd[i+_MNR_COUNT]);
+        if Pos('NG', mTokens[i]) > 0 then
+        begin
+            TsOrdJudge.mJudge := rjNG;
+        end
+        else if Pos('OK', mTokens[i]) > 0 then
+        begin
+            TsOrdJudge.mJudge := rjOK;
+        end
+        else
+        begin
+            TsOrdJudge.mJudge := rjNone;
+        end;
+
+        //gLog.Panel('POP 수신  List : TsOrd %s(%d) : %s, ResultOrd : %s', [GetTsOrdName(TsOrd), Ord(TsOrd), TsOrdJudge.GetDecStr, GetResultOrdName(PopDataOrd[i+_MNR_COUNT])]);
+
+        TsOrdJudge.mTsOrd := TsOrd;
+        Idx := mReworkList.IndexOf(TsOrdJudge.mTsOrd);
+
+        if (Idx < 0) and (TsOrdJudge.mJudge <> rjNone) then
+        begin
+            mReworkList.Add(TsOrdJudge);
+        end
+        else
+        begin
+            if TsOrdJudge.mJudge = rjNG then
+            begin
+                if mReworkList[Idx].mJudge <> rjNG then
+                begin
+                    TempTsOrdJudge := mReworkList[Idx];
+                    mReworkList.Delete(Idx);            // mReworkList[Idx].mJudge := rdNG : 좌변값에 할당이 안됨. 일단은 임시로 기존 바꿔치기
+                    TempTsOrdJudge.mJudge := rjNG;
+                    mReworkList.Add(TempTsOrdJudge);
+                    gLog.Panel('%s NG 변경', [GetTsOrdName(TempTsOrdJudge.mTsOrd)]);
+                end
+                else
+                begin
+
+                end
+            end;
+
+        end;
+    end;
+
+    Result := mReworkList.Count;
+end;
+
+procedure TPopSystem.RecvDatas(AData: string) ;
+var
+    bTm  : boolean ;
+    pBuf : pPopData ;
+begin
+    if Length(AData) > 0 then
+    begin
+        mrcvCommand := -1 ;
+        if AnalysisDatas(AData) then
+        begin
+            case mrcvCommand of
+                SYS_CMD_RCV_MODEL :
+                begin
+                    mPoprcvTime:= Now() ;
+
+                    bTm := true ;
+                    if Assigned(mRcvNotify) then OnRcvData(Self, mrcvCommand) ;
+                    if bTm then
+                    begin
+                        gLog.Panel('POP수신(모델) 성공(%s)', [mrcvCarType]) ;
+                    end ;
+                    SendData(Format('%s%s%d%s%s', [_HEAD,_TOKEN,
+                                                    SYS_CMD_RCV_ACK,
+                                                    _TOKEN,_TAIL])) ;
+
+                    //모델요청에 대한 응답.
+                    if mList.Count > 0 then
+                    begin
+                        pBuf := mList.Items[0] ;
+                        if Assigned(pBuf)
+                            and (pBuf^.rCommand = SYS_REQ_MODEL) then
+                        begin
+                            mRepeat := 0 ;
+                            if mProc In[_RESPONSE_WAIT] then
+                            begin
+                                mProc := _RESPONSE_WAIT + 1 ;
+                            end ;
+
+                            try
+                                Dispose(pBuf) ;
+                            finally
+                                mList.Delete(0) ;
+                                SetMessage(SYS_POP_LIST_UPDATE) ;
+                            end ;
+                            gLog.Panel('POP요청에 의한 응답확인', []) ;
+                        end ;
+                    end ;
+                end ;
+                //ACK 결과 데이터 전송 후... 수신정상 응답
+                SYS_CMD_RCV_ACK    :
+                begin
+                    mrcvCommand := SYS_CMD_RCV_ACK ;
+
+                    if mList.Count > 0 then
+                    begin
+                        pBuf := mList.Items[0] ;
+                        if Assigned(pBuf)
+                            and (pBuf^.rCommand = SYS_CMD_WRITE_DATA) then
+                        begin
+                            mrcvCommand := SYS_CMD_RCV_ACK ;
+
+                            if Assigned(pBuf^.rOnReceive) then
+                                pBuf^.rOnReceive(Self, mrcvCommand) ;
+
+                            mRepeat := 0 ;
+                            if mProc In[_RESPONSE_WAIT] then
+                            begin
+                                mProc := _RESPONSE_WAIT + 1 ;
+                            end ;
+
+                            try
+                                Dispose(pBuf) ;
+                            finally
+                                mList.Delete(0) ;
+                                SetMessage(SYS_POP_LIST_UPDATE) ;
+                            end ;
+                            gLog.Panel('POP전송(결과) 성공', []) ;
+                        end ;
+                    end ;
+                end ;
+                SYS_CMD_PING:
+                begin
+                    SendData(Format('%s%s%d%s%s', [_HEAD,_TOKEN,
+                                                    SYS_CMD_RCV_EX_ACK,
+                                                    _TOKEN,_TAIL])) ;
+                    //gLog.Panel('POP수신 ping');
+                end ;
+                SYS_CMD_RCV_EX_ACK:
+                begin
+                    if mList.Count <= 0 then
+                        Exit;
+
+                    pBuf := mList.Items[0] ;
+                    try
+                        if Assigned(pBuf) then
+                        begin
+                            Dispose(pBuf) ;
+                        end ;
+                    finally
+                        mList.Delete(0) ;
+                        SetMessage(SYS_POP_LIST_UPDATE) ;
+                    end ;
+
+
+                    mRepeat := 0 ;
+                    if mProc In[_RESPONSE_WAIT] then
+                    begin
+                        mProc := _RESPONSE_WAIT + 1 ;
+                    end ;
+
+                end
+
+            else
+                SetMessage(SYS_POP_ERROR) ;
+                gLog.Panel('CMD:%d, POP%d수신(에러): %s', [mrcvCommand, mTag, mLastError]) ;
+                Exit ;
+            end ;
+        end ;
+        //if Assigned(mPassNotify) then mPassNotify;
+    end ;
+end ;
+
+procedure TPopSystem.SetMessage(ACode: integer);
+begin
+    if mLastMessage = ACode then Exit ;
+    SendToForm(mHandle, ACode, mTag, false);
+    mLastMessage := ACode ;
+end;
+
+function TPopSystem.GetHostIP: string;
+begin
+    Result := mClient.IP ;
+end;
+
+function TPopSystem.GetPort: integer;
+begin
+    Result := mClient.Port ;
+end;
+
+function TPopSystem.GetPalletNo: string;
+begin
+    Result := mrcvPalletNo ;
+end;
+
+function TPopSystem.GetPartNo: string;
+begin
+    Result := mrcvPartNo ;
+end;
+
+function TPopSystem.GetLclPartNo: string;
+begin
+    Result := mrcvLclPartNo ;
+end;
+
+
+function TPopSystem.GetLotNo: string;
+begin
+    Result := mrcvLotNo;
+end;
+
+function TPopSystem.GetSysCode: string ;
+begin
+    Result := mrcvsysCode ;
+end;
+
+
+function TPopSystem.GetWorkInfo(DefStr: string) : string;
+begin
+    if mrcvWorkType = '0' then
+        Result := _TR('작업 없음')
+    else if mrcvWorkType = '1' then
+        Result := _TR('작업 있음')
+    else if mrcvWorkType = '2' then
+        Result := 'REWORK'
+    else if mrcvWorkType = '3' then
+        Result := 'CODE:3'
+    else if mrcvWorkType = '4' then
+        Result := 'CODE:4'
+    else
+        Result := DefStr
+end;
+
+function TPopSystem.IsExists: boolean;
+begin
+    Result := ((mrcvWorkType = '1') or (mrcvWorkType = '2')) and (GetPartNo <> '');
+end;
+
+function TPopSystem.IsHeight: boolean;
+begin
+    Result := mrcvSeatType = '1' ;
+end;
+
+
+function TPopSystem.GetCarTypeStr : string ;
+begin
+    Result := TCAR_TYPE_STR[ord(GetCarType)] ;
+end ;
+
+function TPopSystem.GetPosTypeStr : string ;
+begin
+    Result := TPOS_TYPE_STR[ord(GetPosType)] ;
+end ;
+
+
+function TPopSystem.GetEcuTypeStr : string ;
+begin
+    Result := '';
+end ;
+
+
+function TPopSystem.GetCarType : TCAR_TYPE ;
+var
+    iDx : integer ;
+begin
+    Result := ctJG1;
+    iDx := StrToIntDef(mrcvCarType, -1) ;
+
+    if not (iDx In[ord(Low(TCAR_TYPE))..Ord(High(TCAR_TYPE))]) then Exit ;
+    Result := TCAR_TYPE(iDx) ;
+end ;
+
+function TPopSystem.GetPosType : TPOS_TYPE ;
+var
+    iDx : integer ;
+begin
+    Result := ptLH ;
+    iDx := StrToIntDef(mrcvPosType, -1) ;
+    if not (iDx In[ord(ptLH)..ord(ptRH)]) then Exit ;
+    Result := TPOS_TYPE(iDx) ;
+end ;
+
+
+
+function TPopSystem.IsRH: boolean;
+begin
+    Result := mrcvPosType = '1' ;
+end;
+
+function TPopSystem.IsRun: boolean;
+begin
+    Result:= mProc > _NONE_PROC ;
+end;
+
+procedure TPopSystem.SetTest(AData: string);
+begin
+    SendData(_HEAD+_TOKEN+IntToStr(SYS_CMD_WRITE_DATA)+AData+_TOKEN+_TAIL);
+end;
+
+function TPopSystem.IsPoprcved: boolean;
+begin
+    Result:= (mrcvWorkType <> '0') and  (mrcvWorkType <> '');
+//    Result:= GetSysCode = '1' ;
+end;
+
+procedure TPopSystem.Initial;
+begin
+    //ClearList() ;
+
+    mrcvsysCode :='';
+    mrcvPartNo :='';
+    mrcvPalletNo :='';
+    mrcvWorkType :='';
+    mrcvDrive :='';
+    mrcvPosType :='';
+    mrcvSeatType :='';
+    mrcvOptType :='';
+    mrcvCarType :='';
+    mrcvLumbType :='';
+    mrcvEcuType :='';
+    mrcvLocal :='';
+    mrcvColor :='';
+    mrcvMotor := '';
+    mrcWorkIn := '';
+end;
+
+function TPopSystem.GetLastRcvTime: double;
+begin
+    Result:= mPoprcvTime ;
+end;
+
+procedure TPopSystem.ClearRcvDatas;
+begin
+    mrcvsysCode :='';
+    mrcvPartNo :='';
+    mrcvPalletNo :='';
+    mrcvWorkType :='';
+
+end;
+
+//------------------------------------------------------------------------------
+{ TPopSystems }
+//------------------------------------------------------------------------------
+function TPopSystems.Count: integer;
+begin
+    Result:= Length(mItems) ;
+end;
+
+constructor TPopSystems.Create(AOwner:HWND; ItemCount: integer);
+var
+    i: integer;
+begin
+    gLog.ToFiles('POP SYSTEMS CREATE',[]) ;
+
+    mReady:= false ;
+
+
+    SetLength(mItems, ItemCount);
+
+    for i := 0 to ItemCount - 1 do
+    begin
+        mItems[i]:= TPopSystem.Create(AOwner, i);
+    end;
+
+end;
+
+destructor TPopSystems.Destroy;
+var
+    i: integer;
+begin
+    gLog.ToFiles('POP SYSTEMS DESTROY',[]) ;
+
+    for i := 0 to Length(mItems) - 1 do
+        FreeAndNil(mItems[i]);
+
+    mItems := nil;
+  inherited;
+end;
+
+function TPopSystems.GetItem(Index: integer): TPopSystem;
+begin
+    Result:= mItems[Index] ;
+end;
+
+function TPopSystems.IsRun: boolean;
+var
+    i: integer;
+begin
+    for i := 0 to Length(mItems) - 1 do
+        if mItems[0].IsRun then Exit(true);
+
+    Result := false;
+end;
+
+procedure TPopSystems.Reset;
+var
+    i: integer;
+
+begin
+
+    for i := 0 to Length(mItems) - 1 do
+        mItems[i].Reset ;
+
+    gLog.ToFiles('POP SYSTEMS RESET',[]) ;
+end;
+
+procedure TPopSystems.Start;
+var
+    i: integer;
+
+begin
+    if mReady then Exit ;
+    mReady:= true ;
+    mIndex:= 0 ;
+    for i := 0 to Length(mItems) - 1 do
+        mItems[i].Start ;
+
+    gLog.ToFiles('POP SYSTEMS SATRT',[]) ;
+end;
+
+procedure TPopSystems.Stop;
+var
+    i: integer;
+begin
+    if not mReady then Exit ;
+    mReady:= false ;
+
+    for i := 0 to Length(mItems) - 1 do
+        mItems[i].Stop ;
+
+    gLog.ToFiles('POP SYSTEMS STOP',[]) ;
+end;
+
+procedure TPopSystems.WorkProcess(Sender: TObject);
+begin
+    if not mReady then Exit ;
+
+    Inc(mIndex);
+    mIndex:= mIndex mod Length(mItems) ;
+
+    mItems[mIndex].WorkProcess(Sender);
+end;
+
+
+initialization
+    _RECV_CHECK := _HEAD + _TOKEN + IntToStr(SYS_CMD_PING) + _TOKEN + _TAIL;
+    _SEND_CHECK := _HEAD + _TOKEN + IntToStr(SYS_CMD_RCV_EX_ACK) + _TOKEN + _TAIL;
+finalization
+
+
+end.

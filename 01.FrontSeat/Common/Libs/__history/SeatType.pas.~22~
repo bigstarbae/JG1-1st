@@ -1,0 +1,64 @@
+unit SeatType;
+
+interface
+
+type
+    // 시트 사양 TYPE
+    TPOS_TYPE = (rtLH, rtRH);
+    TDRV_TYPE = (rtLHD, rtRHD);
+    TPOS_TYPE_EX = (rteLH, rteRH, rteLHD, rteRHD);
+    {
+     - SLIDE : 2WAY
+     - SLIDE + RECL : 4WAY
+     - S + R + HEIGHT : 6WAY
+     - S + R+ H + TILT : 8WAY
+     - S + R + H + T + CUSH.EXT: 10WAY
+    }
+
+
+    TCAR_TYPE = (rtJG1, rtRJ1, rtHI, rtSPARE1, rtSPARE2);
+    TSEAT_TYPE = (rtSTD, rtSE);
+
+
+    TECU_TYPE = (rtNoneEcu, rtECU);
+    TIMS_TYPE = (rtNoneIms, rtIMS);
+
+    THV_TYPE = (rtNoneHV, rtHeat, rtHV);
+    TBuckleTestType = (btNone, btIO, btCurr, btIOCurr);
+    TODS_TYPE  = (rtNoneOds, rtODS);
+    TANCHORPT_TYPE = (rtACPTNone, rtACPT);
+
+    TBC_PART_TYPE = (bptUnknown, bptECU, bptECU2, bptBuckle, bptHeight, bptWire, bptVentFan, bptODS, bptWkIn);
+    TBC_PART_TYPE_ARRAY = array of TBC_PART_TYPE;
+
+
+
+
+
+
+
+const
+
+    TPOS_TYPE_STR: array [0 .. 1] of string = ('LH', 'RH');
+    TDRV_TYPE_STR: array [0 .. 1] of string = ('LHD', 'RHD');
+    TPOS_TYPE_EX_STR: array [0 .. 3] of string = ('LH', 'RH', 'LHD', 'RHD');
+
+    TCAR_TYPE_STR: array [0 .. Ord(High(TCAR_TYPE))] of string = ('JG1', 'RJ1', 'HI', 'SPARE1', 'SPARE2');
+    TSEAT_TYPE_STR: array [0 .. Ord(High(TSEAT_TYPE))] of string = ('STD', 'SE');
+
+    TECU_TYPE_STR: array [0 .. 2] of string = ('NONE ECU', 'ECU');
+    TIMS_TYPE_STR : array[0 .. 1] of string = ('NONE IMS', 'IMS') ;
+
+    TBUCKLE_TYPE_STR: array [0 .. 2] of string = ('NONE BKL', 'BKL IO', 'BKL SNSR');//, _TR('BKL IO/센서'));
+
+
+    THV_TYPE_STR: array [0 .. 2] of string = ('NONE H/V', 'HTR', 'HTR/VNT');//, 'VNT');
+
+    TBC_PART_TYPE_STR: array [TBC_PART_TYPE] of string = ('UNKNOWN', 'ECU', 'ECU2', 'BUCKLE', 'HEIGHT MTR', 'WIRE', 'VENT FAN', 'ODS', 'WK-IN');
+    TSW_STR: array [false .. true] of string = ('OFF', 'ON');
+
+implementation
+
+end.
+
+

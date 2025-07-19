@@ -1,0 +1,581 @@
+{
+	"VER": "250625.00",
+	"CAR": "JG1",
+	"CONNECTORS": [
+		{
+			"TYPE": 10,
+			"CONNECTOR_NAME": "JG1 DRV MAIN",
+			"ID": "MAIN:JG1:DRV",
+			"PIN_NAMES": [
+				"MOT PWR B+(A)",
+				"MOT PWR B+(B)",
+				"MOOD LAMP PWR B+",
+				"HVPSU ECU B+",
+				"SAU ECU B+(BK EXT)",
+				"B2 CAN LO",
+				"B2 CAN HI",
+				"HVPSU IGN1",
+				"SPKR+LEFT(BK EXT)OPT",
+				"SPKR+RIGHT(BK EXT)OPT",
+				"SPKR-LEFT(BK EXT)OPT",
+				"SPKR-RIGHT(BK EXT)OPT",
+				"HVPSU ECU GND",
+				"MOOD LAMP PWR GND",
+				"MOT PWR GND(A)",
+				"MOT PWR GND(B)",
+				"MOOD LAMP EN_IN",
+				"SAU PWR B+ (BK EXT)",
+				"HV MAT PWR B+",
+				"L CAN LO RTN(BK EXN)",
+				"L CAN HI RTN(BK EXN)",
+				"MOOD LAMP ILAS_ISP_N",
+				"MOOD LAMP ILAS_ISP_P",
+				"MOOD LAMP ILAS_ESP_N",
+				"MOOD LAMP ILAS_ESP_P",
+				"L CAN LO (HV/IMS SW)",
+				"L CAN HI (HV/IMS SW)",
+				"L CAN LO (BK EXT)",
+				"L CAN HI (BK EXT)",
+				"HV MAT PWR GND",
+				"MOOD LAMP ILAS_ISP_SLD",
+				"SAU PWR GND (BK EXT)",
+				"MOOD LAMP EN_OUT",
+				"MOOD LAMP ILAS_ESP_SLD"
+			]
+		},
+		{
+			"TYPE": 10,
+			"CONNECTOR_NAME": "JG1 PSG MAIN",
+			"ID": "MAIN:JG1:PSG",
+			"PIN_NAMES": [
+				"MOT PWR B+(A)",
+				"MOT PWR B+(B)",
+				"MOOD LAMP PWR B+",
+				"HVPSU ECU B+",
+				"SAU ECU B+(BK EXT)",
+				"B2 CAN LO",
+				"B2 CAN HI",
+				"HVPSU IGN1",
+				"",
+				"",
+				"",
+				"",
+				"HVPSU ECU GND",
+				"MOOD LAMP PWR GND",
+				"MOT PWR GND(A)",
+				"MOT PWR GND(B)",
+				"MOOD LAMP EN_IN",
+				"SAU PWR B+ (BK EXT)",
+				"HV MAT PWR B+",
+				"L CAN LO RTN(BK EXN)",
+				"L CAN HI RTN(BK EXN)",
+				"MOOD LAMP ILAS_ISP_N",
+				"MOOD LAMP ILAS_ISP_P",
+				"MOOD LAMP ILAS_ESP_N",
+				"MOOD LAMP ILAS_ESP_P",
+				"L CAN LO (HV/IMS SW)",
+				"L CAN HI (HV/IMS SW)",
+				"L CAN LO (BK EXT)",
+				"L CAN HI (BK EXT)",
+				"HV MAT PWR GND",
+				"MOOD LAMP ILAS_ISP_SLD",
+				"SAU PWR GND (BK EXT)",
+				"MOOD LAMP EN_OUT",
+				"MOOD LAMP ILAS_ESP_SLD"
+			]
+		},
+		{
+			"TYPE": 21,
+			"CONNECTOR_NAME": "JG1 LH BK.EXT",
+			"ID": "BK.EXT:JG1:DRV",
+			"PIN_NAMES": [
+				"SAU PWR B+",
+				"",
+				"",
+				"SAU ECU B+",
+				"L CAN HI RTN",
+				"L CAN LO RTN",
+				"E_C_B_ CAN HI",
+				"E_C_B_ CAN LO",
+				"L CAN HI",
+				"L CAN LO",
+				"BLW VCC BACK",
+				"BLW VSP BACK",
+				"BLW GND BACK",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				""
+			]
+		},
+		{
+			"TYPE": 21,
+			"CONNECTOR_NAME": "JG1 RH BK.EXT",
+			"ID": "BK.EXT:JG1:PSG",
+			"PIN_NAMES": [
+				"",
+				"",
+				"",
+				"",
+				"L CAN HI RTN",
+				"L CAN LO RTN",
+				"",
+				"",
+				"L CAN HI",
+				"L CAN LO",
+				"BLW VCC BACK",
+				"BLW VSP BACK",
+				"BLW GND BACK",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				""
+			]
+		},
+		{
+			"TYPE": 30,
+			"CONNECTOR_NAME": "JG1 HTR.MAT",
+			"ID": "HTR.MAT:JG1",
+			"PIN_NAMES": [
+				"BACK MAT PWR",
+				"BACK NTC-",
+				"BACK MAT GND",
+				"CUSH MAT PWR",
+				"BACK NTC+",
+				"CUSH NTC+",
+				"CUSH NTC-",
+				"CUSH MAT GND"
+			]
+		},
+		{
+			"TYPE": 60,
+			"CONNECTOR_NAME": "JG1 LH COACH",
+			"ID": "JG1:LH:COACH",
+			"PIN_NAMES": [
+				"L SLI FWD MTR",
+				"HALL SEN SIG",
+				"HALL SEN VCC",
+				"L SLI BWD MTR"
+			]
+		},
+		{
+			"TYPE": 60,
+			"CONNECTOR_NAME": "JG1 RH COACH",
+			"ID": "JG1:RH:COACH",
+			"PIN_NAMES": [
+				"L SLI BWD MTR",
+				"HALL SEN SIG",
+				"HALL SEN VCC",
+				"L SLI FWD MTR"
+			]
+		},
+		{
+			"TYPE": 90,
+			"CONNECTOR_NAME": "JG1 A.PT",
+			"ID": "JG1:APT",
+			"PIN_NAMES": [
+				"A.PT+",
+				"A.PT+",
+				"A.PT-",
+				"A.PT-"
+			]
+		}
+	],
+	"WIRING_SETS": [
+		{
+			"TYPE": 10,
+			"WIRING_NUMBERS": [
+				{
+					"NUMBER": "J10-1",
+					"ELECTRODE": "1"
+				},
+				{
+					"NUMBER": "J10-2",
+					"ELECTRODE": "2"
+				},
+				{
+					"NUMBER": "J10-3",
+					"ELECTRODE": "3"
+				},
+				{
+					"NUMBER": "J10-4",
+					"ELECTRODE": "4"
+				},
+				{
+					"NUMBER": "J10-5",
+					"ELECTRODE": "5"
+				},
+				{
+					"NUMBER": "J10-6",
+					"ELECTRODE": "6"
+				},
+				{
+					"NUMBER": "J10-7",
+					"ELECTRODE": "7"
+				},
+				{
+					"NUMBER": "J10-8",
+					"ELECTRODE": "8"
+				},
+				{
+					"NUMBER": "J10-9",
+					"ELECTRODE": "9"
+				},
+				{
+					"NUMBER": "J10-10",
+					"ELECTRODE": "10"
+				},
+				{
+					"NUMBER": "J10-11",
+					"ELECTRODE": "11"
+				},
+				{
+					"NUMBER": "J10-12",
+					"ELECTRODE": "12"
+				},
+				{
+					"NUMBER": "J10-13",
+					"ELECTRODE": "13"
+				},
+				{
+					"NUMBER": "J10-14",
+					"ELECTRODE": "14"
+				},
+				{
+					"NUMBER": "J10-15",
+					"ELECTRODE": "15"
+				},
+				{
+					"NUMBER": "J10-16",
+					"ELECTRODE": "16"
+				},
+				{
+					"NUMBER": "J10-17",
+					"ELECTRODE": "17"
+				},
+				{
+					"NUMBER": "J10-18",
+					"ELECTRODE": "18"
+				},
+				{
+					"NUMBER": "J10-19",
+					"ELECTRODE": "19"
+				},
+				{
+					"NUMBER": "J10-20",
+					"ELECTRODE": "20"
+				},
+				{
+					"NUMBER": "J10-21",
+					"ELECTRODE": "21"
+				},
+				{
+					"NUMBER": "J10-22",
+					"ELECTRODE": "22"
+				},
+				{
+					"NUMBER": "J10-23",
+					"ELECTRODE": "23"
+				},
+				{
+					"NUMBER": "J10-24",
+					"ELECTRODE": "24"
+				},
+				{
+					"NUMBER": "J10-25",
+					"ELECTRODE": "25"
+				},
+				{
+					"NUMBER": "J10-26",
+					"ELECTRODE": "26"
+				},
+				{
+					"NUMBER": "J10-27",
+					"ELECTRODE": "27"
+				},
+				{
+					"NUMBER": "J10-28",
+					"ELECTRODE": "28"
+				},
+				{
+					"NUMBER": "J10-29",
+					"ELECTRODE": "29"
+				},
+				{
+					"NUMBER": "J10-30",
+					"ELECTRODE": "30"
+				},
+				{
+					"NUMBER": "J10-31",
+					"ELECTRODE": "31"
+				},
+				{
+					"NUMBER": "J10-32",
+					"ELECTRODE": "32"
+				},
+				{
+					"NUMBER": "J10-33",
+					"ELECTRODE": "33"
+				},
+				{
+					"NUMBER": "J10-34",
+					"ELECTRODE": "34"
+				}
+			]
+		},
+		{
+			"TYPE": 21,
+			"WIRING_NUMBERS": [
+				{
+					"NUMBER": "J20-1",
+					"ELECTRODE": "35"
+				},
+				{
+					"NUMBER": "J20-2",
+					"ELECTRODE": "36"
+				},
+				{
+					"NUMBER": "J20-3",
+					"ELECTRODE": "37"
+				},
+				{
+					"NUMBER": "J20-4",
+					"ELECTRODE": "38"
+				},
+				{
+					"NUMBER": "J20-5",
+					"ELECTRODE": "39"
+				},
+				{
+					"NUMBER": "J20-6",
+					"ELECTRODE": "40"
+				},
+				{
+					"NUMBER": "J20-7",
+					"ELECTRODE": "41"
+				},
+				{
+					"NUMBER": "J20-8",
+					"ELECTRODE": "42"
+				},
+				{
+					"NUMBER": "J20-9",
+					"ELECTRODE": "43"
+				},
+				{
+					"NUMBER": "J20-10",
+					"ELECTRODE": "44"
+				},
+				{
+					"NUMBER": "J20-11",
+					"ELECTRODE": "45"
+				},
+				{
+					"NUMBER": "J20-12",
+					"ELECTRODE": "46"
+				},
+				{
+					"NUMBER": "J20-13",
+					"ELECTRODE": "47"
+				},
+				{
+					"NUMBER": "J20-14",
+					"ELECTRODE": "48"
+				},
+				{
+					"NUMBER": "J20-15",
+					"ELECTRODE": "49"
+				},
+				{
+					"NUMBER": "J20-16",
+					"ELECTRODE": "50"
+				},
+				{
+					"NUMBER": "J20-17",
+					"ELECTRODE": "51"
+				},
+				{
+					"NUMBER": "J20-18",
+					"ELECTRODE": "52"
+				},
+				{
+					"NUMBER": "J20-19",
+					"ELECTRODE": "53"
+				},
+				{
+					"NUMBER": "J20-20",
+					"ELECTRODE": "54"
+				},
+				{
+					"NUMBER": "J20-21",
+					"ELECTRODE": "55"
+				},
+				{
+					"NUMBER": "J20-22",
+					"ELECTRODE": "56"
+				},
+				{
+					"NUMBER": "J20-23",
+					"ELECTRODE": "57"
+				},
+				{
+					"NUMBER": "J20-24",
+					"ELECTRODE": "58"
+				},
+				{
+					"NUMBER": "J20-25",
+					"ELECTRODE": "59"
+				},
+				{
+					"NUMBER": "J20-26",
+					"ELECTRODE": "60"
+				},
+				{
+					"NUMBER": "J20-27",
+					"ELECTRODE": "61"
+				},
+				{
+					"NUMBER": "J20-28",
+					"ELECTRODE": "62"
+				},
+				{
+					"NUMBER": "J20-29",
+					"ELECTRODE": "63"
+				},
+				{
+					"NUMBER": "J20-30",
+					"ELECTRODE": "64"
+				},
+				{
+					"NUMBER": "J20-31",
+					"ELECTRODE": "65"
+				},
+				{
+					"NUMBER": "J20-32",
+					"ELECTRODE": "66"
+				},
+				{
+					"NUMBER": "J20-33",
+					"ELECTRODE": "67"
+				},
+				{
+					"NUMBER": "J20-34",
+					"ELECTRODE": "68"
+				}
+			]
+		},
+		{
+			"TYPE": 30,
+			"WIRING_NUMBERS": [
+				{
+					"NUMBER": "J30-1",
+					"ELECTRODE": "69"
+				},
+				{
+					"NUMBER": "J30-2",
+					"ELECTRODE": "70"
+				},
+				{
+					"NUMBER": "J30-3",
+					"ELECTRODE": "71"
+				},
+				{
+					"NUMBER": "J30-4",
+					"ELECTRODE": "72"
+				},
+				{
+					"NUMBER": "J30-5",
+					"ELECTRODE": "73"
+				},
+				{
+					"NUMBER": "J30-6",
+					"ELECTRODE": "74"
+				},
+				{
+					"NUMBER": "J30-7",
+					"ELECTRODE": "75"
+				},
+				{
+					"NUMBER": "J30-8",
+					"ELECTRODE": "76"
+				}
+			]
+		},
+		{
+			"TYPE": 60,
+			"WIRING_NUMBERS": [
+				{
+					"NUMBER": "J60-1",
+					"ELECTRODE": "78"
+				},
+				{
+					"NUMBER": "J60-2",
+					"ELECTRODE": "79"
+				},
+				{
+					"NUMBER": "J60-3",
+					"ELECTRODE": "80"
+				},
+				{
+					"NUMBER": "J60-4",
+					"ELECTRODE": "81"
+				}
+			]
+		},
+		{
+			"TYPE": 90,
+			"WIRING_NUMBERS": [
+				{
+					"NUMBER": "J90-1",
+					"ELECTRODE": "82"
+				},
+				{
+					"NUMBER": "J90-2",
+					"ELECTRODE": "83"
+				},
+				{
+					"NUMBER": "J90-3",
+					"ELECTRODE": "84"
+				},
+				{
+					"NUMBER": "J90-4",
+					"ELECTRODE": "85"
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,2120 @@
+unit SysEnv;
+
+interface
+
+uses
+    Classes, Windows, SeatType, SeatMotorType, CANIDFilter, RefVoltSetter,
+    Comctrls, StdCtrls, Controls, CheckLst, ExtCtrls, IniFiles, RTTi;
+
+const
+    _START = 0;
+    _END = 1;
+
+type
+    TControlClass = class of TControl;
+
+    TCompMap = record
+        rPrefix: string;
+        rControlClass: TControlClass;
+    end;
+
+    TEnvBinder = class
+    public
+        class procedure FormToEnv<T: record>(var ARecord: T; WinCtrl: TWinControl; const EnvPrefix: string);
+        class procedure EnvToForm<T: record>(var ARecord: T; WinCtrl: TWinControl; const EnvPrefix: string);
+        class procedure SaveEnv<T: record>(var ARecord: T; Ini: TIniFile; const Section: string);
+        class procedure LoadEnv<T: record>(var ARecord: T; Ini: TIniFile; const Section: string);
+    end;
+
+    // ------------------
+    // 운영설정
+    // -------------------
+
+    // 운영 - 검사 환경 설정
+    TTestEnv = record
+    private
+        rPrefix: string;
+    public
+        rVolt, rCurr, rSpecCurr, rRefVolt: Double;
+
+        procedure Init;
+    end;
+
+    // 운영 설정
+    TOPEnv = record
+    private
+        rPrefix: string;
+    public
+        rVer: string;
+        rStNo: Integer;
+        rLotNo: Integer;
+        rLoadTime: TDateTime;
+        rWorkTime: TDateTime;
+        rWidth: Integer;
+        rUsePw: Boolean;
+        rUseScreenSaver: Boolean;
+        rLanguage: Integer;
+        rAlarmDisk: Double;
+        rEmerDisk: Double;
+        rDiskAutoDel: Boolean;
+        rKeepGraphMonth: Integer;
+        rGraphCheckTimeStart: Double;
+        rGraphCheckTimeEnd: Double;
+        rResultDir: string;
+        rGraphDir: string;
+
+        rStGroupNo: Integer;
+        rDIChType: string;
+        rEnabled: Boolean;
+
+        rTest: TTestEnv;
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+
+    end;
+
+
+    // ------------------
+    // 통신설정
+    // -------------------
+
+    // 통신 - POP 설정
+    TPopEnv = record
+    private
+        rPrefix: string;
+    public
+        rHostIp: string;
+        rPort: Integer;
+        rConnectTime: Integer;
+        rSendTerm: Integer;
+        rReConnect: Boolean;
+        rSndData: Boolean;
+        rUse: Boolean;
+
+        procedure Init;
+    end;
+
+    // 통신 설정
+    TCommEnv = record
+    private
+        rPrefix: string;
+    public
+        rPop: TPopEnv;
+
+        rWaitResPwrSply: Double;
+        rCANConChkMinTime: Double;
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+
+        property POP: TPopEnv read rPop write rPop;
+    end;
+
+    // ------------------
+    // 공통 모터 설정
+    // -------------------
+
+    // 공통모터 - 버니싱 설정
+    TBrnEnv = record
+        rPrefix: string;
+        rBurnishingCount : Integer;
+
+        procedure Init;
+    end;
+
+    // 공통모터 설정
+    TMtrComEnv = record
+    private
+        rPrefix: string;
+        rSelectedCar: Integer;
+        rSelectedMtr: Integer;
+
+        rMotionType: Integer;
+        rIsDirectMove: Boolean;
+
+        rBurnishing: array[0..10] of TBrnEnv;
+
+        function GetBrnEnv: TBrnEnv;
+    public
+        rMinAmp, rLimitAmp, rLimitAmpOffset, rMoveGapTime, rMoveCheckTime, rReadDelayTime: Double;
+
+        procedure SetSelectedMotor(const Value: Integer);
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure SetSMParam;
+        procedure Init;
+
+        function  CanBurnish: Boolean;
+
+        property Burnishing: TBrnEnv read GetBrnEnv;
+    end;
+
+    // ------------------
+    // 방음실 설정
+    // -------------------
+
+
+    // 방음실 설정
+    TSoundProofEnv = record
+    private
+        rPrefix: string;
+
+    public
+        rSliencerWait: Double;
+        rWaitA4WeightLoading: Double;
+        rWaitB4WeightUnLoading: Double;
+
+        rRepeatCount: Integer;
+        rCurrFilter: Integer;
+        rNoiseFilter: Integer;
+        rUseSwZeroCurr: Boolean;
+
+        rNoiseCollectStart: Double;
+        rNoiseCollectEnd: Double;
+        rUseCurr, rUseSpeed, rUseNoise, rUseStrokeAmount, rUseRetryCurr, rUseRetrySpeed, rUseRetryNoise, rUseRetryStrokeAmount: Boolean;
+
+        rNoiseResultType: Integer;
+
+        rStopOnNG: Boolean;
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+    end;
+
+    // ------------------
+    // 백각도 설정
+    // -------------------
+
+
+    // 백각도 설정
+    TBackAngleEnv = record
+    private
+        rPrefix: string;
+
+    public
+        rDualMtrDevCurr: Double;
+        rStabliTime: Double;
+        rMaxCollectData: Integer;
+        rDataResultType: Integer;
+        rExDataStart: Integer;
+        rExDataEnd: Integer;
+
+        rUseFolding, rUseRearMost: Boolean;
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+
+    end;
+
+    // ------------------
+    // 전장 설정
+    // -------------------
+
+
+    // 전장 설정 - 히터통풍 설정
+    THVEnv = record
+    private
+        rPrefix: string;
+    public
+        rTestB4Delay, rSwOnDelay, rMaxCollectTime, rBlowReadTime: Double;
+        rNGRetry: Integer;
+        rUseSwZeroCurr: Boolean;
+        rUseHeat, rUseVent, rUseSenseVent: Boolean;
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+
+    end;
+
+    // 전장 설정 - ECU 검사 설정
+    TECUEnv = record
+    private
+        rPrefix: string;
+    public
+        rEEPROMSaveTime: Double;
+        rVerRetry: Integer;
+        rDTCRetry: Integer;
+
+        rUseVerMaster: Boolean;
+        rUseVer, rUseDTC: Boolean;
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+    end;
+
+
+    // 전장 설정 - 버클 검사 설정
+    TBuckleEnv = record
+    private
+        rPrefix: string;
+    public
+        rChkTime: Double;
+        rUseCurr, rUseIO, rUseILL: Boolean;
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+    end;
+
+    // 전장 설정
+    TElecEnv = record
+        rHV: THVEnv;
+        rECU: TECUEnv;
+        rBuckle: TBuckleEnv;
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+
+        property HV: THVEnv read rHV write rHV;
+        property ECU: TECUEnv read rECU write rECU;
+        property Buckle: TBuckleEnv read rBuckle write rBuckle;
+    end;
+
+    // ------------------
+    // IMS 설정
+    // -------------------
+
+
+    // IMS 설정 - 리미트 설정
+    TLimitEnv = record
+    private
+        rPrefix: string;
+    public
+        rReqDelay: Double;
+        rCmdFailRetry: Integer;
+        rHallErrChk: Integer;
+        rIsSkipSet: Boolean;
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+    end;
+
+    // IMS 설정 - 메모리 & 승하차 설정 - 차종별
+    TMemCarEnv = record
+        rUseMem, rUseEasyAcc: Boolean;
+
+        rUseMem1, rUseMem2, rUseMem3: Boolean;
+
+        procedure Init;
+    end;
+
+    // IMS 설정 - 메모리 & 승하차 설정
+    TMemEnv = record
+    private
+        rPrefix: string;
+
+        rSelectedCar: Integer;
+        rCarGroup: array[0..10] of TMemCarEnv;
+
+        function GetMemCarEnv: TMemCarEnv;
+    public
+        rMemMoveTime, rMemSaveWait, rMemOffset, rEasyAccOffset: Double;
+        rMemRepeat: Integer;
+
+        procedure SetSelectedCar(const Value: Integer);
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+
+        property Car: TMemCarEnv read GetMemCarEnv;
+    end;
+
+    // IMS 설정
+    TIMSEnv = record
+        rLimit: TLimitEnv;
+        rMem: TMemEnv;
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+
+        property Limit: TLimitEnv read rLimit write rLimit;
+        property Memory: TMemEnv read rMem write rMem;
+    end;
+
+
+    // 안티핀치 설정
+    TAPEnv = record
+    private
+        rPrefix: string;
+
+    public
+        rUseSlide, rUseRecl: Boolean;
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+
+    end;
+
+    // ------------------
+    // 메뉴얼 시트 설정
+    // -------------------
+
+    // 메뉴얼 시트 - 슬라이드 검사
+    TMnlSlideEnv = record
+    private
+        rPrefix: string;
+    public
+        rLvrMinForce: Double;
+        rUseLvrCollectPoint: Boolean;
+        rIsMinLvrForceSendPLC: Boolean;
+        rLvrEndForce: Double;
+
+        rSliMinForce: Double;
+        rUseSliCollectPoint: Boolean;
+
+        rUseLvrSwZero, rUseSliSwZero: Boolean;
+
+        rLvrFilter, rSliFwFilter, rSliBwFilter: Integer;
+
+        rUseOverSendPLC: Boolean;
+
+        rLvrLimit, rSliFwLimit, rSliBwLimit: Double;
+
+        rUseLever, rUseSlide, rUseLocking: Boolean;
+        rControlRetry: Boolean;
+        rRetry: Integer;
+
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+
+    end;
+
+    // 메뉴얼 시트 - 하이트 검사
+    TMnlHeightEnv = record
+    private
+        rPrefix: string;
+    public
+        rUseRealGraph, rUseAnalyGraph, rUseDiplayDatas, rUseCollectSection: Boolean;
+
+        rUseSwZero: Boolean;
+        rUseDisplayDelay: Boolean;
+
+        rLHFilter, rRHFilter: Integer;
+
+        rUseOverSendPLC: Boolean;
+
+        rLHLimit, rRHLimit: Double;
+
+        rCycleMinAngle, rCycleUpAngle: Double;
+
+        rUseForce, rUseCount, rUseEndPoint, rUseUpHeight, rUseDeviceSleep, rUseAngle: Boolean;
+
+        rDataResult: Integer;
+
+        rTestOrd: Integer;
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+
+
+    end;
+
+    // 메뉴얼 시트 설정
+    TManualEnv = record
+        rSlide: TMnlSlideEnv;
+        rHeight: TMnlHeightEnv;
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+
+        property Slide: TMnlSlideEnv read rSlide write rSlide;
+        property Height: TMnlHeightEnv read rHeight write rHeight;
+    end;
+
+    // ------------------
+    // 개발자 설정
+    // -------------------
+    TDevelopEnv = record
+    private
+        rPrefix: string;
+    public
+        rFullScale1: Integer;
+        rFullScale2: Integer;
+        rFullScale3: Integer;
+        rUseWorkStandard: Boolean;
+        rWorkStandardImg: string;
+        rCanWriteLog, rCanReadLog: Boolean;
+        rEtherCAT: Integer;
+        rUsePwrSplyDebug: Boolean;
+        rIsCustomVisible: Boolean;
+
+        procedure FormToEnv(WinCtrl: TWinControl);
+        procedure EnvToForm(WinCtrl: TWinControl);
+        procedure SaveEnv(Ini: TIniFile);
+        procedure LoadEnv(Ini: TIniFile);
+        procedure Init;
+    end;
+
+    // ReferenceForm의 PageControl TTabSheet 순서랑 연동시킬것
+    TSysEnvItem = (eiOP, eiComm, eiMotor, eiSoundProof, eiElec, eiIMS, eiDevelop, eiBackAngle, eiAntipinch, eiManual, eiCanIDFilter, eiRefVoltSetter);
+    // -------------------
+    // 전역변수 SysEnv
+    // --------------------
+
+    TSysEnv = record
+        rOP: TOPEnv;
+        rComm: TCommEnv;
+        rMotor: TMtrComEnv;
+        rSoundProof: TSoundProofEnv;
+        rBackAngle: TBackAngleEnv;
+        rElec: TElecEnv;
+        rIMS: TIMSEnv;
+        rAntipinch: TAPEnv;
+        rManual: TManualEnv;
+        rDevelop: TDevelopEnv;
+
+        rCanIDFilter: TCanIDFilter;
+        rRefVoltSetter: TRefVoltSetter;
+
+        procedure DispatchPull(WinCtrl: TWinControl);
+        procedure DispatchPush(WinCtrl: TWinControl);
+        procedure Save(Item: TSysEnvItem);
+        procedure Load(Item: TSysEnvItem);
+        procedure SaveAll;
+        procedure LoadAll;
+        procedure Init;
+
+    end;
+
+function GetEnvPath(FileName: string): string;
+
+function StartsWith(const S, Prefix: string): Boolean;
+
+function StartsWithRUpper(const S: string): Boolean;
+
+function FindControl(const AName: string; WinCtrl: TWinControl): TControl;
+
+function ExtractPrefix(Control: TWinControl): string;
+
+const
+    CompMaps: array[0..4] of TCompMap = ((
+        rPrefix: 'edt';
+        rControlClass: TEdit
+    ), (
+        rPrefix: 'cbx';
+        rControlClass: TComboBox
+    ), (
+        rPrefix: 'rdg';
+        rControlClass: TRadioGroup
+    ), (
+        rPrefix: 'ckb';
+        rControlClass: TCheckBox
+    ), (
+        rPrefix: 'dtp';
+        rControlClass: TDateTimePicker
+    ));
+    ARRAY_LENGTH = 10;
+    DIR_ENV = '\Env';
+
+var
+    gSysEnv: TSysEnv;
+
+implementation
+
+uses
+    MyUtils, SysUtils, SeatMotor, Global, LangTran, StrUtils, TypInfo;
+
+function GetEnvPath(FileName: string): string;
+begin
+    Result := GetHomeDirectory + DIR_ENV;
+
+    if DirectoryExists(Result) then
+        ForceDirectories(Result);
+
+    if FileName <> '' then
+        Result := Result + '\' + FileName;
+end;
+
+function StartsWith(const S, Prefix: string): Boolean;
+begin
+    Result := Copy(S, 1, Length(Prefix)) = Prefix;
+end;
+
+function ExtractPrefix(Control: TWinControl): string;
+var
+    S: string;
+    p: Integer;
+begin
+    S := Control.Name;
+    if StartsWith(S, 'ts') then
+        Result := Copy(S, 3, MaxInt)
+    else if StartsWith(S, 'pnl') then
+    begin
+        p := Pos('_', S);
+        if p > 0 then
+            Result := Copy(S, 4, p - 4)
+        else
+            Result := Copy(S, 4, MaxInt);
+    end
+    else
+        Result := '';
+end;
+
+{ TTestEnv }
+
+procedure TTestEnv.Init;
+begin
+    rPrefix := 'Test';
+
+    rVolt := 13.5;
+    rCurr := 30;
+    rSpecCurr := 1;
+    rRefVolt := -1.065;
+end;
+
+{ TOPEnv }
+
+procedure TOPEnv.Init;
+begin
+    rTest.Init();
+
+    rPrefix := 'OP';
+
+    rVer := FormatDateTime('yymmdd', Now) + '.00';
+    rStNo := 1;
+    rLoadTime := Now();
+    rWorkTime := 1 + EncodeTime(8, 0, 0, 0);
+    rUsePw := False;
+    rUseScreenSaver := False;
+    rLotNo := 0;
+    rWidth := 1;
+    rLanguage := 0;
+    rAlarmDisk := 20 * 1024;
+    rEmerDisk := 15 * 1024;
+    rDiskAutoDel := False;
+    rKeepGraphMonth := 12;
+    rGraphCheckTimeStart := Trunc(Now) + EncodeTime(11, 30, 0, 0);
+    rGraphCheckTimeEnd := Trunc(Now) + EncodeTime(12, 0, 0, 0);
+    rResultDir := '';
+    rGraphDir := '';
+    rStGroupNo := 1;
+    rDIChType := 'AAAA AAAA AAAA AAAA AAAA AAAA AAAA AAAA';
+    rEnabled := True;
+end;
+
+procedure TOPEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    TEnvBinder.FormToEnv<TOPEnv>(Self, WinCtrl, rPrefix);
+    TEnvBinder.FormToEnv<TTestEnv>(rTest, WinCtrl, rTest.rPrefix);
+end;
+
+
+
+procedure TOPEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    TEnvBinder.EnvToForm<TOPEnv>(Self, WinCtrl, rPrefix);
+    TEnvBinder.EnvToForm<TTestEnv>(rTest, WinCtrl, rTest.rPrefix);
+end;
+
+procedure TOPEnv.SaveEnv(Ini: TIniFile);
+begin
+    TEnvBinder.SaveEnv<TOPEnv>(Self, Ini, 'OP');
+    TEnvBinder.SaveEnv<TTestEnv>(rTest, Ini, 'TEST');
+    Ini.WriteBool('SYSTEM', '_USE_ENABLE', rEnabled);
+end;
+
+procedure TOPEnv.LoadEnv(Ini: TIniFile);
+begin
+    TEnvBinder.LoadEnv<TOPEnv>(Self, Ini, 'OP');
+    TEnvBinder.LoadEnv<TTestEnv>(rTest, Ini, 'TEST');
+    rEnabled := Ini.ReadBool('SYSTEM', '_USE_ENABLE', True);
+end;
+{ TPopEnv }
+
+procedure TPopEnv.Init;
+begin
+    rPrefix := 'POP';
+
+    rHostIp := '192.168.0.1';
+    rPort := 8000;
+    rConnectTime := 300;
+    rSendTerm := 5;
+    rReConnect := False;
+    rSndData := False;
+    rUse := False;
+end;
+
+{ TCommEnv }
+
+procedure TCommEnv.Init;
+begin
+    rPop.Init();
+
+    rPrefix := 'Comm';
+    rWaitResPwrSply := 2;
+    rCANConChkMinTime := 1.5;
+end;
+
+procedure TCommEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    TEnvBinder.FormToEnv<TCommEnv>(Self, WinCtrl, rPrefix);
+    TEnvBinder.FormToEnv<TPopEnv>(rPop, WinCtrl, rPop.rPrefix);
+end;
+
+procedure TCommEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    TEnvBinder.EnvToForm<TCommEnv>(Self, WinCtrl, rPrefix);
+    TEnvBinder.EnvToForm<TPopEnv>(rPop, WinCtrl, rPop.rPrefix);
+end;
+
+procedure TCommEnv.SaveEnv(Ini: TIniFile);
+begin
+    TEnvBinder.SaveEnv<TCommEnv>(Self, Ini, 'COMM');
+    TEnvBinder.SaveEnv<TPopEnv>(rPop, Ini, 'POP');
+end;
+
+procedure TCommEnv.LoadEnv(Ini: TIniFile);
+begin
+    TEnvBinder.LoadEnv<TCommEnv>(Self, Ini, 'COMM');
+    TEnvBinder.LoadEnv<TPopEnv>(rPop, Ini, 'POP');
+end;
+
+{ TMtrComEnv }
+
+function TMtrComEnv.GetBrnEnv: TBrnEnv;
+begin
+    Result := rBurnishing[rSelectedMtr];
+end;
+
+procedure TMtrComEnv.Init;
+var
+    i: Integer;
+begin
+    rPrefix := 'Mtr';
+    rSelectedCar := ord(ctJG1);
+
+    for i := 0 to Length(rBurnishing) - 1 do
+        rBurnishing[i].Init();
+
+    rMinAmp := 0.2;
+    rLimitAmp := 30;
+    rLimitAmpOffset := 0;
+    rMoveGapTime := 0.1;
+    rMoveCheckTime := 0.8;
+    rReadDelayTime := 0;
+
+    TSMParam.Init();
+end;
+
+procedure TMtrComEnv.FormToEnv(WinCtrl: TWinControl);
+var
+    Item: TMotorORD;
+begin
+    TEnvBinder.FormToEnv<TMtrComEnv>(Self, WinCtrl, rPrefix);
+
+    TEnvBinder.FormToEnv<TBrnEnv>(rBurnishing[rSelectedMtr], WinCtrl, rBurnishing[rSelectedMtr].rPrefix);
+end;
+
+function TMtrComEnv.CanBurnish: Boolean;
+var
+    MtrIt: TMotorORD;
+begin
+
+    for MtrIt := Low(TMotorORD) to MtrOrdHi do
+    begin
+        if rBurnishing[Ord(MtrIt)].rBurnishingCount > 0 then
+            Exit(True);
+    end;
+
+    Result := False;
+
+end;
+
+procedure TMtrComEnv.EnvToForm(WinCtrl: TWinControl);
+var
+    Item: TMotorORD;
+begin
+    TEnvBinder.EnvToForm<TMtrComEnv>(Self, WinCtrl, rPrefix);
+
+    TEnvBinder.EnvToForm<TBrnEnv>(rBurnishing[rSelectedMtr], WinCtrl, rBurnishing[rSelectedMtr].rPrefix);
+end;
+
+procedure TMtrComEnv.SaveEnv(Ini: TIniFile);
+var
+    i, j: Integer;
+begin
+    TEnvBinder.SaveEnv<TMtrComEnv>(Self, Ini, 'MOTOR');
+
+
+    for i := ord(Low(TMotorORD)) to ord(High(TMotorORD)) do
+        TEnvBinder.SaveEnv<TBrnEnv>(rBurnishing[i], Ini, Format('BURNISHING_MTRTYPE%d', [i]));
+
+    SetSMParam();
+end;
+
+procedure TMtrComEnv.LoadEnv(Ini: TIniFile);
+var
+    i, j: Integer;
+begin
+    TEnvBinder.LoadEnv<TMtrComEnv>(Self, Ini, 'MOTOR');
+
+    for i := ord(Low(TMotorORD)) to ord(High(TMotorORD)) do
+        TEnvBinder.LoadEnv<TBrnEnv>(rBurnishing[i], Ini, Format('BURNISHING_MTRTYPE%d', [i]));
+
+    SetSMParam();
+end;
+
+procedure TMtrComEnv.SetSelectedMotor(const Value: Integer);
+begin
+    rSelectedMtr := Value;
+end;
+
+procedure TMtrComEnv.SetSMParam;
+begin
+    TSMParam.mMoveMinCurr := rMinAmp;
+    TSMParam.mMoveCheckTime := rMoveCheckTime;
+    TSMParam.mReadDelayTime := rReadDelayTime;
+    TSMParam.mMoveGapTime := rMoveGapTime;
+    TSMParam.mMoveLimitCurr := rLimitAmp;
+end;
+
+{ TSoundProofEnv }
+
+procedure TSoundProofEnv.Init;
+var
+    i: Integer;
+begin
+
+    rPrefix := 'SP';
+
+    rSliencerWait := 2;
+    rWaitA4WeightLoading := 0;
+    rWaitB4WeightUnLoading := 0;
+
+    rRepeatCount := 0;
+    rCurrFilter := 0;
+    rNoiseFilter := 0;
+    rUseSwZeroCurr := False;
+
+    rNoiseCollectStart := 0.2;
+    rNoiseCollectEnd := 10;
+    rUseSpeed := True;
+    rUseNoise := True;
+    rUseCurr := False;
+    rUseStrokeAmount := False;
+    rUseRetrySpeed := True;
+    rUseRetryNoise := True;
+    rUseRetryCurr := False;
+    rUseRetryStrokeAmount := False;
+    rNoiseResultType := 0;
+end;
+
+procedure TSoundProofEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    TEnvBinder.FormToEnv<TSoundProofEnv>(Self, WinCtrl, rPrefix);
+
+end;
+
+procedure TSoundProofEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    TEnvBinder.EnvToForm<TSoundProofEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TSoundProofEnv.SaveEnv(Ini: TIniFile);
+begin
+    TEnvBinder.SaveEnv<TSoundProofEnv>(Self, Ini, 'SOUNDPROOF');
+end;
+
+procedure TSoundProofEnv.LoadEnv(Ini: TIniFile);
+begin
+    TEnvBinder.LoadEnv<TSoundProofEnv>(Self, Ini, 'SOUNDPROOF');
+
+end;
+
+
+{ TBackAngleEnv }
+procedure TBackAngleEnv.Init;
+var
+    i: Integer;
+begin
+    rPrefix := 'Bk';
+
+    rDualMtrDevCurr := 1;
+    rStabliTime := 1;
+    rMaxCollectData := 10;
+    rDataResultType := 0;
+    rExDataStart := 0;
+    rExDataEnd := 0;
+    rUseFolding := True;
+    rUseRearMost := True;
+end;
+
+procedure TBackAngleEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    TEnvBinder.FormToEnv<TBackAngleEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TBackAngleEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    TEnvBinder.EnvToForm<TBackAngleEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TBackAngleEnv.SaveEnv(Ini: TIniFile);
+var
+    i: Integer;
+begin
+    TEnvBinder.SaveEnv<TBackAngleEnv>(Self, Ini, 'BACKANGLE');
+
+end;
+
+procedure TBackAngleEnv.LoadEnv(Ini: TIniFile);
+var
+    i: Integer;
+begin
+    TEnvBinder.LoadEnv<TBackAngleEnv>(Self, Ini, 'BACKANGLE');
+
+end;
+
+{ THVEnv }
+procedure THVEnv.Init;
+var
+    i: Integer;
+begin
+    rPrefix := 'HV';
+
+    rTestB4Delay := 1;
+    rSwOnDelay := 3;
+    rMaxCollectTime := 5;
+    rBlowReadTime := 7;
+
+    rNGRetry := 1;
+    rUseSwZeroCurr := True;
+
+    rUseHeat := True;
+    rUseVent := True;
+    rUseSenseVent := False;
+end;
+
+procedure THVEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    TEnvBinder.FormToEnv<THVEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure THVEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    TEnvBinder.EnvToForm<THVEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure THVEnv.SaveEnv(Ini: TIniFile);
+var
+    i: Integer;
+begin
+    TEnvBinder.SaveEnv<THVEnv>(Self, Ini, 'HV');
+end;
+
+procedure THVEnv.LoadEnv(Ini: TIniFile);
+var
+    i: Integer;
+begin
+    TEnvBinder.LoadEnv<THVEnv>(Self, Ini, 'HV');
+end;
+
+{ TECUEnv }
+procedure TECUEnv.Init;
+var
+    i: Integer;
+begin
+    rPrefix := 'ECU';
+
+    rEEPROMSaveTime := 3;
+    rVerRetry := 0;
+    rDTCRetry := 0;
+    rUseVer := True;
+    rUseDTC := True;
+
+    rUseVerMaster := False;
+end;
+
+procedure TECUEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    TEnvBinder.FormToEnv<TECUEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TECUEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    TEnvBinder.EnvToForm<TECUEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TECUEnv.SaveEnv(Ini: TIniFile);
+begin
+    TEnvBinder.SaveEnv<TECUEnv>(Self, Ini, 'ECU');
+end;
+
+procedure TECUEnv.LoadEnv(Ini: TIniFile);
+begin
+    TEnvBinder.LoadEnv<TECUEnv>(Self, Ini, 'ECU');
+end;
+
+{ TBuckleEnv }
+procedure TBuckleEnv.Init;
+begin
+    rPrefix := 'Bkl';
+
+    rUseCurr := False;
+    rUseIO := False;
+    rUseILL := False;
+    rChkTime := 3;
+end;
+
+procedure TBuckleEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    TEnvBinder.FormToEnv<TBuckleEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TBuckleEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    TEnvBinder.EnvToForm<TBuckleEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TBuckleEnv.SaveEnv(Ini: TIniFile);
+var
+    i: Integer;
+begin
+    TEnvBinder.SaveEnv<TBuckleEnv>(Self, Ini, 'BUCKLE');
+end;
+
+procedure TBuckleEnv.LoadEnv(Ini: TIniFile);
+begin
+    TEnvBinder.LoadEnv<TBuckleEnv>(Self, Ini, 'BUCKLE');
+end;
+{ TLimitEnv }
+procedure TLimitEnv.Init;
+var
+    i: Integer;
+begin
+    rPrefix := 'Lmt';
+
+    rReqDelay := 1;
+    rCmdFailRetry := 3;
+    rHallErrChk := 0;
+    rIsSkipSet := False;
+end;
+
+procedure TLimitEnv.FormToEnv(WinCtrl: TWinControl);
+var
+    Item: TMotorORD;
+begin
+    TEnvBinder.FormToEnv<TLimitEnv>(Self, WinCtrl, rPrefix);
+
+end;
+
+procedure TLimitEnv.EnvToForm(WinCtrl: TWinControl);
+var
+    Item: TMotorORD;
+begin
+    TEnvBinder.EnvToForm<TLimitEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TLimitEnv.SaveEnv(Ini: TIniFile);
+var
+    i, j: Integer;
+begin
+    TEnvBinder.SaveEnv<TLimitEnv>(Self, Ini, 'LIMIT');
+end;
+
+procedure TLimitEnv.LoadEnv(Ini: TIniFile);
+var
+    i, j: Integer;
+begin
+    TEnvBinder.LoadEnv<TLimitEnv>(Self, Ini, 'LIMIT');
+end;
+{ TMemCarEnv }
+
+procedure TMemCarEnv.Init;
+begin
+    rUseMem := True;
+    rUseEasyAcc := False;
+
+    rUseMem1 := True;
+    rUseMem2 := True;
+    rUseMem3 := False;
+end;
+
+{ TMemEnv }
+
+function TMemEnv.GetMemCarEnv: TMemCarEnv;
+begin
+    Result := rCarGroup[rSelectedCar];
+end;
+
+procedure TMemEnv.Init;
+var
+    i: Integer;
+begin
+    rPrefix := 'Mem';
+
+    rSelectedCar := ord(ctJG1);
+
+    for i := 0 to Length(rCarGroup) - 1 do
+        rCarGroup[i].Init();
+
+    rMemMoveTime := 0;
+    rMemSaveWait := 1;
+    rMemOffset := 0;
+    rEasyAccOffset := 0;
+    rMemRepeat := 0;
+end;
+
+procedure TMemEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    TEnvBinder.FormToEnv<TMemEnv>(Self, WinCtrl, rPrefix);
+    TEnvBinder.FormToEnv<TMemCarEnv>(rCarGroup[rSelectedCar], WinCtrl, rPrefix);
+end;
+
+procedure TMemEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    TEnvBinder.EnvToForm<TMemEnv>(Self, WinCtrl, rPrefix);
+    TEnvBinder.EnvToForm<TMemCarEnv>(rCarGroup[rSelectedCar], WinCtrl, rPrefix);
+end;
+
+procedure TMemEnv.SaveEnv(Ini: TIniFile);
+var
+    i: Integer;
+begin
+    TEnvBinder.SaveEnv<TMemEnv>(Self, Ini, 'MEMORY');
+
+    for i := ord(Low(TCAR_TYPE)) to ord(High(TCAR_TYPE)) do
+        TEnvBinder.SaveEnv<TMemCarEnv>(rCarGroup[i], Ini, Format('MEMORY_CARTYPE%d', [i]));
+end;
+
+procedure TMemEnv.LoadEnv(Ini: TIniFile);
+var
+    i: Integer;
+begin
+    TEnvBinder.LoadEnv<TMemEnv>(Self, Ini, 'MEMORY');
+
+    for i := ord(Low(TCAR_TYPE)) to ord(High(TCAR_TYPE)) do
+        TEnvBinder.LoadEnv<TMemCarEnv>(rCarGroup[i], Ini, Format('MEMORY_CARTYPE%d', [i]));
+end;
+
+procedure TMemEnv.SetSelectedCar(const Value: Integer);
+begin
+    rSelectedCar := Value;
+end;
+
+{ TMnlSlideEnv }
+
+procedure TMnlSlideEnv.Init;
+var
+    i: Integer;
+begin
+
+    rPrefix := 'Sli';
+    rLvrMinForce := 0.2;
+    rUseLvrCollectPoint := True;
+    rIsMinLvrForceSendPLC := False;
+    rLvrEndForce := 4;
+
+    rSliMinForce := 0;
+    rUseSliCollectPoint := True;
+
+    rUseLvrSwZero := True;
+    rUseSliSwZero := True;
+
+    rLvrFilter := 0;
+    rSliFwFilter := 0;
+    rSliBwFilter := 0;
+
+    rUseOverSendPLC := False;
+
+    rLvrLimit := 0;
+    rSliFwLimit := 0;
+    rSliBwLimit := 0;
+
+    rUseLever := True;
+    rUseSlide := True;
+    rUseLocking := False;
+
+    rControlRetry := False;
+    rRetry := 0;
+end;
+
+procedure TMnlSlideEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    TEnvBinder.FormToEnv<TMnlSlideEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TMnlSlideEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    TEnvBinder.EnvToForm<TMnlSlideEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TMnlSlideEnv.SaveEnv(Ini: TIniFile);
+var
+    i: Integer;
+begin
+    TEnvBinder.SaveEnv<TMnlSlideEnv>(Self, Ini, 'MNLSLIDE');
+end;
+
+procedure TMnlSlideEnv.LoadEnv(Ini: TIniFile);
+var
+    i: Integer;
+begin
+    TEnvBinder.LoadEnv<TMnlSlideEnv>(Self, Ini, 'MNLSLIDE');
+end;
+
+
+{ TMnlHeightEnv }
+
+procedure TMnlHeightEnv.Init;
+var
+    i: Integer;
+begin
+    rPrefix := 'Pump';
+
+    rUseRealGraph := True;
+    rUseAnalyGraph := True;
+    rUseDiplayDatas := False;
+    rUseCollectSection := False;
+
+    rUseSwZero := True;
+    rUseDisplayDelay := True;
+
+    rLHFilter := 0;
+    rRHFilter := 0;
+
+    rUseOverSendPLC := False;
+
+    rLHLimit := 0;
+    rRHLimit := 0;
+
+    rCycleMinAngle := 2;
+    rCycleUpAngle := 12;
+
+    rUseForce := True;
+    rUseCount := True;
+    rUseEndPoint := False;
+    rUseUpHeight := False;
+    rUseDeviceSleep := False;
+    rUseAngle := False;
+
+    rDataResult := 0;
+    rTestOrd := 0;
+end;
+
+procedure TMnlHeightEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    TEnvBinder.FormToEnv<TMnlHeightEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TMnlHeightEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    TEnvBinder.EnvToForm<TMnlHeightEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TMnlHeightEnv.SaveEnv(Ini: TIniFile);
+begin
+    TEnvBinder.SaveEnv<TMnlHeightEnv>(Self, Ini, 'MNLHEIGHT');
+end;
+
+procedure TMnlHeightEnv.LoadEnv(Ini: TIniFile);
+begin
+    TEnvBinder.LoadEnv<TMnlHeightEnv>(Self, Ini, 'MNLHEIGHT');
+end;
+
+{ TDevelopEnv }
+procedure TDevelopEnv.Init;
+begin
+    rPrefix := 'Dp';
+    rFullScale1 := 0;
+    rFullScale2 := 0;
+    rFullScale3 := 0;
+    rUseWorkStandard := False;
+    rWorkStandardImg := '';
+    rCanWriteLog := False;
+    rCanReadLog := False;
+    rEtherCAT := 0;
+    rUsePwrSplyDebug := False;
+    rIsCustomVisible := False;
+end;
+
+procedure TDevelopEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    TEnvBinder.FormToEnv<TDevelopEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TDevelopEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    TEnvBinder.EnvToForm<TDevelopEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TDevelopEnv.SaveEnv(Ini: TIniFile);
+begin
+    TEnvBinder.SaveEnv<TDevelopEnv>(Self, Ini, 'DEVELOP');
+end;
+
+procedure TDevelopEnv.LoadEnv(Ini: TIniFile);
+begin
+    TEnvBinder.LoadEnv<TDevelopEnv>(Self, Ini, 'DEVELOP');
+end;
+
+{ TSysEnv }
+
+procedure TSysEnv.Load(Item: TSysEnvItem);
+var
+    Ini: TIniFile;
+    sTm: string;
+begin
+    sTm := GetEnvPath('Reference.Ini');
+    Ini := TIniFile.Create(sTm);
+    try
+        case Item of
+            eiOP:
+                rOP.LoadEnv(Ini);
+            eiComm:
+                rComm.LoadEnv(Ini);
+            eiMotor:
+                begin
+                    rMotor.LoadEnv(Ini);
+                    TSMParam.Read(Ini);
+                end;
+            eiSoundProof:
+                rSoundProof.LoadEnv(Ini);
+            eiBackAngle:
+                rBackAngle.LoadEnv(Ini);
+            eiElec:
+                rElec.LoadEnv(Ini);
+            eiIMS:
+                rIMS.LoadEnv(Ini);
+            eiAntipinch:
+                rAntipinch.LoadEnv(Ini);
+            eiManual:
+                rManual.LoadEnv(Ini);
+            eiDevelop:
+                rDevelop.LoadEnv(Ini);
+            eiCanIDFilter:
+                rCanIDFilter.Read(Ini);
+            eiRefVoltSetter:
+                rRefVoltSetter.Read(Ini);
+        end;
+    finally
+        Ini.Free;
+    end;
+end;
+
+procedure TSysEnv.DispatchPull(WinCtrl: TWinControl);
+var
+    Prefix: string;
+begin
+    Prefix := ExtractPrefix(WinCtrl);
+
+    if Prefix = 'Op' then
+        rOP.FormToEnv(WinCtrl)
+    else if Prefix = 'Comm' then
+        rComm.FormToEnv(WinCtrl)
+    else if Prefix = 'Mtr' then
+        rMotor.FormToEnv(WinCtrl)
+    else if Prefix = 'Al' then
+        rMotor.FormToEnv(WinCtrl)
+    else if Prefix = 'Brn' then
+        rMotor.FormToEnv(WinCtrl)
+    else if Prefix = 'SP' then
+        rSoundProof.FormToEnv(WinCtrl)
+    else if Prefix = 'Bk' then
+        rBackAngle.FormToEnv(WinCtrl)
+    else if Prefix = 'Elec' then
+        rElec.FormToEnv(WinCtrl)
+    else if Prefix = 'IMS' then
+        rIMS.FormToEnv(WinCtrl)
+    else if Prefix = 'Mem' then
+        rIMS.rMem.FormToEnv(WinCtrl)
+    else if Prefix = 'AP' then
+        rAntipinch.FormToEnv(WinCtrl)
+    else if Prefix = 'Mnl' then
+        rManual.FormToEnv(WinCtrl)
+    else if Prefix = 'Dp' then
+        rDevelop.FormToEnv(WinCtrl);
+end;
+
+procedure TSysEnv.DispatchPush(WinCtrl: TWinControl);
+var
+    Prefix: string;
+begin
+    Prefix := ExtractPrefix(WinCtrl);
+
+    if Prefix = 'Op' then
+        rOP.EnvToForm(WinCtrl)
+    else if Prefix = 'Comm' then
+        rComm.EnvToForm(WinCtrl)
+    else if Prefix = 'Mtr' then
+        rMotor.EnvToForm(WinCtrl)
+    else if Prefix = 'Al' then
+        rMotor.EnvToForm(WinCtrl)
+    else if Prefix = 'Brn' then
+        rMotor.EnvToForm(WinCtrl)
+    else if Prefix = 'SP' then
+        rSoundProof.EnvToForm(WinCtrl)
+    else if Prefix = 'Bk' then
+        rBackAngle.EnvToForm(WinCtrl)
+    else if Prefix = 'Elec' then
+        rElec.EnvToForm(WinCtrl)
+    else if Prefix = 'IMS' then
+        rIMS.EnvToForm(WinCtrl)
+    else if Prefix = 'Mem' then
+        rIMS.rMem.EnvToForm(WinCtrl)
+    else if Prefix = 'AP' then
+        rAntipinch.EnvToForm(WinCtrl)
+    else if Prefix = 'Mnl' then
+        rManual.EnvToForm(WinCtrl)
+    else if Prefix = 'Dp' then
+        rDevelop.EnvToForm(WinCtrl);
+end;
+
+procedure TSysEnv.Save(Item: TSysEnvItem);
+var
+    Ini: TIniFile;
+    sTm: string;
+begin
+    sTm := GetEnvPath('Reference.Ini');
+    Ini := TIniFile.Create(sTm);
+    try
+        case Item of
+            eiOP:
+                rOP.SaveEnv(Ini);
+            eiComm:
+                rComm.SaveEnv(Ini);
+            eiMotor:
+                rMotor.SaveEnv(Ini);
+            eiSoundProof:
+                rSoundProof.SaveEnv(Ini);
+            eiBackAngle:
+                rBackAngle.SaveEnv(Ini);
+            eiElec:
+                rElec.SaveEnv(Ini);
+            eiIMS:
+                rIMS.SaveEnv(Ini);
+            eiAntipinch:
+                rAntipinch.SaveEnv(Ini);
+            eiManual:
+                rManual.SaveEnv(Ini);
+            eiDevelop:
+                rDevelop.SaveEnv(Ini);
+            eiCanIDFilter:
+                rCanIDFilter.Write(Ini);
+            eiRefVoltSetter:
+                rRefVoltSetter.Write(Ini);
+        end;
+    finally
+        Ini.Free;
+    end;
+end;
+
+procedure TSysEnv.Init;
+begin
+    rRefVoltSetter := TRefVoltSetter.Create(MAX_ST_COUNT, 2);
+    rCanIDFilter := TCanIDFilter.Create;
+
+    rOP.Init();
+    rComm.Init();
+    rMotor.Init();
+    rSoundProof.Init();
+    rBackAngle.Init();
+    rElec.Init();
+    rAntipinch.Init();
+    rIMS.Init();
+    rManual.Init();
+    rDevelop.Init();
+end;
+
+procedure TSysEnv.LoadAll;
+var
+    Item: TSysEnvItem;
+begin
+    FillChar(gSysEnv, Sizeof(TSysEnv), #0);
+
+    Init();
+
+    if not FileExists(GetHomeDirectory + DIR_ENV + '\Reference.Ini') then
+        SaveAll();
+
+    for Item := Low(TSysEnvItem) to High(TSysEnvItem) do
+    begin
+        Load(Item);
+    end;
+
+end;
+
+procedure TSysEnv.SaveAll;
+var
+    Item: TSysEnvItem;
+begin
+    for Item := Low(TSysEnvItem) to High(TSysEnvItem) do
+        Save(Item);
+end;
+
+{ TEnvBinder }
+
+function StartsWithRUpper(const S: string): Boolean;
+begin
+    Result := (Length(S) > 1) and (S[1] = 'r') and (S[2] in ['A'..'Z']);
+end;
+
+function FindControl(const AName: string; WinCtrl: TWinControl): TControl;
+var
+    i: Integer;
+    ChildCtrl: TControl;
+begin
+    for i := 0 to WinCtrl.ControlCount - 1 do
+    begin
+        ChildCtrl := WinCtrl.Controls[i];
+
+        if SameText(ChildCtrl.Name, AName) then
+            Exit(ChildCtrl);
+
+        // 재귀 탐색
+        if ChildCtrl is TWinControl then
+        begin
+            Result := FindControl(AName, TWinControl(ChildCtrl));
+            if Assigned(Result) then
+                Exit;
+        end;
+    end;
+
+    Result := nil;
+end;
+
+class procedure TEnvBinder.FormToEnv<T>(var ARecord: T; WinCtrl: TWinControl; const EnvPrefix: string);
+var
+    ctx: TRttiContext;
+    typ: TRttiType;
+    fld: TRttiField;
+    ctrl: TControl;
+    ctrlName, fieldName: string;
+    ptr: Pointer;
+    clb: TCheckListBox;
+    i, j: Integer;
+    PurePrefix: string;
+    Index: Integer;
+    HasIndex: Boolean;
+begin
+    // Prefix 파싱: "Al,1" → PurePrefix = "Al", Index = 1
+    HasIndex := Pos(',', EnvPrefix) > 0;
+    if HasIndex then
+    begin
+        PurePrefix := Trim(Copy(EnvPrefix, 1, Pos(',', EnvPrefix) - 1));
+        Index := StrToIntDef(Trim(Copy(EnvPrefix, Pos(',', EnvPrefix) + 1, MaxInt)), 0);
+    end
+    else
+    begin
+        PurePrefix := EnvPrefix;
+        Index := -1;
+    end;
+
+    ctx := TRttiContext.Create;
+    try
+        typ := ctx.GetType(TypeInfo(T));
+        ptr := @ARecord;
+
+        for fld in typ.GetFields do
+        begin
+            fieldName := fld.Name;
+
+            if (fld.FieldType = nil) and (Pos('Group', fieldName) <= 0) then
+                Continue;
+
+            // 'r' 접두어 제거
+            if StartsWithRUpper(fieldName) then
+                fieldName := Copy(fieldName, 2, MaxInt);
+
+            if Pos('Prefix', fieldName) > 0 then
+                Continue;
+
+            // 배열 처리: 이름에 Group이 포함되어 있는 경우
+            if Pos('Group', fieldName) > 0 then
+            begin
+                if Pos('BGroup', fieldName) > 0 then
+                begin
+                    // clb+Prefix+_+FieldName+Index 형식
+                    if HasIndex then
+                        ctrlName := Format('clb%s_%s%d', [PurePrefix, fieldName, Index])
+                    else
+                        ctrlName := Format('clb%s_%s', [PurePrefix, fieldName]);
+
+                    ctrl := FindControl(ctrlName, WinCtrl);
+
+                    if not Assigned(ctrl) or not (ctrl is TCheckListBox) then
+                        Continue;
+
+                    clb := TCheckListBox(ctrl);
+
+                    for i := 0 to ARRAY_LENGTH do
+                    begin
+                        if i >= clb.Items.Count then
+                            Break;
+
+                        PBoolean(PByte(ptr) + fld.Offset + i * SizeOf(Boolean))^ := clb.Checked[i];
+                    end;
+                end;
+
+                Continue;
+            end;
+
+            // 일반 필드 처리
+            for j := Low(CompMaps) to High(CompMaps) do
+            begin
+                ctrlName := CompMaps[j].rPrefix + PurePrefix + '_' + fieldName;
+                ctrl := FindControl(ctrlName, WinCtrl);
+
+                if not Assigned(ctrl) then
+                    Continue;
+
+                case j of
+                    0:
+                        if ctrl is TEdit then
+                        begin
+                            case fld.FieldType.TypeKind of
+                                tkInteger:
+                                    fld.SetValue(ptr, TValue.From<Integer>(StrToIntDef(TEdit(ctrl).Text, 0)));
+                                tkFloat:
+                                    fld.SetValue(ptr, TValue.From<Double>(StrToFloatDef(TEdit(ctrl).Text, 0.0)));
+                            else
+                                fld.SetValue(ptr, TValue.From<string>(TEdit(ctrl).Text));
+                            end;
+                        end;
+                    1:
+                        if ctrl is TComboBox then
+                            fld.SetValue(ptr, TValue.From<Integer>(TComboBox(ctrl).ItemIndex));
+                    2:
+                        if ctrl is TRadioGroup then
+                            fld.SetValue(ptr, TValue.From<Integer>(TRadioGroup(ctrl).ItemIndex));
+                    3:
+                        if ctrl is TCheckBox then
+                            fld.SetValue(ptr, TValue.From<Boolean>(TCheckBox(ctrl).Checked));
+                    4:
+                        if ctrl is TDateTimePicker then
+                            fld.SetValue(ptr, TValue.From<Double>( Trunc(Now) + Frac(TDateTimePicker(ctrl).Time)));
+                end;
+
+                Break;
+            end;
+        end;
+    finally
+        ctx.Free;
+    end;
+end;
+
+class procedure TEnvBinder.EnvToForm<T>(var ARecord: T; WinCtrl: TWinControl; const EnvPrefix: string);
+var
+    ctx: TRttiContext;
+    typ: TRttiType;
+    fld: TRttiField;
+    ctrl: TControl;
+    ctrlName, fieldName: string;
+    ptr: Pointer;
+    clb: TCheckListBox;
+    i, j: Integer;
+    PurePrefix: string;
+    Index: Integer;
+    HasIndex: Boolean;
+begin
+    // Prefix 파싱: "Al,1" → PurePrefix = "Al", Index = 1
+    HasIndex := Pos(',', EnvPrefix) > 0;
+    if HasIndex then
+    begin
+        PurePrefix := Trim(Copy(EnvPrefix, 1, Pos(',', EnvPrefix) - 1));
+        Index := StrToIntDef(Trim(Copy(EnvPrefix, Pos(',', EnvPrefix) + 1, MaxInt)), 0);
+    end
+    else
+    begin
+        PurePrefix := EnvPrefix;
+        Index := -1;
+    end;
+
+    ctx := TRttiContext.Create;
+    try
+        typ := ctx.GetType(TypeInfo(T));
+        ptr := @ARecord;
+
+        for fld in typ.GetFields do
+        begin
+            fieldName := fld.Name;
+
+            if (fld.FieldType = nil) and (Pos('Group', fieldName) <= 0) then
+                Continue;
+      // 'r' 접두어 제거
+            if StartsWithRUpper(fieldName) then
+                fieldName := Copy(fieldName, 2, MaxInt);
+
+            if Pos('Prefix', fieldName) > 0 then
+                Continue;
+
+            // 배열 처리: 이름에 Group이 포함되어 있는 경우
+            if Pos('Group', fieldName) > 0 then
+            begin
+                if Pos('BGroup', fieldName) > 0 then
+                begin
+                    // clb+PurePrefix+_+FieldName+Index 형식
+                    if HasIndex then
+                        ctrlName := Format('clb%s_%s%d', [PurePrefix, fieldName, Index])
+                    else
+                        ctrlName := Format('clb%s_%s', [PurePrefix, fieldName]);
+
+                    ctrl := FindControl(ctrlName, WinCtrl);
+
+                    if not Assigned(ctrl) or not (ctrl is TCheckListBox) then
+                        Continue;
+
+                    clb := TCheckListBox(ctrl);
+
+                    for i := 0 to ARRAY_LENGTH do
+                    begin
+                        if i >= clb.Items.Count then
+                            Break;
+
+                        clb.Checked[i] := PBoolean(PByte(ptr) + fld.Offset + i * SizeOf(Boolean))^;
+                    end;
+                end;
+
+                Continue;
+            end;
+
+            // 일반 필드 처리
+            for j := Low(CompMaps) to High(CompMaps) do
+            begin
+                ctrlName := CompMaps[j].rPrefix + PurePrefix + '_' + fieldName;
+                ctrl := FindControl(ctrlName, WinCtrl);
+                if not Assigned(ctrl) then
+                    Continue;
+
+
+                // 차종 선택 감지시 Push 하기전 현재 화면상의 차종 Set
+                if Pos('SelectedCar', fieldName) > 0 then
+                begin
+                    fld.SetValue(ptr, TValue.From<Integer>(TComboBox(ctrl).ItemIndex));
+                    Continue;
+                end;
+
+                // 모터 선택 감지시 Push 하기전 현재 화면상의 차종 Set
+                if Pos('SelectedMtr', fieldName) > 0 then
+                begin
+                    fld.SetValue(ptr, TValue.From<Integer>(TComboBox(ctrl).ItemIndex));
+                    Continue;
+                end;
+
+                case j of
+                    0:
+                        if ctrl is TEdit then
+                        begin
+                            case fld.FieldType.TypeKind of
+                                tkInteger:
+                                    TEdit(ctrl).Text := IntToStr(fld.GetValue(ptr).AsInteger);
+                                tkFloat:
+                                    TEdit(ctrl).Text := FloatToStr(fld.GetValue(ptr).AsExtended);
+                            else
+                                TEdit(ctrl).Text := fld.GetValue(ptr).AsString;
+                            end;
+                        end;
+                    1:
+                        if ctrl is TComboBox then
+                            TComboBox(ctrl).ItemIndex := fld.GetValue(ptr).AsInteger;
+                    2:
+                        if ctrl is TRadioGroup then
+                            TRadioGroup(ctrl).ItemIndex := fld.GetValue(ptr).AsInteger;
+                    3:
+                        if ctrl is TCheckBox then
+                            TCheckBox(ctrl).Checked := fld.GetValue(ptr).AsBoolean;
+                    4:
+                        if ctrl is TDateTimePicker then
+                            TDateTimePicker(ctrl).DateTime := fld.GetValue(ptr).AsExtended;
+
+                end;
+
+                Break;
+            end;
+        end;
+    finally
+        ctx.Free;
+    end;
+end;
+
+{ TIMSEnv }
+
+procedure TIMSEnv.Init;
+begin
+    rLimit.Init();
+    rMem.Init();
+end;
+
+procedure TIMSEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    rLimit.FormToEnv(WinCtrl);
+    rMem.FormToEnv(WinCtrl);
+end;
+
+procedure TIMSEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    rLimit.EnvToForm(WinCtrl);
+    rMem.EnvToForm(WinCtrl);
+end;
+
+procedure TIMSEnv.SaveEnv(Ini: TIniFile);
+begin
+    rLimit.SaveEnv(Ini);
+    rMem.SaveEnv(Ini);
+end;
+
+procedure TIMSEnv.LoadEnv(Ini: TIniFile);
+begin
+    rLimit.LoadEnv(Ini);
+    rMem.LoadEnv(Ini);
+end;
+
+{ TManualEnv }
+procedure TManualEnv.Init;
+begin
+    rSlide.Init();
+    rHeight.Init();
+end;
+
+procedure TManualEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    rSlide.FormToEnv(WinCtrl);
+    rHeight.FormToEnv(WinCtrl);
+end;
+
+procedure TManualEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    rSlide.EnvToForm(WinCtrl);
+    rHeight.EnvToForm(WinCtrl);
+end;
+
+procedure TManualEnv.LoadEnv(Ini: TIniFile);
+begin
+    rSlide.LoadEnv(Ini);
+    rHeight.LoadEnv(Ini);
+end;
+
+procedure TManualEnv.SaveEnv(Ini: TIniFile);
+begin
+    rSlide.SaveEnv(Ini);
+    rHeight.SaveEnv(Ini);
+end;
+
+{ TElecEnv }
+
+procedure TElecEnv.Init;
+begin
+    rHV.Init();
+    rECU.Init();
+    rBuckle.Init();
+end;
+
+procedure TElecEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    rHV.FormToEnv(WinCtrl);
+    rECU.FormToEnv(WinCtrl);
+    rBuckle.FormToEnv(WinCtrl);
+end;
+
+procedure TElecEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    rHV.EnvToForm(WinCtrl);
+    rECU.EnvToForm(WinCtrl);
+    rBuckle.EnvToForm(WinCtrl);
+end;
+
+procedure TElecEnv.SaveEnv(Ini: TIniFile);
+begin
+    rHV.SaveEnv(Ini);
+    rECU.SaveEnv(Ini);
+    rBuckle.SaveEnv(Ini);
+end;
+
+procedure TElecEnv.LoadEnv(Ini: TIniFile);
+begin
+    rHV.LoadEnv(Ini);
+    rECU.LoadEnv(Ini);
+    rBuckle.LoadEnv(Ini);
+end;
+
+{ TEnvBinder }
+class procedure TEnvBinder.LoadEnv<T>(var ARecord: T; Ini: TIniFile; const Section: string);
+var
+    ctx: TRttiContext;
+    typ: TRttiType;
+    fld: TRttiField;
+    fieldName, ident, strValue: string;
+    val: TValue;
+    ptr: Pointer;
+    hasValue: Boolean;
+    i, intVal: Integer;
+    floatVal: Double;
+    basePtr: PByte;
+begin
+    ctx := TRttiContext.Create;
+    try
+        typ := ctx.GetType(TypeInfo(T));
+        ptr := @ARecord;
+        basePtr := PByte(ptr);
+
+        for fld in typ.GetFields do
+        begin
+
+            fieldName := fld.Name;
+
+            if (fld.FieldType = nil) and (Pos('Group', fieldName) <= 0) then
+                Continue;
+
+      // 'r' 제거
+            if (Length(fieldName) > 1) and (fieldName[1] = 'r') and (fieldName[2] in ['A'..'Z']) then
+                ident := Copy(fieldName, 2, MaxInt)
+            else
+                ident := fieldName;
+
+            val := TValue.Empty;
+            hasValue := False;
+
+            try
+                if Pos('Prefix', fieldName) > 0 then
+                    Continue;
+
+                // 배열로 처리할 필드인지 판단
+                if Pos('Group', fieldName) > 0 then
+                begin
+                    for i := 0 to ARRAY_LENGTH do
+                    begin
+                        // 저장된 값이 없으면 종료 (필요시 체크)
+                        if not Ini.ValueExists(Section, ident + IntToStr(i)) then
+                            Break;
+
+                        if Pos('IGroup', fieldName) > 0 then
+                            PInteger(basePtr + fld.Offset + i * SizeOf(Integer))^ := Ini.ReadInteger(Section, ident + IntToStr(i), -1)
+                        else if Pos('BGroup', fieldName) > 0 then
+                            PBoolean(basePtr + fld.Offset + i * SizeOf(Boolean))^ := Ini.ReadBool(Section, ident + IntToStr(i), False)
+                        else if Pos('FGroup', fieldName) > 0 then
+                            PDouble(basePtr + fld.Offset + i * SizeOf(Double))^ := Ini.ReadFloat(Section, ident + IntToStr(i), 0.0)
+                        else
+                            Break; // 알 수 없는 타입은 무시
+                    end;
+
+                    Continue; // 배열 처리 완료
+                end;
+
+                // 일반 필드 처리
+                case fld.FieldType.TypeKind of
+                    tkString, tkLString, tkWString, tkUString:
+                        begin
+                            strValue := Ini.ReadString(Section, ident, '');
+                            if strValue <> '' then
+                            begin
+                                val := TValue.From<string>(strValue);
+                                hasValue := True;
+                            end;
+                        end;
+
+                    tkInteger:
+                        begin
+                            intVal := Ini.ReadInteger(Section, ident, -1);
+                            if intVal <> -1 then
+                            begin
+                                val := TValue.From<Integer>(intVal);
+                                hasValue := True;
+                            end;
+                        end;
+
+                    tkFloat:
+                        begin
+                            floatVal := Ini.ReadFloat(Section, ident, -1.0);
+                            if floatVal <> -1.0 then
+                            begin
+                                val := TValue.From<Double>(floatVal);
+                                hasValue := True;
+                            end;
+                        end;
+
+                    tkEnumeration:
+                        begin
+                            if fld.FieldType.Handle = TypeInfo(Boolean) then
+                            begin
+                                val := TValue.From<Boolean>(Ini.ReadBool(Section, ident, False));
+                                hasValue := True;
+                            end;
+                        end;
+                end;
+
+                if hasValue and (not val.IsEmpty) then
+                    fld.SetValue(ptr, val);
+            except
+                on E: Exception do
+                    ; // 오류 무시
+            end;
+        end;
+    finally
+        ctx.Free;
+    end;
+end;
+
+class procedure TEnvBinder.SaveEnv<T>(var ARecord: T; Ini: TIniFile; const Section: string);
+var
+    ctx: TRttiContext;
+    typ: TRttiType;
+    fld: TRttiField;
+    fieldName, ident: string;
+    val: TValue;
+    ptr: Pointer;
+    basePtr: PByte;
+    i: Integer;
+begin
+    ctx := TRttiContext.Create;
+    try
+        typ := ctx.GetType(TypeInfo(T));
+        ptr := @ARecord;
+        basePtr := PByte(ptr);
+
+        for fld in typ.GetFields do
+        begin
+            fieldName := fld.Name;
+
+            if (fld.FieldType = nil) and (Pos('Group', fieldName) <= 0) then
+                Continue;
+
+            // 'r' 접두사 제거
+            if (Length(fieldName) > 1) and (fieldName[1] = 'r') and (fieldName[2] in ['A'..'Z']) then
+                ident := Copy(fieldName, 2, MaxInt)
+            else
+                ident := fieldName;
+
+            if Pos('Prefix', fieldName) > 0 then
+                Continue;
+
+            try
+                // 배열인 경우
+                if Pos('Group', fieldName) > 0 then
+                begin
+                    for i := 0 to ARRAY_LENGTH do
+                    begin
+                        // 값 저장
+                        if Pos('IGroup', fieldName) > 0 then
+                            Ini.WriteInteger(Section, ident + IntToStr(i), PInteger(basePtr + fld.Offset + i * SizeOf(Integer))^)
+                        else if Pos('BGroup', fieldName) > 0 then
+                            Ini.WriteBool(Section, ident + IntToStr(i), PBoolean(basePtr + fld.Offset + i * SizeOf(Boolean))^)
+                        else if Pos('FGroup', fieldName) > 0 then
+                            Ini.WriteFloat(Section, ident + IntToStr(i), PDouble(basePtr + fld.Offset + i * SizeOf(Double))^)
+                        else
+                            Break;
+                    end;
+
+                    Continue; // 배열 처리 완료
+                end;
+
+                // 일반 필드
+                val := fld.GetValue(ptr);
+
+                case fld.FieldType.TypeKind of
+                    tkString, tkLString, tkWString, tkUString:
+                        Ini.WriteString(Section, ident, val.AsString);
+                    tkInteger:
+                        Ini.WriteInteger(Section, ident, val.AsInteger);
+                    tkFloat:
+                        Ini.WriteFloat(Section, ident, val.AsExtended);
+                    tkEnumeration:
+                        if fld.FieldType.Handle = TypeInfo(Boolean) then
+                            Ini.WriteBool(Section, ident, val.AsBoolean);
+                end;
+            except
+                on E: Exception do
+                    ; // 오류 무시
+            end;
+        end;
+    finally
+        ctx.Free;
+    end;
+end;
+
+{ TAPEnv }
+
+procedure TAPEnv.EnvToForm(WinCtrl: TWinControl);
+begin
+    TEnvBinder.EnvToForm<TAPEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TAPEnv.FormToEnv(WinCtrl: TWinControl);
+begin
+    TEnvBinder.FormToEnv<TAPEnv>(Self, WinCtrl, rPrefix);
+end;
+
+procedure TAPEnv.Init;
+var
+    i: Integer;
+begin
+    rPrefix := 'AP';
+    rUseSlide := True;
+    rUseRecl := True;
+end;
+
+procedure TAPEnv.LoadEnv(Ini: TIniFile);
+begin
+    TEnvBinder.LoadEnv<TAPEnv>(Self, Ini, 'ANTIPINCH');
+end;
+
+procedure TAPEnv.SaveEnv(Ini: TIniFile);
+begin
+    TEnvBinder.SaveEnv<TAPEnv>(Self, Ini, 'ANTIPINCH');
+end;
+{ TBrnEnv }
+procedure TBrnEnv.Init;
+begin
+    rPrefix := 'Brn';
+    rBurnishingCount := 0;
+end;
+
+initialization
+
+finalization
+    if Assigned(gSysEnv.rRefVoltSetter) then
+        gSysEnv.rRefVoltSetter.Free;
+
+    if Assigned(gSysEnv.rCanIDFilter) then
+        gSysEnv.rCanIDFilter.Free;
+
+end.
+

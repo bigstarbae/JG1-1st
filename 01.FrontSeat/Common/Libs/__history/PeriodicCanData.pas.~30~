@@ -1,0 +1,198 @@
+unit PeriodicCanData;
+
+interface
+
+uses
+    Classes, BaseCAN, IntervalCaller, Log, ModelType, SysUtils, SeatType;
+
+const
+    // Interval Caller
+    IC_ATL = 'IC_SW_ATL';
+    IC_IGN = 'IC_IGN';
+    IC_IGN_RJ1_PE = 'IC_IGN_RJ1_PE';
+    IC_SPEED = 'IC_SPEED';
+    IC_IBOX_ON = 'IC_IBOX_ON';
+    IC_IBOX_CRK = 'IC_IBOX_CRK';
+
+type
+    TPeriodicCanData = class
+    private
+        mICMan : TIntervalCallerManager;
+        mCAN: TBaseCAN;
+        mCarType : TCAR_TYPE;
+
+        procedure SetEnabled(Value: boolean);
+    procedure HVEnables(IsStart: Boolean);
+    procedure MemoryEnables(IsStart: Boolean);
+
+    public
+        constructor Create(CAN: TBaseCAN; CarType: TCAR_TYPE);
+        destructor Destroy; override;
+
+        procedure Init(CarType: TCAR_TYPE);
+
+        procedure Run;
+
+        procedure SetIgn(IsStart: boolean);
+
+
+
+        property Enabled : boolean write SetEnabled;
+
+
+    end;
+
+implementation
+
+{ TPeriodicCanData }
+
+constructor TPeriodicCanData.Create(CAN: TBaseCAN; CarType: TCAR_TYPE);
+begin
+    mCAN := CAN;
+    mCarType := CarType;
+
+    mICMan := TIntervalCallerManager.Create();
+
+    mICMan.Add(IC_IGN_RJ1_PE,
+        procedure
+        var
+            CANFrame: TCANData;
+        begin
+            FillChar(CANFrame, SizeOf(CANFrame), 0);
+            CANFrame[3] := $D8;
+            mCAN.Write($100, CANFrame, 8);
+        end, 200);
+
+    mICMan.Add(IC_ATL,
+        procedure
+        var
+            CANFrame: TCANData;
+        begin
+            FillChar(CANFrame, SizeOf(CANFrame), 0);
+            CANFrame[0] := $80;
+            mCAN.Write($188, CANFrame, 8);
+        end, 200);
+
+    mICMan.Add(IC_IGN,
+        procedure
+        var
+            CANFrame: TCANData;
+        begin
+            FillChar(CANFrame, SizeOf(CANFrame), 0);
+            CANFrame[0] := $4C;
+            CANFrame[6] := $40;
+            mCAN.Write($100, CANFrame, 8);
+        end, 200);
+
+    mICMan.Add(IC_IGN_RJ1_PE,
+        procedure
+        var
+            CANFrame: TCANData;
+        begin
+            FillChar(CANFrame, SizeOf(CANFrame), 0);
+            CANFrame[3] := $D8;
+            mCAN.Write($100, CANFrame, 8);
+        end, 200);
+
+    mICMan.Add(IC_SPEED,
+        procedure
+        var
+            CANFrame: TCANData;
+        begin
+            FillChar(CANFrame, SizeOf(CANFrame), 0);
+            CANFrame[0] := $00;
+            mCAN.Write($589, CANFrame, 8);
+        end, 200);
+
+    mICMan.Add(IC_IBOX_ON,
+        procedure
+        var
+            CANFrame: TCANData;
+        begin
+            FillChar(CANFrame, SizeOf(CANFrame), 0);
+            CANFrame[0] := $02;
+            mCAN.Write($18B, CANFrame, 8);
+        end, 200);
+
+    mICMan.Add(IC_IBOX_CRK,
+        procedure
+        var
+            CANFrame: TCANData;
+        begin
+            FillChar(CANFrame, SizeOf(CANFrame), 0);
+            CANFrame[0] := $18;
+            CANFrame[2] := $40;
+            mCAN.Write($188, CANFrame, 8);
+        end, 200);
+end;
+
+destructor TPeriodicCanData.Destroy;
+begin
+    FreeAndNil(mICMan);
+end;
+
+procedure TPeriodicCanData.Init(CarType: TCAR_TYPE);
+begin
+    mCarType := CarType;
+end;
+
+procedure TPeriodicCanData.Run;
+begin
+    mICMan.Run;
+end;
+
+procedure TPeriodicCanData.SetEnabled(Value: boolean);
+begin
+    mICMan.Enabled := Value;
+end;
+
+procedure TPeriodicCanData.SetIgn(IsStart: boolean);
+begin
+    case mCarType of
+        ctJG1: ;
+        ctRJ1:
+            begin
+                mICMan.Items[IC_IGN_RJ1_PE].Enabled := IsStart;
+            end;
+        ctHI: ;
+        ctSPARE1: ;
+        ctSPARE2: ;
+    end;
+
+end;
+
+procedure TPeriodicCanData.MemoryEnables(IsStart: Boolean);
+begin
+    case mCarType of
+        ctRJ1:
+            begin
+                mICMan[IC_IGN_RJ1_PE].Enabled := IsStart;
+                mICMan[IC_SPEED].Enabled := IsStart;
+            end;
+        ctHI:
+            begin
+                mICMan[IC_IGN].Enabled := IsStart;
+                mICMan[IC_SPEED].Enabled := IsStart;
+            end;
+    end;
+
+end;
+
+procedure TPeriodicCanData.HVEnables(IsStart: Boolean);
+begin
+    case mCarType of
+        ctRJ1:
+            begin
+                mICMan[IC_IGN_RJ1_PE].Enabled := IsStart;
+                mICMan[IC_IBOX_ON].Enabled := IsStart;
+                mICMan[IC_IBOX_CRK].Enabled := IsStart;
+            end;
+        ctHI:
+            begin
+                mICMan[IC_IGN].Enabled := IsStart;
+            end;
+    end;
+
+end;
+
+end.

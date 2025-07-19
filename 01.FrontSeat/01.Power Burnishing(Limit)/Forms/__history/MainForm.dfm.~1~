@@ -1,0 +1,289 @@
+inherited frmMain: TfrmMain
+  Caption = 'frmMain'
+  Constraints.MinHeight = 0
+  Constraints.MinWidth = 0
+  PixelsPerInch = 96
+  TextHeight = 17
+  inherited shpConseparator: TShape
+    ExplicitLeft = 1693
+    ExplicitHeight = 769
+  end
+  inherited pnlStatus: TPanel
+    object lblWorkMonitor: TLabel [2]
+      Left = 1173
+      Top = 0
+      Width = 107
+      Height = 24
+      Align = alRight
+      Alignment = taCenter
+      Caption = 'P/C 33.3 / 66.6 High '
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -12
+      Font.Name = #47569#51008' '#44256#46357' Semilight'
+      Font.Style = []
+      ParentFont = False
+      Layout = tlCenter
+      ExplicitHeight = 15
+    end
+    object lblMemory: TLabel [3]
+      Left = 961
+      Top = 0
+      Width = 58
+      Height = 24
+      Align = alRight
+      Caption = 'lblMemory'
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clGray
+      Font.Height = -12
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = []
+      ParentFont = False
+      Layout = tlCenter
+      ExplicitHeight = 15
+    end
+    inherited pnlCommStatus: TPanel
+      inherited Label2: TLabel
+        Height = 24
+      end
+    end
+    inherited pnlExtra: TPanel
+      Left = 1019
+      Width = 154
+      ExplicitLeft = 1019
+      ExplicitWidth = 154
+      object lblCycleTime: TLabel
+        Left = 0
+        Top = 0
+        Width = 154
+        Height = 24
+        Align = alRight
+        Alignment = taCenter
+        AutoSize = False
+        Caption = '#23 123.4'
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = clGray
+        Font.Height = -12
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = []
+        ParentFont = False
+        Layout = tlCenter
+        ExplicitLeft = -48
+        ExplicitTop = -8
+      end
+    end
+  end
+  inherited pnlTop: TPanel
+    inherited lblResult: TLabel3D
+      ExplicitLeft = 812
+    end
+    inherited lblMode: TLabel3D
+      Left = 911
+      Width = 142
+      ExplicitLeft = 912
+      ExplicitWidth = 142
+    end
+    inherited fmModelInfo: TMdllInfoFrame
+      Width = 911
+      ExplicitWidth = 911
+      inherited pnlMdlInfo: TPanel
+        Width = 911
+        ExplicitWidth = 911
+        inherited pnlOpt: TPanel
+          Width = 161
+          ExplicitWidth = 161
+          inherited pnlOptTop: TPanel
+            Width = 161
+            ExplicitWidth = 161
+          end
+          inherited pnlOptUnder: TPanel
+            Width = 161
+            ExplicitWidth = 161
+            inherited lblSemi: TLabel3D
+              ExplicitHeight = 58
+            end
+          end
+        end
+      end
+    end
+  end
+  inherited pnlBottom: TPanel
+    inherited pnlRTVals: TPanel
+      inherited Label19: TLabel
+        Visible = True
+      end
+      inherited lblMotorCurr: TLabel
+        Visible = True
+      end
+      inherited Label99: TLabel
+        Visible = True
+      end
+    end
+    inherited pnlWorkStatus: TPanel
+      Width = 677
+      Align = alClient
+      ExplicitWidth = 677
+      inherited lblStatus: TLabel3D
+        Width = 677
+        ExplicitLeft = -24
+        ExplicitTop = 16
+        ExplicitWidth = 509
+      end
+      inherited pnlWorkStatusTitle: TPanel
+        Width = 677
+        ExplicitWidth = 677
+      end
+      inherited lbLog: TListBox
+        Width = 677
+        ExplicitWidth = 677
+      end
+    end
+  end
+  inherited pnlSysStatus: TPanel
+    inherited abCable: TAbLED
+      Visible = False
+    end
+    inherited abPop: TAbLED
+      Visible = False
+    end
+    object abDiskC: TAbLED
+      Left = 1650
+      Top = 2
+      Width = 122
+      Height = 16
+      Caption = 'Disk(C:) 100 %'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clBlack
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+      LED.Shape = sRectangle
+      LED.Width = 15
+      LED.Height = 10
+      LED_Position = lpLeft
+      Spacing = 5
+      Checked = False
+      Flashing = False
+      Frequency = ff1Hz
+      StatusInt = 0
+      StatusBit = 0
+      GroupIndex = 0
+      Mode = mIndicator
+    end
+    object abDiskD: TAbLED
+      Left = 1787
+      Top = 2
+      Width = 122
+      Height = 16
+      Caption = 'Disk(D:) 100 %'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clBlack
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+      LED.Shape = sRectangle
+      LED.Width = 15
+      LED.Height = 10
+      LED_Position = lpLeft
+      Spacing = 5
+      Checked = False
+      Flashing = False
+      Frequency = ff1Hz
+      StatusInt = 0
+      StatusBit = 0
+      GroupIndex = 0
+      Mode = mIndicator
+    end
+  end
+  inherited pnlClient: TPanel
+    inherited shpTop: TShape
+      Height = 44
+      ExplicitHeight = 44
+    end
+    inherited shpLeft: TShape
+      Top = 44
+      Height = 582
+      ExplicitTop = 44
+      ExplicitHeight = 635
+    end
+    inherited shpRight: TShape
+      Top = 44
+      Height = 582
+      ExplicitLeft = 976
+      ExplicitTop = 44
+      ExplicitHeight = 582
+    end
+    inherited shpBottom: TShape
+      ExplicitWidth = 1920
+    end
+    inherited pnlGrp: TPanel
+      Top = 44
+      Height = 582
+      ExplicitTop = 44
+      ExplicitHeight = 582
+      inherited shpGap2: TShape
+        ExplicitWidth = 1564
+      end
+      inherited Shape3: TShape
+        Top = 580
+        ExplicitTop = 636
+        ExplicitWidth = 1784
+      end
+      inherited pnlLegend: TPanel
+        inherited Shape2: TShape
+          ExplicitWidth = 1784
+        end
+      end
+      inherited chtMtr: TChart
+        PrintMargins = (
+          15
+          36
+          15
+          36)
+      end
+      inherited pnlBurnInfo: TPanel
+        Left = 224
+        Width = 689
+        ExplicitLeft = 224
+        ExplicitWidth = 689
+        inherited pnlBurnSlide: TPanel
+          Width = 689
+          ExplicitWidth = 689
+          inherited lblSlideBrnCnt: TLabel3D
+            Width = 156
+            Font.Charset = HANGEUL_CHARSET
+            ExplicitLeft = 525
+            ExplicitTop = 8
+            ExplicitWidth = 236
+          end
+        end
+      end
+    end
+  end
+  object tmrDiskChk: TTimer [10]
+    Interval = 3600000
+    OnTimer = tmrDiskChkTimer
+    Left = 725
+    Top = 192
+  end
+  object tmrMain: TTimer [11]
+    Enabled = False
+    Interval = 200
+    OnTimer = tmrMainTimer
+    Left = 528
+    Top = 192
+  end
+  inherited tmrPoll: TTimer
+    Left = 605
+    Top = 191
+  end
+  object tmrShow: TTimer
+    Enabled = False
+    Interval = 3000
+    OnTimer = tmrShowTimer
+    Left = 664
+    Top = 192
+  end
+end

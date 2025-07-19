@@ -1,0 +1,1459 @@
+{
+	Ver.240912.00
+}
+unit SubDataBox4Mtr;
+
+interface
+
+uses
+    BaseDataBox, DataBox, DataUnit;
+
+type
+    TSubDataBox4Mtr = class(TBaseDataBox)
+    private
+        mParent: TDataBox;
+
+        function GetTag: integer; override;
+        procedure SetValidity; override;
+
+    public
+        constructor Create(Parent: TDataBox);
+
+        procedure InitData(AReadEnv: boolean = false); override;
+        procedure SetDataInit(ATsMode: TTsORD); override;
+
+        function GetPResultBuffer(): PResult; override;
+        procedure SetResult(const AResult; Afpos: integer = -1); override;
+
+        function IsExists(AORD: TResultORD): boolean; overload; override;
+        function IsTested(AORD: TResultORD): boolean; overload; override;
+
+        function GetData(AORD: TResultORD; ADigit: integer = 0): double; overload; override;
+        function GetResult(AORD: TResultORD): boolean; overload; override;
+        function GetResult(ATsMode: TTsORD): boolean; overload; override;
+        function GetResultToATxt(APos: integer; IsUnit: boolean; IsResult: boolean = false): string; override;
+
+        procedure SetData(AORD: TResultORD; const Value: double); overload; override;
+        procedure SetData(AORD: TResultORD; const Value: string); overload; override;
+        procedure SetData(AORD: TResultORD; const Value: boolean); overload; override;
+        procedure SetData(AORD: TResultOrd; const Value: integer); overload; override;
+    end;
+
+implementation
+
+uses
+    Log, SeatMotorType, ModelUnit, SysEnv, DataUnitHelper;
+
+{ TSubDataBox4Mtr }
+
+constructor TSubDataBox4Mtr.Create(Parent: TDataBox);
+begin
+    inherited Create;
+    mParent := Parent
+end;
+
+function TSubDataBox4Mtr.GetData(AORD: TResultORD; ADigit: integer): double;
+begin
+    mIsProcessDone := true;
+
+    with mParent do
+    begin
+
+        case AORD of
+            rospecCurrLo_SLIDE:
+                Result := RsBuf.rModel.rspecs.rMotors[tmSlide].rCurr.rLo;
+            rospecCurrHi_SLIDE:
+                Result := RsBuf.rModel.rspecs.rMotors[tmSlide].rCurr.rHi;
+
+            rospecTimeLo_SLIDE:
+                Result := RsBuf.rModel.rspecs.rMotors[tmSlide].rTime.rLo;
+            rospecTimeHi_SLIDE:
+                Result := RsBuf.rModel.rspecs.rMotors[tmSlide].rTime.rHi;
+
+            rospecSpeedFwLo_SLIDE:
+                Result := RsBuf.rModel.rspecs.rMotors[tmSlide].rSpeedFw.rLo;
+            rospecSpeedFwHi_SLIDE:
+                Result := RsBuf.rModel.rspecs.rMotors[tmSlide].rSpeedFw.rHi;
+
+            rospecSpeedBwLo_SLIDE:
+                Result := RsBuf.rModel.rspecs.rMotors[tmSlide].rSpeedBw.rLo;
+            rospecSpeedBwHi_SLIDE:
+                Result := RsBuf.rModel.rspecs.rMotors[tmSlide].rSpeedBw.rHi;
+
+            rospecCurrLo_Tilt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmTilt].rCurr.rLo;
+            rospecCurrHi_Tilt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmTilt].rCurr.rHi;
+
+            rospecTimeLo_Tilt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmTilt].rTime.rLo;
+            rospecTimeHi_Tilt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmTilt].rTime.rHi;
+
+            rospecSpeedFwLo_Tilt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmTilt].rSpeedFw.rLo;
+            rospecSpeedFwHi_Tilt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmTilt].rSpeedFw.rHi;
+
+            rospecSpeedBwLo_Tilt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmTilt].rSpeedBw.rLo;
+            rospecSpeedBwHi_Tilt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmTilt].rSpeedBw.rHi;
+
+            rospecCurrLo_Height:
+                Result := RsBuf.rModel.rspecs.rMotors[tmHeight].rCurr.rLo;
+            rospecCurrHi_Height:
+                Result := RsBuf.rModel.rspecs.rMotors[tmHeight].rCurr.rHi;
+
+            rospecTimeLo_Height:
+                Result := RsBuf.rModel.rspecs.rMotors[tmHeight].rTime.rLo;
+            rospecTimeHi_Height:
+                Result := RsBuf.rModel.rspecs.rMotors[tmHeight].rTime.rHi;
+
+            rospecSpeedFwLo_Height:
+                Result := RsBuf.rModel.rspecs.rMotors[tmHeight].rSpeedFw.rLo;
+            rospecSpeedFwHi_Height:
+                Result := RsBuf.rModel.rspecs.rMotors[tmHeight].rSpeedFw.rHi;
+
+            rospecSpeedBwLo_Height:
+                Result := RsBuf.rModel.rspecs.rMotors[tmHeight].rSpeedBw.rLo;
+            rospecSpeedBwHi_Height:
+                Result := RsBuf.rModel.rspecs.rMotors[tmHeight].rSpeedBw.rHi;
+
+            rospecCurrLo_CushExt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmCushExt].rCurr.rLo;
+            rospecCurrHi_CushExt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmCushExt].rCurr.rHi;
+
+            rospecTimeLo_CushExt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmCushExt].rTime.rLo;
+            rospecTimeHi_CushExt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmCushExt].rTime.rHi;
+
+            rospecSpeedFwLo_CushExt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmCushExt].rSpeedFw.rLo;
+            rospecSpeedFwHi_CushExt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmCushExt].rSpeedFw.rHi;
+
+            rospecSpeedBwLo_CushExt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmCushExt].rSpeedBw.rLo;
+            rospecSpeedBwHi_CushExt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmCushExt].rSpeedBw.rHi;
+
+            roStroke_Slide:
+                Result := RsBuf.rModel.rspecs.rMotors[tmSlide].rStroke;
+
+            roStroke_Tilt:
+                begin
+                {
+                if RsBuf.rModel.rTypes.IsRelax then
+                    Result:= RsBuf.rModel.rspecs.rMotors[tmTilt].rRelaxStroke
+                else
+                }
+                    Result := RsBuf.rModel.rspecs.rMotors[tmTilt].rStroke;
+                end;
+
+            roStroke_Height:
+                Result := RsBuf.rModel.rspecs.rMotors[tmHeight].rStroke;
+            roStroke_CushExt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmCushExt].rStroke;
+
+            rospecNoiseHi_Slide:
+                Result := RsBuf.rModel.rspecs.rMotors[tmSlide].rNoiseRunning;
+            rospecNoiseInitTime_Slide:
+                Result := RsBuf.rModel.rspecs.rMotors[tmSlide].rNoiseInitTime;
+            rospecNoiseInitHi_Slide:
+                Result := RsBuf.rModel.rspecs.rMotors[tmSlide].rNoiseInitMax;
+
+            rospecNoiseHi_Tilt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmTilt].rNoiseRunning;
+            rospecNoiseInitTime_Tilt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmTilt].rNoiseInitTime;
+            rospecNoiseInitHi_Tilt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmTilt].rNoiseInitMax;
+
+            rospecNoiseHi_Height:
+                Result := RsBuf.rModel.rspecs.rMotors[tmHeight].rNoiseRunning;
+            rospecNoiseInitTime_Height:
+                Result := RsBuf.rModel.rspecs.rMotors[tmHeight].rNoiseInitTime;
+            rospecNoiseInitHi_Height:
+                Result := RsBuf.rModel.rspecs.rMotors[tmHeight].rNoiseInitMax;
+
+            rospecNoiseHi_CushExt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmCushExt].rNoiseRunning;
+            rospecNoiseInitTime_CushExt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmCushExt].rNoiseInitTime;
+            rospecNoiseInitHi_CushExt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmCushExt].rNoiseInitMax;
+
+            rospecDevInit_Slide:
+                Result := RsBuf.rModel.rspecs.rMotors[tmSlide].rDevNoiseInit;
+            rospecDevInit_Tilt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmTilt].rDevNoiseInit;
+            rospecDevInit_Height:
+                Result := RsBuf.rModel.rspecs.rMotors[tmHeight].rDevNoiseInit;
+            rospecDevInit_CushExt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmCushExt].rDevNoiseInit;
+
+            rospecDev_Slide:
+                Result := RsBuf.rModel.rspecs.rMotors[tmSlide].rDevNoise;
+            rospecDev_Tilt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmTilt].rDevNoise;
+            rospecDev_Height:
+                Result := RsBuf.rModel.rspecs.rMotors[tmHeight].rDevNoise;
+            rospecDev_CushExt:
+                Result := RsBuf.rModel.rspecs.rMotors[tmCushExt].rDevNoise;
+
+            roDataCurrFw_Slide, roDataTimeFw_Slide, roDataSpeedFw_Slide, roDataCurrBw_Slide, roDataTimeBw_Slide, roDataSpeedBw_Slide, roDataNoiseFw_Slide, roDataNoiseBw_Slide, roDataNoiseInitFw_Slide, roDataNoiseInitBw_Slide, roDevInitNoiseFw_SLIDE, roDevInitNoiseBw_SLIDE, roDevNoiseFw_SLIDE, roDevNoiseBw_SLIDE:
+                Result := RsBuf.rDatMtrs[tmSlide].GetData(AORD);
+
+            roDataCurrFw_Tilt, roDataTimeFw_Tilt, roDataSpeedFw_Tilt, roDataCurrBw_Tilt, roDataTimeBw_Tilt, roDataSpeedBw_Tilt, roDataNoiseFw_Tilt, roDataNoiseBw_Tilt, roDataNoiseInitFw_Tilt, roDataNoiseInitBw_Tilt, roDevInitNoiseFw_Tilt, roDevInitNoiseBw_Tilt, roDevNoiseFw_Tilt, roDevNoiseBw_Tilt:
+                Result := RsBuf.rDatMtrs[tmTilt].GetData(AORD);
+
+            roDataCurrFw_Height, roDataTimeFw_Height, roDataSpeedFw_Height, roDataCurrBw_Height, roDataTimeBw_Height, roDataSpeedBw_Height, roDataNoiseFw_Height, roDataNoiseBw_Height, roDataNoiseInitFw_Height, roDataNoiseInitBw_Height, roDevInitNoiseFw_Height, roDevInitNoiseBw_Height, roDevNoiseFw_Height, roDevNoiseBw_Height:
+                Result := RsBuf.rDatMtrs[tmHeight].GetData(AORD);
+
+            roDataCurrFw_CushExt, roDataTimeFw_CushExt, roDataSpeedFw_CushExt, roDataCurrBw_CushExt, roDataTimeBw_CushExt, roDataSpeedBw_CushExt, roDataNoiseFw_CushExt, roDataNoiseBw_CushExt, roDataNoiseInitFw_CushExt, roDataNoiseInitBw_CushExt, roDevInitNoiseFw_CushExt, roDevInitNoiseBw_CushExt, roDevNoiseFw_CushExt, roDevNoiseBw_CushExt:
+                Result := RsBuf.rDatMtrs[tmCushExt].GetData(AORD);
+
+            roCycleTime:
+                Result := RsBuf.rCycleTime;
+
+            //
+            roLimitTime_Slide:
+                Result := gModels.GetMotorTimeLimit(tmSlide, GetModelIndex);
+            roLimitCurr_Slide:
+                Result := gModels.GetMotorCurrLimit(tmSlide, GetModelIndex);
+            roLimitTime_Tilt:
+                Result := gModels.GetMotorTimeLimit(tmTilt, GetModelIndex);
+            roLimitCurr_Tilt:
+                Result := gModels.GetMotorCurrLimit(tmTilt, GetModelIndex);
+            roLimitTime_Height:
+                Result := gModels.GetMotorTimeLimit(tmHeight, GetModelIndex);
+            roLimitCurr_Height:
+                Result := gModels.GetMotorCurrLimit(tmHeight, GetModelIndex);
+            roLimitTime_CushExt:
+                Result := gModels.GetMotorTimeLimit(tmCushExt, GetModelIndex);
+            roLimitCurr_CushExt:
+                Result := gModels.GetMotorCurrLimit(tmCushExt, GetModelIndex);
+
+        else
+            mIsProcessDone := false;
+            Result := 0.0;
+        end;
+    end;
+end;
+
+function TSubDataBox4Mtr.GetPResultBuffer: PResult;
+begin
+    Result := mParent.GetPResultBuffer;
+end;
+
+function TSubDataBox4Mtr.GetResult(ATsMode: TTsORD): boolean;
+begin
+    mIsProcessDone := true;
+
+    with mParent do
+    begin
+
+        case ATsMode of
+            tsSlide:
+                Result := GetResult(roRsSlide_Fw) and GetResult(roRsSlide_Bw);
+            tsTilt:
+                Result := GetResult(roRsTilt_Fw) and GetResult(roRsTilt_Bw);
+            tsHeight:
+                Result := GetResult(roRsHeight_Fw) and GetResult(roRsHeight_Bw);
+            tsCushExt:
+                Result := GetResult(roRsCushExt_Fw) and GetResult(roRsCushExt_Bw);
+
+            tsNOISE:
+                Result := GetResult(roRsNoise);
+
+            tsDeviation:
+                begin
+                    Result := GetResult(roDevInitNoiseFw_SLIDE) and GetResult(roDevInitNoiseFw_Tilt) and GetResult(roDevInitNoiseFw_Height) and GetResult(roDevInitNoiseFw_CushExt) and GetResult(roDevInitNoiseBw_SLIDE) and GetResult(roDevInitNoiseBw_Tilt) and GetResult(roDevInitNoiseBw_Height) and GetResult(roDevInitNoiseBw_CushExt) and GetResult(roDevNoiseFw_SLIDE) and GetResult(roDevNoiseFw_Tilt) and GetResult(roDevNoiseFw_Height) and GetResult(roDevNoiseFw_CushExt) and GetResult(roDevNoiseBw_SLIDE) and GetResult(roDevNoiseBw_Tilt) and GetResult(roDevNoiseBw_Height) and GetResult(roDevNoiseBw_CushExt);
+                end;
+            tsAbnormalSound:
+                begin
+                    Result := GetResult(roRsAbnormalSound);
+                end;
+
+            tsWalkIn:
+                begin
+                    Result := GetResult(roRsWalkIn);
+                end;
+
+            tsMidPos:
+                begin
+                    Result := GetResult(roRsMidPos);
+                end
+
+        else
+            mIsProcessDone := false;
+            Result := false;
+        end;
+    end;
+end;
+
+function TSubDataBox4Mtr.GetResult(AORD: TResultORD): boolean;
+begin
+
+    mIsProcessDone := true;
+    Result := True;
+
+    with mParent do
+    begin
+
+        case AORD of
+            roRsPwrSeat:
+                begin
+                    Result := GetCompoJudge([
+                        roRsSlide_Fw, roRsSlide_Bw,
+                        roRsTilt_Fw, roRsTilt_Bw,
+                        roRsHeight_Fw, roRsHeight_Bw,
+                        roRsCushExt_Fw, roRsCushExt_Bw,
+
+
+                        // 소음 편차
+                        roDevInitNoiseFw_SLIDE, roDevInitNoiseFw_Tilt, roDevInitNoiseFw_Height, roDevInitNoiseFw_CushExt,
+                        roDevInitNoiseBw_SLIDE, roDevInitNoiseBw_Tilt, roDevInitNoiseBw_Height, roDevInitNoiseBw_CushExt,
+                        roDevNoiseFw_SLIDE, roDevNoiseFw_Tilt, roDevNoiseFw_Height, roDevNoiseFw_CushExt,
+                        roDevNoiseBw_SLIDE, roDevNoiseBw_Tilt, roDevNoiseBw_Height, roDevNoiseBw_CushExt,
+
+                        roRsAbnormalSound,
+                        roRsWalkIn,
+                        roRsMidPos
+                    ]);
+                end;
+
+            roDataCurrFw_SLIDE, roDataCurrBw_SLIDE:
+                begin
+                    if not IsTested(tsCURR) then
+                        Exit;
+
+                    Result := (GetData(rospecCurrLo_SLIDE) <= GetData(AORD, 1)) and (GetData(rospecCurrHi_SLIDE) >= GetData(AORD, 1));
+                end;
+            roDataSpeedFw_SLIDE:
+                begin
+                    Result := (GetData(rospecSpeedFwLo_SLIDE) <= GetData(AORD, 1)) and (GetData(rospecSpeedFwHi_SLIDE) >= GetData(AORD, 1));
+                end;
+            roDataSpeedBw_SLIDE:
+                begin
+                    Result := (GetData(rospecSpeedBwLo_SLIDE) <= GetData(AORD, 1)) and (GetData(rospecSpeedBwHi_SLIDE) >= GetData(AORD, 1));
+                end;
+            roDataCurrFw_Tilt, roDataCurrBw_Tilt:
+                begin
+                    if not IsTested(tsCURR) then
+                        Exit;
+
+                    Result := (GetData(rospecCurrLo_Tilt) <= GetData(AORD, 1)) and (GetData(rospecCurrHi_Tilt) >= GetData(AORD, 1));
+                end;
+            roDataSpeedFw_Tilt:
+                begin
+                    Result := (GetData(rospecSpeedFwLo_Tilt) <= GetData(AORD, 1)) and (GetData(rospecSpeedFwHi_Tilt) >= GetData(AORD, 1));
+                end;
+            roDataSpeedBw_Tilt:
+                begin
+                    Result := (GetData(rospecSpeedBwLo_Tilt) <= GetData(AORD, 1)) and (GetData(rospecSpeedBwHi_Tilt) >= GetData(AORD, 1));
+                end;
+            roDataCurrFw_Height, roDataCurrBw_Height:
+                begin
+                    if not IsTested(tsCURR) then
+                        Exit;
+
+                    Result := (GetData(rospecCurrLo_Height) <= GetData(AORD, 1)) and (GetData(rospecCurrHi_Height) >= GetData(AORD, 1));
+                end;
+
+            roDataSpeedFw_Height:
+                begin
+                    Result := (GetData(rospecSpeedFwLo_Height) <= GetData(AORD, 1)) and (GetData(rospecSpeedFwHi_Height) >= GetData(AORD, 1));
+                end;
+            roDataSpeedBw_Height:
+                begin
+                    Result := (GetData(rospecSpeedBwLo_Height) <= GetData(AORD, 1)) and (GetData(rospecSpeedBwHi_Height) >= GetData(AORD, 1));
+                end;
+
+            roDataCurrFw_CushExt, roDataCurrBw_CushExt:
+                begin
+                    if not IsTested(tsCURR) then
+                        Exit;
+
+                    Result := (GetData(rospecCurrLo_CushExt) <= GetData(AORD, 1)) and (GetData(rospecCurrHi_CushExt) >= GetData(AORD, 1));
+                end;
+            roDataSpeedFw_CushExt:
+                begin
+                    Result := (GetData(rospecSpeedFwLo_CushExt) <= GetData(AORD, 1)) and (GetData(rospecSpeedFwHi_CushExt) >= GetData(AORD, 1));
+                end;
+            roDataSpeedBw_CushExt:
+                begin
+                    Result := (GetData(rospecSpeedBwLo_CushExt) <= GetData(AORD, 1)) and (GetData(rospecSpeedBwHi_CushExt) >= GetData(AORD, 1));
+                end;
+
+            roDataNoiseFw_SLIDE, roDataNoiseBw_SLIDE:
+                Result := GetData(rospecNoiseHi_Slide) >= GetData(AORD, 1);
+            roDataNoiseFw_Tilt, roDataNoiseBw_Tilt:
+                Result := GetData(rospecNoiseHi_Tilt) >= GetData(AORD, 1);
+            roDataNoiseFw_Height, roDataNoiseBw_Height:
+                Result := GetData(rospecNoiseHi_Height) >= GetData(AORD, 1);
+            roDataNoiseFw_CushExt, roDataNoiseBw_CushExt:
+                Result := GetData(rospecNoiseHi_CushExt) >= GetData(AORD, 1);
+
+            roDataNoiseInitFw_SLIDE, roDataNoiseInitBw_SLIDE:
+                Result := GetData(rospecNoiseInitHi_Slide) >= GetData(AORD, 1);
+            roDataNoiseInitFw_Tilt, roDataNoiseInitBw_Tilt:
+                Result := GetData(rospecNoiseInitHi_Tilt) >= GetData(AORD, 1);
+            roDataNoiseInitFw_Height, roDataNoiseInitBw_Height:
+                Result := GetData(rospecNoiseInitHi_Height) >= GetData(AORD, 1);
+            roDataNoiseInitFw_CushExt, roDataNoiseInitBw_CushExt:
+                Result := GetData(rospecNoiseInitHi_CushExt) >= GetData(AORD, 1);
+
+            roRsInitNoiseFw_Slide:
+                Result := GetResult(roDataNoiseInitFw_SLIDE);
+            roRsInitNoiseBw_Slide:
+                Result := GetResult(roDataNoiseInitBw_SLIDE);
+            roRsInitNoiseFw_Tilt:
+                Result := GetResult(roDataNoiseInitFw_Tilt);
+            roRsInitNoiseBw_Tilt:
+                Result := GetResult(roDataNoiseInitBw_Tilt);
+            roRsInitNoiseFw_Height:
+                Result := GetResult(roDataNoiseInitFw_Height);
+            roRsInitNoiseBw_Height:
+                Result := GetResult(roDataNoiseInitBw_Height);
+            roRsInitNoiseFw_CushExt:
+                Result := GetResult(roDataNoiseInitFw_CushExt);
+            roRsInitNoiseBw_CushExt:
+                Result := GetResult(roDataNoiseInitBw_CushExt);
+
+            roRsInitNoise_Slide:
+                Result := GetResult(roDataNoiseInitFw_SLIDE) and GetResult(roDataNoiseInitBw_SLIDE);
+            roRsInitNoise_Tilt:
+                Result := GetResult(roDataNoiseInitFw_Tilt) and GetResult(roDataNoiseInitBw_Tilt);
+            roRsInitNoise_Height:
+                Result := GetResult(roDataNoiseInitFw_Height) and GetResult(roDataNoiseInitBw_Height);
+            roRsInitNoise_CushExt:
+                Result := GetResult(roDataNoiseInitFw_CushExt) and GetResult(roDataNoiseInitBw_CushExt);
+
+            roRsRunNoiseFw_Slide:
+                Result := GetResult(roDataNoiseFw_SLIDE);
+            roRsRunNoiseBw_Slide:
+                Result := GetResult(roDataNoiseBw_SLIDE);
+            roRsRunNoiseFw_Tilt:
+                Result := GetResult(roDataNoiseFw_Tilt);
+            roRsRunNoiseBw_Tilt:
+                Result := GetResult(roDataNoiseBw_Tilt);
+            roRsRunNoiseFw_Height:
+                Result := GetResult(roDataNoiseFw_Height);
+            roRsRunNoiseBw_Height:
+                Result := GetResult(roDataNoiseBw_Height);
+            roRsRunNoiseFw_CushExt:
+                Result := GetResult(roDataNoiseFw_CushExt);
+            roRsRunNoiseBw_CushExt:
+                Result := GetResult(roDataNoiseBw_CushExt);
+
+            roRsRunNoise_Slide:
+                Result := GetResult(roDataNoiseFw_SLIDE) and GetResult(roDataNoiseBw_SLIDE);
+            roRsRunNoise_Tilt:
+                Result := GetResult(roDataNoiseFw_Tilt) and GetResult(roDataNoiseBw_Tilt);
+            roRsRunNoise_Height:
+                Result := GetResult(roDataNoiseFw_Height) and GetResult(roDataNoiseBw_Height);
+            roRsRunNoise_CushExt:
+                Result := GetResult(roDataNoiseFw_CushExt) and GetResult(roDataNoiseBw_CushExt);
+
+            roRsInitNoise:
+                begin
+                    Result := GetResult(roDataNoiseInitFw_SLIDE) and GetResult(roDataNoiseInitBw_SLIDE) and GetResult(roDataNoiseInitFw_Tilt) and GetResult(roDataNoiseInitBw_Tilt) and GetResult(roDataNoiseInitFw_Height) and GetResult(roDataNoiseInitBw_Height) and GetResult(roDataNoiseInitFw_CushExt) and GetResult(roDataNoiseInitBw_CushExt);
+
+                end;
+            roRsRunNoise:
+                begin
+                    Result := GetResult(roDataNoiseFw_SLIDE) and GetResult(roDataNoiseBw_SLIDE) and GetResult(roDataNoiseFw_Tilt) and GetResult(roDataNoiseBw_Tilt) and GetResult(roDataNoiseFw_Height) and GetResult(roDataNoiseBw_Height) and GetResult(roDataNoiseFw_CushExt) and GetResult(roDataNoiseBw_CushExt);
+
+                end;
+            roRsNoise:
+                begin
+                    Result := GetResult(roDataNoiseFw_SLIDE) and GetResult(roDataNoiseBw_SLIDE) and GetResult(roDataNoiseFw_Tilt) and GetResult(roDataNoiseBw_Tilt) and GetResult(roDataNoiseFw_Height) and GetResult(roDataNoiseBw_Height) and GetResult(roDataNoiseFw_CushExt) and GetResult(roDataNoiseBw_CushExt) and GetResult(roDataNoiseInitFw_SLIDE) and GetResult(roDataNoiseInitBw_SLIDE) and GetResult(roDataNoiseInitFw_Tilt) and GetResult(roDataNoiseInitBw_Tilt) and GetResult(roDataNoiseInitFw_Height) and GetResult(roDataNoiseInitBw_Height) and GetResult(roDataNoiseInitFw_CushExt) and GetResult(roDataNoiseInitBw_CushExt);
+
+                end;
+
+            roRsSLIDE_Fw:
+                begin
+                    Result := GetResult(roDataCurrFw_SLIDE) and GetResult(roDataSpeedFw_SLIDE) and GetResult(roDataNoiseFw_SLIDE) and GetResult(roDataNoiseInitFw_SLIDE);
+                end;
+            roRsSLIDE_Bw:
+                begin
+                    Result := GetResult(roDataCurrBw_SLIDE) and GetResult(roDataSpeedBw_SLIDE) and GetResult(roDataNoiseBw_SLIDE) and GetResult(roDataNoiseInitBw_SLIDE);
+                end;
+            roRsTilt_Fw:
+                begin
+                    Result := GetResult(roDataCurrFw_Tilt) and GetResult(roDataSpeedFw_Tilt) and GetResult(roDataNoiseFw_Tilt) and GetResult(roDataNoiseInitFw_Tilt);
+                end;
+            roRsTilt_Bw:
+                begin
+                    Result := GetResult(roDataCurrBw_Tilt) and GetResult(roDataSpeedBw_Tilt) and GetResult(roDataNoiseBw_Tilt) and GetResult(roDataNoiseInitBw_Tilt);
+                end;
+            roRsHeight_Fw:
+                begin
+                    Result := GetResult(roDataCurrFw_Height) and GetResult(roDataSpeedFw_Height) and GetResult(roDataNoiseFw_Height) and GetResult(roDataNoiseInitFw_Height);
+                end;
+            roRsHeight_Bw:
+                begin
+                    Result := GetResult(roDataCurrBw_Height) and GetResult(roDataSpeedBw_Height) and GetResult(roDataNoiseBw_Height) and GetResult(roDataNoiseInitBw_Height);
+                end;
+
+            roRsCushExt_Fw:
+                begin
+                    Result := GetResult(roDataCurrFw_CushExt) and GetResult(roDataSpeedFw_CushExt) and GetResult(roDataNoiseFw_CushExt) and GetResult(roDataNoiseInitFw_CushExt);
+                end;
+            roRsCushExt_Bw:
+                begin
+                    Result := GetResult(roDataCurrBw_CushExt) and GetResult(roDataSpeedBw_CushExt) and GetResult(roDataNoiseBw_CushExt) and GetResult(roDataNoiseInitBw_CushExt);
+                end;
+
+            roRsCurr_Slide:
+                begin
+                    Result := GetResult(roDataCurrFw_SLIDE) and GetResult(roDataCurrBw_SLIDE);
+                end;
+            roRsCurr_Tilt:
+                begin
+                    Result := GetResult(roDataCurrFw_Tilt) and GetResult(roDataCurrBw_Tilt);
+                end;
+            roRsCurr_Height:
+                begin
+                    Result := GetResult(roDataCurrFw_Height) and GetResult(roDataCurrBw_Height);
+                end;
+
+            roRsCurr_CushExt:
+                begin
+                    Result := GetResult(roDataCurrFw_CushExt) and GetResult(roDataCurrBw_CushExt);
+                end;
+
+            roRsSpeed_Slide:
+                begin
+                    Result := GetResult(roDataSpeedBw_SLIDE) and GetResult(roDataSpeedFw_SLIDE);
+                end;
+            roRsSpeed_Tilt:
+                begin
+                    Result := GetResult(roDataSpeedBw_Tilt) and GetResult(roDataSpeedFw_Tilt);
+                end;
+            roRsSpeed_Height:
+                begin
+                    Result := GetResult(roDataSpeedBw_Height) and GetResult(roDataSpeedFw_Height);
+                end;
+            roRsSpeed_CushExt:
+                begin
+                    Result := GetResult(roDataSpeedBw_CushExt) and GetResult(roDataSpeedFw_CushExt);
+                end;
+
+            roDevInitNoiseFw_SLIDE:
+                begin
+                    Result := GetData(rospecDevInit_Slide) >= GetData(roDevInitNoiseFw_SLIDE, 1);
+                end;
+            roDevInitNoiseFw_Tilt:
+                begin
+                    Result := GetData(rospecDevInit_Tilt) >= GetData(roDevInitNoiseFw_Tilt, 1);
+                end;
+            roDevInitNoiseFw_Height:
+                begin
+                    Result := GetData(rospecDevInit_Height) >= GetData(roDevInitNoiseFw_Height, 1);
+                end;
+            roDevInitNoiseFw_CushExt:
+                begin
+                    Result := GetData(rospecDevInit_CushExt) >= GetData(roDevInitNoiseFw_CushExt, 1);
+                end;
+
+            roDevInitNoiseBw_SLIDE:
+                begin
+                    Result := GetData(rospecDevInit_Slide) >= GetData(roDevInitNoiseBw_SLIDE, 1);
+                end;
+            roDevInitNoiseBw_Tilt:
+                begin
+                    Result := GetData(rospecDevInit_Tilt) >= GetData(roDevInitNoiseBw_Tilt, 1);
+                end;
+            roDevInitNoiseBw_Height:
+                begin
+                    Result := GetData(rospecDevInit_Height) >= GetData(roDevInitNoiseBw_Height, 1);
+                end;
+            roDevInitNoiseBw_CushExt:
+                begin
+                    Result := GetData(rospecDevInit_CushExt) >= GetData(roDevInitNoiseBw_CushExt, 1);
+                end;
+
+            roDevNoiseFw_SLIDE:
+                begin
+                    Result := GetData(rospecDev_Slide) >= GetData(roDevNoiseFw_SLIDE, 1);
+                end;
+            roDevNoiseFw_Tilt:
+                begin
+                    Result := GetData(rospecDev_Tilt) >= GetData(roDevNoiseFw_Tilt, 1);
+                end;
+            roDevNoiseFw_Height:
+                begin
+                    Result := GetData(rospecDev_Height) >= GetData(roDevNoiseFw_Height, 1);
+                end;
+            roDevNoiseFw_CushExt:
+                begin
+                    Result := GetData(rospecDev_CushExt) >= GetData(roDevNoiseFw_CushExt, 1);
+                end;
+
+            roDevNoiseBw_SLIDE:
+                begin
+                    Result := GetData(rospecDev_Slide) >= GetData(roDevNoiseBw_SLIDE, 1);
+                end;
+            roDevNoiseBw_Tilt:
+                begin
+                    Result := GetData(rospecDev_Tilt) >= GetData(roDevNoiseBw_Tilt, 1);
+                end;
+            roDevNoiseBw_Height:
+                begin
+                    Result := GetData(rospecDev_Height) >= GetData(roDevNoiseBw_Height, 1);
+                end;
+            roDevNoiseBw_CushExt:
+                begin
+                    Result := GetData(rospecDev_CushExt) >= GetData(roDevNoiseBw_CushExt, 1);
+                end;
+
+            roRsAbnormalSound:
+                begin
+                    Result := RsBuf.rValidity[tsAbnormalSound];
+                end;
+
+            roRsWalkIn:
+                begin
+                    Result := RsBuf.rValidity[tsWalkIn];
+                end;
+
+            roRsMidPos:
+                begin
+                    Result := RsBuf.rValidity[tsMidPos];
+                end;
+
+        else
+            mIsProcessDone := false;
+            Result := false;
+        end;
+    end;
+
+end;
+
+function TSubDataBox4Mtr.GetResultToATxt(APos: integer; IsUnit, IsResult: boolean): string;
+begin
+    mIsProcessDone := true;
+
+    with mParent do
+    begin
+        case APos of
+
+            ord(rospecCurrLo_SLIDE)..ord(rospecNoiseInitHi_CushExt):
+                begin
+                    Result := GetModelToTxt(RsBuf.rModel, ord(APos), IsUnit);
+                end;
+            //Data
+            ord(roDataCurrFw_SLIDE), ord(roDataCurrBw_SLIDE), ord(roDataCurrFw_Tilt), ord(roDataCurrBw_Tilt), ord(roDataCurrFw_Height), ord(roDataCurrBw_Height), ord(roDataCurrFw_CushExt), ord(roDataCurrBw_CushExt):
+
+                begin
+                    if not IsExists(TResultORD(APos)) and not IsTested(TResultORD(APos)) then
+                        Exit;
+
+                    if not IsExists(TResultORD(APos)) or (abs(GetData(TResultORD(APos))) = 999) then
+                        Result := '--'
+                    else
+                        Result := GetFloatToStr(GetData(TResultORD(APos), 1), 1);
+
+                    if IsUnit and (Result <> '--') then
+                        Result := Result + ' A';
+                    if IsResult and IsTested(TResultORD(APos)) then
+                    begin
+                        Result := ARY_TAG[GetResult(TResultORD(APos))] + Result;
+                    end;
+                end;
+            ord(roDataTimeFw_SLIDE), ord(roDataTimeBw_SLIDE), ord(roDataTimeFw_Tilt), ord(roDataTimeBw_Tilt), ord(roDataTimeFw_Height), ord(roDataTimeBw_Height), ord(roDataTimeFw_CushExt), ord(roDataTimeBw_CushExt):
+
+                begin
+                    if not IsExists(TResultORD(APos)) and not IsTested(TResultORD(APos)) then
+                        Exit;
+
+                    if not IsExists(TResultORD(APos)) or (abs(GetData(TResultORD(APos))) = 999) then
+                        Result := ''
+                    else
+                        Result := GetFloatToStr(GetData(TResultORD(APos), 1), 1);
+
+                    if IsUnit and (Result <> '') then
+                        Result := Result + ' sec';
+                end;
+            ord(roDataSpeedFw_SLIDE), ord(roDataSpeedBw_SLIDE), ord(roDataSpeedFw_Tilt), ord(roDataSpeedBw_Tilt), ord(roDataSpeedFw_Height), ord(roDataSpeedBw_Height), ord(roDataSpeedFw_CushExt), ord(roDataSpeedBw_CushExt):
+                begin
+                    if not IsExists(TResultORD(APos)) and not IsTested(TResultORD(APos)) then
+                        Exit;
+
+                    if not IsExists(TResultORD(APos)) or (abs(GetData(TResultORD(APos))) = 999) then
+                        Result := '--'
+                    else
+                        Result := GetFloatToStr(GetData(TResultORD(APos), 1), 1);
+
+                    if IsUnit and (Result <> '--') then
+                        Result := Result + ' mm/s';
+                    if IsResult and IsTested(TResultORD(APos)) then
+                    begin
+                        Result := ARY_TAG[GetResult(TResultORD(APos))] + Result;
+                    end;
+                end;
+
+            ord(roDataNoiseFw_SLIDE), ord(roDataNoiseBw_SLIDE), ord(roDataNoiseInitFw_SLIDE), ord(roDataNoiseInitBw_SLIDE), ord(roDataNoiseFw_Tilt), ord(roDataNoiseBw_Tilt), ord(roDataNoiseInitFw_Tilt), ord(roDataNoiseInitBw_Tilt), ord(roDataNoiseFw_Height), ord(roDataNoiseBw_Height), ord(roDataNoiseInitFw_Height), ord(roDataNoiseInitBw_Height), ord(roDataNoiseFw_CushExt), ord(roDataNoiseBw_CushExt), ord(roDataNoiseInitFw_CushExt), ord(roDataNoiseInitBw_CushExt):
+
+                begin
+                    if not IsExists(TResultORD(APos)) and not IsTested(TResultORD(APos)) then
+                        Exit;
+
+                    if not IsExists(TResultORD(APos)) or (abs(GetData(TResultORD(APos))) = 999) then
+                        Result := '--'
+                    else
+                        Result := GetFloatToStr(GetData(TResultORD(APos), 1), 1);
+
+                    if IsUnit and (Result <> '--') then
+                        Result := Result + ' dB';
+
+{$IFDEF _VIEWER}
+                    if IsResult and IsTested(TResultORD(APos)) then
+                    begin
+                        Result := ARY_TAG[GetResult(TResultORD(APos))] + Result;
+                    end;
+{$ENDIF}
+                end;
+            ord(roRsSLIDE_Fw), ord(roRsSLIDE_Bw), ord(roRsTilt_Fw), ord(roRsTilt_Bw), ord(roRsHeight_Fw), ord(roRsHeight_Bw), ord(roRsCushExt_Fw), ord(roRsCushExt_Bw), ord(roRsCurr_Slide), ord(roRsCurr_Tilt), ord(roRsCurr_Height), ord(roRsSpeed_Slide), ord(roRsSpeed_Tilt), ord(roRsSpeed_Height), ord(roRsSpeed_CushExt), ord(roRsInitNoiseFw_Slide), ord(roRsInitNoiseBw_Slide), ord(roRsInitNoiseFw_Tilt), ord(roRsInitNoiseBw_Tilt), ord(roRsInitNoiseFw_Height), ord(roRsInitNoiseBw_Height), ord(roRsInitNoiseFw_CushExt),
+                ord(roRsInitNoiseBw_CushExt), ord(roRsInitNoise_Slide), ord(roRsInitNoise_Tilt), ord(roRsInitNoise_Height), ord(roRsRunNoiseFw_Slide), ord(roRsRunNoiseBw_Slide), ord(roRsRunNoiseFw_Tilt), ord(roRsRunNoiseBw_Tilt), ord(roRsRunNoiseFw_Height), ord(roRsRunNoiseBw_Height), ord(roRsRunNoiseFw_CushExt), ord(roRsRunNoiseBw_CushExt), ord(roRsRunNoise_Slide), ord(roRsRunNoise_Tilt), ord(roRsRunNoise_Height), ord(roRsRunNoise_CushExt), ord(roRsInitNoise), ord(roRsRunNoise), ord(roRsNoise), ord(roRsSpecCheck), ord(roRsAbnormalSound), ord(roRsWalkIn), ord(roRsMidPos):
+                begin
+                    if not IsExists(TResultORD(APos)) and not IsTested(TResultORD(APos)) then
+                        Exit;
+
+                    Result := JUDGE_TXT[GetResult(TResultORD(APos))];
+
+                    if IsResult and IsTested(TResultORD(APos)) then
+                    begin
+                        Result := ARY_TAG[GetResult(TResultORD(APos))] + Result;
+                    end;
+                end;
+            //EDIT
+            {
+            ord(roDataStpsFw_F),
+            ord(roDataStpsFw_B),
+            ord(roDataStpsFw_Len),
+            ord(roDataStpsBw_F),
+            ord(roDataStpsBw_B),
+            ord(roDataStpsBw_Len),
+            ord(roDataStps_Len),
+            ord(roRsStpsFw),
+            ord(roRsStpsBw),
+            ord(roRsStpsLen),
+            ord(roRsSTPS): Result:= '' ;
+            }
+            //---------------
+            ord(roCycleTime):
+                begin
+                    if GetData(roCycleTime) = 0 then
+                        Exit;
+                    Result := GetFloatToStr(GetSeconds(GetData(roCycleTime)), 1);
+                end;
+            ord(roDevInitNoiseFw_SLIDE)..ord(roDevNoiseBw_Height):
+                begin
+                    if not IsExists(TResultORD(APos)) and not IsTested(TResultORD(APos)) then
+                        Exit;
+
+                    if not IsExists(TResultORD(APos)) or (abs(GetData(TResultORD(APos))) = 999) then
+                        Result := '--'
+                    else
+                        Result := GetFloatToStr(GetData(TResultORD(APos), 1), 1);
+
+                    if IsUnit and (Result <> '--') then
+                        Result := Result + ' dB';
+                    if IsResult and IsTested(TResultORD(APos)) then
+                    begin
+                        Result := ARY_TAG[GetResult(TResultORD(APos))] + Result;
+                    end;
+                end;
+
+        else
+            mIsProcessDone := false;
+        end;
+
+    end;
+end;
+
+function TSubDataBox4Mtr.GetTag: integer;
+begin
+    Result := mParent.Tag;
+end;
+
+procedure TSubDataBox4Mtr.InitData(AReadEnv: boolean);
+var
+    Buf: PResult;
+    IsMemTest: boolean;
+begin
+
+    SetDataInit(tsSlide);
+    SetDataInit(tsTilt);
+    SetDataInit(tsHeight);
+    SetDataInit(tsCushExt);
+
+
+
+    Buf := mParent.GetPResultBuffer;
+
+    with mParent do
+    begin
+
+        Buf.rTested[tsSlide] := true;
+        Buf.rTested[tsTilt] := False; //Buf.rModel.rTypes.IsTiltExists;
+        Buf.rTested[tsHeight] := False;
+        Buf.rTested[tsCushExt] := False; //Buf.rModel.rTypes.IsCushExtExists;
+        Buf.rTested[tsNoise] := False;//gsysEnv.rIsTestNoise;
+        Buf.rTested[tsCURR] := False;//gsysEnv.rIsTestCURR;
+        Buf.rTested[tsSPEED] := true;
+        Buf.rTested[tsLOAD] := true;
+        Buf.rTested[tsDeviation] := False;//gsysEnv.rUseDeviation;
+
+    end;
+end;
+
+function TSubDataBox4Mtr.IsExists(AORD: TResultORD): boolean;
+begin
+    mIsProcessDone := true;
+    with mParent do
+    begin
+
+        case AORD of
+            roDataCurrFw_SLIDE, roDataTimeFw_SLIDE, roDataSpeedFw_SLIDE, roDataCurrBw_SLIDE, roDataTimeBw_SLIDE, roDataSpeedBw_SLIDE, roRsSLIDE_Fw, roRsSLIDE_Bw, roRsCurr_Slide, roRsSpeed_Slide:
+                Result := IsExists(tsSlide);
+
+            roDataCurrFw_Tilt, roDataTimeFw_Tilt, roDataSpeedFw_Tilt, roDataCurrBw_Tilt, roDataTimeBw_Tilt, roDataSpeedBw_Tilt, roRsTilt_Fw, roRsTilt_Bw, roRsCurr_Tilt, roRsSpeed_Tilt:
+                Result := IsExists(tsTilt);
+
+            roDataCurrFw_Height, roDataTimeFw_Height, roDataSpeedFw_Height, roDataCurrBw_Height, roDataTimeBw_Height, roDataSpeedBw_Height, roRsHeight_Fw, roRsHeight_Bw, roRsCurr_Height, roRsSpeed_Height:
+                Result := IsExists(tsHeight);
+
+            roDataCurrFw_CushExt, roDataTimeFw_CushExt, roDataSpeedFw_CushExt, roDataCurrBw_CushExt, roDataTimeBw_CushExt, roDataSpeedBw_CushExt, roRsCushExt_Fw, roRsCushExt_Bw, roRsCurr_CushExt, roRsSpeed_CushExt:
+                Result := IsExists(tsCushExt);
+
+            roDataNoiseFw_SLIDE, roDataNoiseBw_SLIDE, roDataNoiseInitFw_SLIDE, roDataNoiseInitBw_SLIDE, roRsRunNoiseFw_SLIDE, roRsRunNoiseBw_SLIDE, roRsInitNoiseFw_Slide, roRsInitNoiseBw_SLIDE, roRsInitNoise_Slide, roRsRunNoise_Slide:
+                Result := IsExists(tsSlide) and IsExists(tsNOISE);
+
+            roDataNoiseFw_Tilt, roDataNoiseBw_Tilt, roDataNoiseInitFw_Tilt, roDataNoiseInitBw_Tilt, roRsRunNoiseFw_Tilt, roRsRunNoiseBw_Tilt, roRsInitNoiseFw_Tilt, roRsInitNoiseBw_Tilt, roRsInitNoise_Tilt, roRsRunNoise_Tilt:
+                Result := IsExists(tsTilt) and IsExists(tsNOISE);
+
+            roDataNoiseFw_Height, roDataNoiseBw_Height, roDataNoiseInitFw_Height, roDataNoiseInitBw_Height, roRsRunNoiseFw_Height, roRsRunNoiseBw_Height, roRsInitNoiseFw_Height, roRsInitNoiseBw_Height, roRsInitNoise_Height, roRsRunNoise_Height:
+                Result := IsExists(tsHeight) and IsExists(tsNOISE);
+
+            roDataNoiseFw_CushExt, roDataNoiseBw_CushExt, roDataNoiseInitFw_CushExt, roDataNoiseInitBw_CushExt, roRsRunNoiseFw_CushExt, roRsRunNoiseBw_CushExt, roRsInitNoiseFw_CushExt, roRsInitNoiseBw_CushExt, roRsInitNoise_CushExt, roRsRunNoise_CushExt:
+                Result := IsExists(tsCushExt) and IsExists(tsNOISE);
+
+            roRsInitNoise, roRsRunNoise, roRsNoise:
+                Result := IsExists(tsNOISE);
+
+            roDevInitNoiseFw_SLIDE, roDevInitNoiseBw_SLIDE, roDevNoiseFw_SLIDE, roDevNoiseBw_SLIDE:
+                Result := IsExists(tsSlide) and IsExists(tsDeviation);
+
+            roDevInitNoiseFw_Tilt, roDevInitNoiseBw_Tilt, roDevNoiseFw_Tilt, roDevNoiseBw_Tilt:
+                Result := IsExists(tsTilt) and IsExists(tsDeviation);
+
+            roDevInitNoiseFw_Height, roDevInitNoiseBw_Height, roDevNoiseFw_Height, roDevNoiseBw_Height:
+                Result := IsExists(tsHeight) and IsExists(tsDeviation);
+
+            roDevInitNoiseFw_CushExt, roDevInitNoiseBw_CushExt, roDevNoiseFw_CushExt, roDevNoiseBw_CushExt:
+                Result := IsExists(tsCushExt) and IsExists(tsDeviation);
+
+            roRsAbnormalSound:
+                begin
+                    Result := IsExists(tsAbnormalSound);
+                end;
+
+            roNo:
+                begin
+                    Result := IsExists(tsSlide) or IsExists(tsTilt) or IsExists(tsHeight) or IsExists(tsCushExt) or IsExists(tsMidPos) or IsExists(tsNoise);
+                end
+        else
+            mIsProcessDone := false;
+        end;
+    end;
+
+end;
+
+function TSubDataBox4Mtr.IsTested(AORD: TResultORD): boolean;
+begin
+    mIsProcessDone := true;
+
+    with mParent do
+    begin
+
+        case AORD of
+
+            rospecSpeedBwHiLo_Slide, roDataCurrFw_SLIDE, roDataTimeFw_SLIDE, roDataSpeedFw_SLIDE, roDataCurrBw_SLIDE, roDataTimeBw_SLIDE, roDataSpeedBw_SLIDE, roRsSLIDE_Fw, roRsSLIDE_Bw, roRsCurr_Slide, roRsSpeed_Slide:
+                Result := IsTested(tsSlide);
+
+            rospecSpeedBwHiLo_Tilt, roDataCurrFw_Tilt, roDataTimeFw_Tilt, roDataSpeedFw_Tilt, roDataCurrBw_Tilt, roDataTimeBw_Tilt, roDataSpeedBw_Tilt, roRsTilt_Fw, roRsTilt_Bw, roRsCurr_Tilt, roRsSpeed_Tilt:
+                Result := IsTested(tsTilt);
+
+            rospecSpeedBwHiLo_Height, roDataCurrFw_Height, roDataTimeFw_Height, roDataSpeedFw_Height, roDataCurrBw_Height, roDataTimeBw_Height, roDataSpeedBw_Height, roRsHeight_Fw, roRsHeight_Bw, roRsCurr_Height, roRsSpeed_Height:
+                Result := IsTested(tsHeight);
+
+            rospecSpeedBwHiLo_CushExt, roDataCurrFw_CushExt, roDataTimeFw_CushExt, roDataSpeedFw_CushExt, roDataCurrBw_CushExt, roDataTimeBw_CushExt, roDataSpeedBw_CushExt, roRsCushExt_Fw, roRsCushExt_Bw, roRsCurr_CushExt, roRsSpeed_CushExt:
+                Result := IsTested(tsCushExt);
+
+            roDataNoiseFw_SLIDE, roDataNoiseBw_SLIDE, roDataNoiseInitFw_SLIDE, roDataNoiseInitBw_SLIDE, roRsRunNoiseFw_SLIDE, roRsRunNoiseBw_SLIDE, roRsInitNoiseFw_SLIDE, roRsInitNoiseBw_SLIDE, roRsInitNoise_Slide, roRsRunNoise_Slide:
+                Result := IsTested(tsSlide) and IsTested(tsNOISE);
+
+            roDataNoiseFw_Tilt, roDataNoiseBw_Tilt, roDataNoiseInitFw_Tilt, roDataNoiseInitBw_Tilt, roRsRunNoiseFw_Tilt, roRsRunNoiseBw_Tilt, roRsInitNoiseFw_Tilt, roRsInitNoiseBw_Tilt, roRsInitNoise_Tilt, roRsRunNoise_Tilt:
+                Result := IsTested(tsTilt) and IsTested(tsNOISE);
+
+            roDataNoiseFw_Height, roDataNoiseBw_Height, roDataNoiseInitFw_Height, roDataNoiseInitBw_Height, roRsRunNoiseFw_Height, roRsRunNoiseBw_Height, roRsInitNoiseFw_Height, roRsInitNoiseBw_Height, roRsInitNoise_Height, roRsRunNoise_Height:
+                Result := IsTested(tsHeight) and IsTested(tsNOISE);
+
+            roDataNoiseFw_CushExt, roDataNoiseBw_CushExt, roDataNoiseInitFw_CushExt, roDataNoiseInitBw_CushExt, roRsRunNoiseFw_CushExt, roRsRunNoiseBw_CushExt, roRsInitNoiseFw_CushExt, roRsInitNoiseBw_CushExt, roRsInitNoise_CushExt, roRsRunNoise_CushExt:
+                Result := IsTested(tsCushExt) and IsTested(tsNOISE);
+
+            roRsInitNoise, roRsRunNoise, roRsNoise:
+                Result := IsTested(tsNOISE);
+
+
+            {
+            roDataStpsFw_F,
+            roDataStpsFw_B,
+            roDataStpsFw_Len,
+            roDataStpsBw_F,
+            roDataStpsBw_B,
+            roDataStpsBw_Len,
+            roDataStps_Len,
+            roRsStpsFw,
+            roRsStpsBw,
+            roRsStpsLen,
+            roRsSTPS: Result:= false ;
+            }
+
+            roRsSpecCheck:
+                begin
+                    Result := IsTested(tsSpecCheck);
+
+                end;
+
+            roDevInitNoiseFw_SLIDE, roDevInitNoiseBw_SLIDE, roDevNoiseFw_SLIDE, roDevNoiseBw_SLIDE:
+                Result := IsTested(tsSlide) and IsTested(tsDeviation);
+
+            roDevInitNoiseFw_Tilt, roDevInitNoiseBw_Tilt, roDevNoiseFw_Tilt, roDevNoiseBw_Tilt:
+                Result := IsTested(tsTilt) and IsTested(tsDeviation);
+
+            roDevInitNoiseFw_Height, roDevInitNoiseBw_Height, roDevNoiseFw_Height, roDevNoiseBw_Height:
+                Result := IsTested(tsHeight) and IsTested(tsDeviation);
+
+            roDevInitNoiseFw_CushExt, roDevInitNoiseBw_CushExt, roDevNoiseFw_CushExt, roDevNoiseBw_CushExt:
+                Result := IsTested(tsCushExt) and IsTested(tsDeviation);
+
+            roRsAbnormalSound:
+                Result := IsTested(tsAbnormalSound);
+
+            roRsWalkIn:
+                Result := IsTested(tsWalkIn);
+
+            roRsMidPos:
+                Result := IsTested(tsMidPos);
+
+            roRsPwrSeat:
+                begin
+                    Result := IsTested(tsSlide) or IsTested(tsTilt) or IsTested(tsHeight) or
+                        IsTested(tsCushExt) or IsTested(tsNoise) or IsTested(tsMidPos);
+                end
+
+        else
+            mIsProcessDone := false;
+
+        end;
+    end;
+end;
+
+procedure TSubDataBox4Mtr.SetData(AORD: TResultORD; const Value: boolean);
+var
+    Buf: PResult;
+begin
+    mIsProcessDone := true;
+    Buf := mParent.GetPResultBuffer;
+
+    with mParent do
+    begin
+
+        case AORD of
+
+            roRsAbnormalSound:
+                begin
+                    Buf.rValidity[tsAbnormalSound] := Value;
+                    Buf.rExists[tsAbnormalSound] := true;
+                    Buf.rTested[tsAbnormalSound] := true;
+                end;
+
+            roRsWalkIn:
+                begin
+                    Buf.rValidity[tsWalkIn] := Value;
+                    Buf.rExists[tsWalkIn] := true;
+                    Buf.rTested[tsWalkIn] := true;
+                end;
+
+            roRsMidPos:
+                begin
+                    Buf.rValidity[tsMidPos] := Value;
+                    Buf.rExists[tsMidPos] := true;
+                    Buf.rTested[tsMidPos] := true;
+                end;
+
+        else
+            mIsProcessDone := false;
+
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4Mtr.SetData(AORD: TResultOrd; const Value: integer);
+begin
+
+    with mParent do
+    begin
+
+        case AORD of
+            roNone:
+                ;
+        else
+            mIsProcessDone := false;
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4Mtr.SetDataInit(ATsMode: TTsORD);
+var
+    Buf: PResult;
+begin
+    mIsProcessDone := true;
+    Buf := mParent.GetPResultBuffer;
+
+    with mParent do
+    begin
+        case ATsMode of
+            tsSlide:
+                begin
+                    Buf.rValidity[tsSlide] := false;
+                    Buf.rExists[tsSlide] := false;
+                    with Buf.rDatMtrs[tmSlide] do
+                    begin
+                        Clear;
+                    end;
+                end;
+            tsTilt:
+                begin
+                    Buf.rValidity[tsTilt] := false;
+                    Buf.rExists[tsTilt] := false;
+
+                    with Buf.rDatMtrs[tmTilt] do
+                    begin
+                        Clear;
+                    end;
+                end;
+            tsHeight:
+                begin
+                    Buf.rValidity[tsHeight] := false;
+                    Buf.rExists[tsHeight] := false;
+                    with Buf.rDatMtrs[tmHeight] do
+                    begin
+                        Clear;
+                    end;
+                end;
+
+            tsCushExt:
+                begin
+                    Buf.rValidity[tsCushExt] := false;
+                    Buf.rExists[tsCushExt] := false;
+                    with Buf.rDatMtrs[tmCushExt] do
+                    begin
+                        Clear;
+                    end;
+
+                end;
+            tsNOISE:
+                begin
+                    Buf.rValidity[tsNoise] := false;
+                    Buf.rExists[tsNoise] := false;
+                    Buf.rDatNoise := -999;
+                end;
+            {
+            tsSTPS:
+            begin
+                Buf.rValidity[tsSTPS]:= false ;
+                Buf.rExists[tsSTPS]:= false ;
+            end;
+            }
+
+
+            tsAbnormalSound:
+                begin
+                    Buf.rValidity[ATsMode] := false;
+                    Buf.rExists[ATsMode] := false;
+                    Buf.rTested[ATsMode] := false;
+                end;
+
+            tsWalkIn:
+                begin
+                    Buf.rValidity[ATsMode] := false;
+                    Buf.rExists[ATsMode] := false;
+                    Buf.rTested[ATsMode] := false;
+                end;
+
+        else
+            mIsProcessDone := false;
+            gLog.Panel('SubDataBox4Mtr.SetDataInit:%s(%d) 처리 누락', [GetTsOrdName(ATsMode), Ord(ATsMode)]);
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4Mtr.SetData(AORD: TResultORD; const Value: double);
+var
+    Buf: PResult;
+begin
+    mIsProcessDone := true;
+    Buf := mParent.GetPResultBuffer;
+
+    with mParent do
+    begin
+
+        case AORD of
+            rospecTimeHi_SLIDE:
+                Buf.rModel.rspecs.rMotors[tmSlide].rTime.rHi := Value;
+            rospecTimeHi_Tilt:
+                Buf.rModel.rspecs.rMotors[tmTilt].rTime.rHi := Value;
+            rospecTimeHi_Height:
+                Buf.rModel.rspecs.rMotors[tmHeight].rTime.rHi := Value;
+
+            roDataTimeFw_SLIDE:
+                Buf.rDatMtrs[tmSlide].rCurrFw.rTime := Value;
+            roDataCurrFw_SLIDE:
+                begin
+                    Buf.rDatMtrs[tmSlide].rCurrFw.rCurr := Value;
+                    Buf.rExists[tsSLIDE] := true;
+                end;
+            roDataSpeedFw_SLIDE:
+                begin
+                    Buf.rDatMtrs[tmSlide].rSpeedFw := Value + Offsets.rVal[ucSpeedSlide_Fw];
+                    if Buf.rDatMtrs[tmSlide].rSpeedFw < 0 then
+                        Buf.rDatMtrs[tmSlide].rSpeedFw := 0;
+                    Buf.rExists[tsSLIDE] := true;
+                end;
+            roDataCurrBw_SLIDE:
+                begin
+                    Buf.rDatMtrs[tmSlide].rCurrBw.rCurr := Value;
+                    Buf.rExists[tsSLIDE] := true;
+                end;
+            roDataTimeBw_SLIDE:
+                Buf.rDatMtrs[tmSlide].rCurrBw.rTime := Value;
+            roDataSpeedBw_SLIDE:
+                begin
+                    Buf.rDatMtrs[tmSlide].rSpeedBw := Value + Offsets.rVal[ucSpeedSlide_Bw];
+                    if Buf.rDatMtrs[tmSlide].rSpeedBw < 0 then
+                        Buf.rDatMtrs[tmSlide].rSpeedBw := 0;
+                    Buf.rExists[tsSLIDE] := true;
+                end;
+            roDataCurrFw_Tilt:
+                begin
+                    Buf.rDatMtrs[tmTilt].rCurrFw.rCurr := Value;
+                    Buf.rExists[tsTilt] := true;
+                end;
+            roDataTimeFw_Tilt:
+                Buf.rDatMtrs[tmTilt].rCurrFw.rTime := Value;
+            roDataSpeedFw_Tilt:
+                begin
+                    Buf.rDatMtrs[tmTilt].rSpeedFw := Value + Offsets.rVal[ucSpeedTilt_Fw];
+                    if Buf.rDatMtrs[tmTilt].rSpeedFw < 0 then
+                        Buf.rDatMtrs[tmTilt].rSpeedFw := 0;
+                    Buf.rExists[tsTilt] := true;
+                end;
+            roDataCurrBw_Tilt:
+                begin
+                    Buf.rDatMtrs[tmTilt].rCurrBw.rCurr := Value;
+                    Buf.rExists[tsTilt] := true;
+                end;
+            roDataTimeBw_Tilt:
+                Buf.rDatMtrs[tmTilt].rCurrBw.rTime := Value;
+            roDataSpeedBw_Tilt:
+                begin
+                    Buf.rDatMtrs[tmTilt].rSpeedBw := Value + Offsets.rVal[ucSpeedTilt_Bw];
+                    if Buf.rDatMtrs[tmTilt].rSpeedBw < 0 then
+                        Buf.rDatMtrs[tmTilt].rSpeedBw := 0;
+                    Buf.rExists[tsTilt] := true;
+                end;
+            roDataCurrFw_Height:
+                begin
+                    Buf.rDatMtrs[tmHeight].rCurrFw.rCurr := Value;
+                    Buf.rExists[tsHeight] := true;
+                end;
+            roDataTimeFw_Height:
+                Buf.rDatMtrs[tmHeight].rCurrFw.rTime := Value;
+            roDataSpeedFw_Height:
+                begin
+                    Buf.rDatMtrs[tmHeight].rSpeedFw := Value + Offsets.rVal[ucSpeedHeight_Fw];
+                    if Buf.rDatMtrs[tmHeight].rSpeedBw < 0 then
+                        Buf.rDatMtrs[tmHeight].rSpeedBw := 0;
+                    Buf.rExists[tsHeight] := true;
+                end;
+            roDataCurrBw_Height:
+                begin
+                    Buf.rDatMtrs[tmHeight].rCurrBw.rCurr := Value;
+                    Buf.rExists[tsHeight] := true;
+                end;
+            roDataTimeBw_Height:
+                Buf.rDatMtrs[tmHeight].rCurrBw.rTime := Value;
+            roDataSpeedBw_Height:
+                begin
+                    Buf.rDatMtrs[tmHeight].rSpeedBw := Value + Offsets.rVal[ucSpeedHeight_Bw];
+                    if Buf.rDatMtrs[tmHeight].rSpeedBw < 0 then
+                        Buf.rDatMtrs[tmHeight].rSpeedBw := 0;
+                    Buf.rExists[tsHeight] := true;
+                end;
+
+            roDataCurrFw_CushExt:
+                begin
+                    Buf.rDatMtrs[tmCushExt].rCurrFw.rCurr := Value;
+                    Buf.rExists[tsCushExt] := true;
+                end;
+            roDataTimeFw_CushExt:
+                Buf.rDatMtrs[tmCushExt].rCurrFw.rTime := Value;
+            roDataSpeedFw_CushExt:
+                begin
+                    Buf.rDatMtrs[tmCushExt].rSpeedFw := Value + Offsets.rVal[ucSpeedCushExt_Fw];
+                    if Buf.rDatMtrs[tmCushExt].rSpeedBw < 0 then
+                        Buf.rDatMtrs[tmCushExt].rSpeedBw := 0;
+                    Buf.rExists[tsCushExt] := true;
+                end;
+            roDataCurrBw_CushExt:
+                begin
+                    Buf.rDatMtrs[tmCushExt].rCurrBw.rCurr := Value;
+                    Buf.rExists[tsCushExt] := true;
+                end;
+            roDataTimeBw_CushExt:
+                Buf.rDatMtrs[tmCushExt].rCurrBw.rTime := Value;
+
+            roDataSpeedBw_CushExt:
+                begin
+                    Buf.rDatMtrs[tmCushExt].rSpeedBw := Value + Offsets.rVal[ucSpeedCushExt_Bw];
+                    if Buf.rDatMtrs[tmCushExt].rSpeedBw < 0 then
+                        Buf.rDatMtrs[tmCushExt].rSpeedBw := 0;
+                    Buf.rExists[tsCushExt] := true;
+                end;
+
+            roDataNoiseFw_SLIDE:
+                begin
+                    Buf.rDatMtrs[tmSlide].rNoiseRunningFw := Value + Offsets.rVal[ucNoiseRunning_SLIDE_Fw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+            roDataNoiseBw_SLIDE:
+                begin
+                    Buf.rDatMtrs[tmSlide].rNoiseRunningBw := Value + Offsets.rVal[ucNoiseRunning_SLIDE_Bw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+            roDataNoiseInitFw_SLIDE:
+                begin
+                    Buf.rDatMtrs[tmSlide].rNoiseInitFw := Value + Offsets.rVal[ucNoiseInit_SLIDE_Fw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+            roDataNoiseInitBw_SLIDE:
+                begin
+                    Buf.rDatMtrs[tmSlide].rNoiseInitBw := Value + Offsets.rVal[ucNoiseInit_SLIDE_Bw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+            roDataNoiseFw_Tilt:
+                begin
+                    Buf.rDatMtrs[tmTilt].rNoiseRunningFw := Value + Offsets.rVal[ucNoiseRunning_Tilt_Fw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+            roDataNoiseBw_Tilt:
+                begin
+                    Buf.rDatMtrs[tmTilt].rNoiseRunningBw := Value + Offsets.rVal[ucNoiseRunning_Tilt_Bw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+            roDataNoiseInitFw_Tilt:
+                begin
+                    Buf.rDatMtrs[tmTilt].rNoiseInitFw := Value + Offsets.rVal[ucNoiseInit_Tilt_Fw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+            roDataNoiseInitBw_Tilt:
+                begin
+                    Buf.rDatMtrs[tmTilt].rNoiseInitBw := Value + Offsets.rVal[ucNoiseInit_Tilt_Bw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+            roDataNoiseFw_Height:
+                begin
+                    Buf.rDatMtrs[tmHeight].rNoiseRunningFw := Value + Offsets.rVal[ucNoiseRunning_Height_Fw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+            roDataNoiseBw_Height:
+                begin
+                    Buf.rDatMtrs[tmHeight].rNoiseRunningBw := Value + Offsets.rVal[ucNoiseRunning_Height_Bw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+            roDataNoiseInitFw_Height:
+                begin
+                    Buf.rDatMtrs[tmHeight].rNoiseInitFw := Value + Offsets.rVal[ucNoiseInit_Height_Fw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+            roDataNoiseInitBw_Height:
+                begin
+                    Buf.rDatMtrs[tmHeight].rNoiseInitBw := Value + Offsets.rVal[ucNoiseInit_Height_Bw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+
+            roDataNoiseFw_CushExt:
+                begin
+                    Buf.rDatMtrs[tmCushExt].rNoiseRunningFw := Value + Offsets.rVal[ucNoiseRunning_CushExt_Fw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+            roDataNoiseBw_CushExt:
+                begin
+                    Buf.rDatMtrs[tmCushExt].rNoiseRunningBw := Value + Offsets.rVal[ucNoiseRunning_CushExt_Bw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+            roDataNoiseInitFw_CushExt:
+                begin
+                    Buf.rDatMtrs[tmCushExt].rNoiseInitFw := Value + Offsets.rVal[ucNoiseInit_CushExt_Fw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+            roDataNoiseInitBw_CushExt:
+                begin
+                    Buf.rDatMtrs[tmCushExt].rNoiseInitBw := Value + Offsets.rVal[ucNoiseInit_CushExt_Bw];
+                    Buf.rExists[tsNOISE] := true;
+                end;
+
+            roDevInitNoiseFw_SLIDE:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmSlide].rDevInitNoiseFw := Value;
+                end;
+            roDevInitNoiseFw_Tilt:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmTilt].rDevInitNoiseFw := Value;
+                end;
+            roDevInitNoiseFw_Height:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmHeight].rDevInitNoiseFw := Value;
+                end;
+
+            roDevInitNoiseFw_CushExt:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmCushExt].rDevInitNoiseFw := Value;
+                end;
+
+            roDevInitNoiseBw_SLIDE:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmSlide].rDevInitNoiseBw := Value;
+                end;
+            roDevInitNoiseBw_Tilt:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmTilt].rDevInitNoiseBw := Value;
+                end;
+            roDevInitNoiseBw_Height:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmHeight].rDevInitNoiseBw := Value;
+                end;
+
+            roDevInitNoiseBw_CushExt:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmCushExt].rDevInitNoiseBw := Value;
+                end;
+
+
+            //--------------
+
+            roDevNoiseFw_SLIDE:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmSlide].rDevNoiseFw := Value;
+                end;
+            roDevNoiseFw_Tilt:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmTilt].rDevNoiseFw := Value;
+                end;
+            roDevNoiseFw_Height:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmHeight].rDevNoiseFw := Value;
+                end;
+
+            roDevNoiseFw_CushExt:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmCushExt].rDevNoiseFw := Value;
+                end;
+
+            roDevNoiseBw_SLIDE:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmSlide].rDevNoiseBw := Value;
+                end;
+            roDevNoiseBw_Tilt:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmTilt].rDevNoiseBw := Value;
+                end;
+            roDevNoiseBw_Height:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmHeight].rDevNoiseBw := Value;
+                end;
+
+            roDevNoiseBw_CushExt:
+                begin
+                    Buf.rExists[tsDeviation] := true;
+                    Buf.rDatMtrs[tmCushExt].rDevNoiseBw := Value;
+                end;
+        else
+            mIsProcessDone := false;
+
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4Mtr.SetData(AORD: TResultORD; const Value: string);
+begin
+
+    with mParent do
+    begin
+        case AORD of
+            roNone:
+                ;
+        else
+            mIsProcessDone := false;
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4Mtr.SetResult(const AResult; Afpos: integer);
+begin
+
+end;
+
+procedure TSubDataBox4Mtr.SetValidity;
+begin
+    with mParent do
+    begin
+
+        RsBuf.rValidity[tsSlide] := GetResult(tsSlide);
+        RsBuf.rValidity[tsTilt] := GetResult(tsTilt);
+        RsBuf.rValidity[tsHeight] := GetResult(tsHeight);
+        RsBuf.rValidity[tsCushExt] := GetResult(tsCushExt);
+    end;
+end;
+
+end.
+

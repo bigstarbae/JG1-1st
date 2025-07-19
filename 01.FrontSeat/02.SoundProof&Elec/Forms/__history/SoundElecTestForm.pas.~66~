@@ -1,0 +1,2070 @@
+unit SoundElecTestForm;
+{$I myDefine.inc}
+
+interface
+
+uses
+    Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+    Dialogs, BaseMainForm, ExtCtrls, StdCtrls, ModelInfoFrame, Label3D, _GClass,
+    AbLED, pngimage, Buttons, ComCtrls, Grids, SeatConnector, SeatMotor,
+    TeeChartUtil, TsWorkUnit, SeatMotorType, TimeChecker, TeEngine, Series,
+    TeeProcs, Chart, SeatMtrTestFrame, HVDataFrame, DataUnitOrd, HVTester,
+    FaGraphEx;
+
+type
+    TfrmSoundElec = class(TfrmBaseMain)
+        pnlClient: TPanel;
+        shpConseparator: TShape;
+        pnlCon: TPanel;
+        lblConName: TLabel3D;
+        sbtnCon: TSpeedButton;
+        tcCon: TTabControl;
+        Label19: TLabel;
+    lblMainCurr: TLabel;
+        Label99: TLabel;
+        Label96: TLabel;
+        lblOutCurr: TLabel;
+        Label102: TLabel;
+        tmrPoll: TTimer;
+        sgCon: TStringGrid;
+        Label7: TLabel;
+        lblOutVolt: TLabel;
+        Label10: TLabel;
+        tmrMain: TTimer;
+        abDiskD: TAbLED;
+        abDiskC: TAbLED;
+        lblWorkMonitor: TLabel;
+        lblCycleTime: TLabel;
+        lblMemory: TLabel;
+        tmrShow: TTimer;
+        tmrDiskChk: TTimer;
+        fmModelInfo: TMdllInfoFrame;
+        pnlLeft: TPanel;
+        fmSMTSlide: TSeatMtrTestFrme;
+        fmSMTHeight: TSeatMtrTestFrme;
+        fmSMTTilt: TSeatMtrTestFrme;
+        fmSMTLeg: TSeatMtrTestFrme;
+        fmSMTSwivel: TSeatMtrTestFrme;
+        pnlRight: TPanel;
+        pnlHV: TPanel;
+        fmHtrHost: THVDatFrame;
+        fmVntHost: THVDatFrame;
+        pnlMemory: TPanel;
+        pnl2: TPanel;
+        lblName3: TLabel;
+        pnlTOP10: TPanel;
+        lbl18: TLabel3D;
+        lbl23: TLabel3D;
+        lbl24: TLabel3D;
+        lbl25: TLabel3D;
+        pnlTOP12: TPanel;
+        lblEasyAccess: TLabel3D;
+        lblMem3: TLabel3D;
+        lblMem2: TLabel3D;
+        lblMem1: TLabel3D;
+        pnlMemory2: TPanel;
+        pnl6: TPanel;
+        lblName7: TLabel;
+        pnlTOP19: TPanel;
+        lbl20: TLabel3D;
+        lbl21: TLabel3D;
+        lbl22: TLabel3D;
+        pnlTOP20: TPanel;
+        lblEcuPartNo: TLabel3D;
+        lblEcuSwVer: TLabel3D;
+        lblEcuHwVer: TLabel3D;
+        pnlETC: TPanel;
+        Panel1: TPanel;
+        Label1: TLabel;
+        Panel2: TPanel;
+        Label3D1: TLabel3D;
+        Label3D2: TLabel3D;
+        Label3D4: TLabel3D;
+        Panel5: TPanel;
+        lblDTCClear: TLabel3D;
+        lblBuckle: TLabel3D;
+        lblAncPT: TLabel3D;
+    Label9: TLabel;
+    lblNoise: TLabel;
+    Label12: TLabel;
+    lblLaser1: TLabel;
+    Label6: TLabel;
+    lblMotorCurr: TLabel;
+    lblLaserDistance: TLabel;
+    Label14: TLabel;
+    Label15: TLabel;
+    Label16: TLabel;
+    lblSHVU1Curr: TLabel;
+    Label18: TLabel;
+    Label20: TLabel;
+    lblSHVU2Curr: TLabel;
+    Label22: TLabel;
+    lblAPT: TLabel;
+        procedure FormShow(Sender: TObject);
+        procedure sgConDrawCell(Sender: TObject; ACol, ARow: Integer; Rect: TRect; State: TGridDrawState);
+        procedure sbtnModelClick(Sender: TObject);
+        procedure sbtnReferenceClick(Sender: TObject);
+        procedure sbtnRetrieveClick(Sender: TObject);
+        procedure sbtnExitClick(Sender: TObject);
+        procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+        procedure tmrPollTimer(Sender: TObject);
+        procedure sbtnConClick(Sender: TObject);
+        procedure SpeedButton1Click(Sender: TObject);
+        procedure FormDestroy(Sender: TObject);
+        procedure FormCreate(Sender: TObject);
+        procedure chtMtrDblClick(Sender: TObject);
+        procedure tcConChange(Sender: TObject);
+        procedure lblSimLanInModeClick(Sender: TObject);
+        procedure FormClose(Sender: TObject; var Action: TCloseAction);
+        procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+        procedure tmrMainTimer(Sender: TObject);
+        procedure tmrShowTimer(Sender: TObject);
+        procedure tmrDiskChkTimer(Sender: TObject);
+        procedure FormResize(Sender: TObject);
+    procedure btnCanWDebugClick(Sender: TObject);
+    procedure btnCanRDebugClick(Sender: TObject);
+    procedure fmSMTSlidesbtnViewModeClick(Sender: TObject);
+
+    private
+    { Private declarations }
+        mCT: TTimeChecker;
+        mDAQTimerCnt: Integer;
+
+        mHVFrames: array[THVDevType] of THVDatFrame;
+        mMtrFrames: array[TMotorOrd] of TSeatMtrTestFrme;
+
+        mXMax: Double;
+
+        mScrIO, mSysIdle, mLock: Boolean;
+        mState: integer;
+
+        procedure UpdateGraph(IsClear: Boolean);
+        procedure UpdateConUI(Con: TBaseSeatConnector);
+
+        procedure ChartAfterDraw(Sender: TObject);
+
+        procedure ReadCount;
+        procedure ReadDAQValues;
+        procedure ShowConnectorForm(Station: integer);
+        procedure SetBurnishingCount(Motor: TSeatMotor);
+        procedure DisplayDiskFree;
+        procedure WorkClose(Sender: TObject);
+        procedure WorkError(Sender: TObject);
+        procedure GlobalExceptionHandler(Sender: TObject; E: Exception);
+        procedure ReadWorkCycleTime;
+
+        procedure DisplaySpec(Lbl: TLabel3D; RO: TResultOrd);
+        procedure DisplayData(Lbl: TLabel3D; RO: TResultORD; IsJudgeColor: Boolean = True);
+        procedure DisplayJudgeData(Lbl: TLabel3D; ValStr: string; IsOK: Boolean);
+        procedure CalcCtrlSize;
+        procedure SetHVContext(DevType: THVDevType);
+        procedure UpdateHVCurrDisplay(DevType: THVDevType; CurStep: integer; IsOn: boolean);
+
+    protected
+        mTsWork: TTsWork;
+        mCurCon: TBaseSeatConnector;        // 현재 보여지는 커넥터
+
+        procedure HandleReadMessage(var myMsg: TMessage); override;
+        procedure OnWorkStatus(AStatus: Integer); override;
+
+    public
+    { Public declarations }
+    end;
+
+var
+    frmSoundElec: TfrmSoundElec;
+
+implementation
+
+uses
+    ShellAPI, Global, Work, Log, DataUnit, SysEnv, DataUnitHelper, IODef,
+    KIIMessages, ModelUnit, UserSocketUnit, LanIoUnit, BaseTsWork, PopWork,
+    madKernel, FormUtils, StrUtils, GridUtils, myUtils, LangTran,
+    ModelSelSimForm, DioReferForm, StateViewForm, waitForm, ExitForm,
+    UserModelForm, PinIOForm, DIOExForm, UserReferForm, NotifyForm,
+    GraphconfigForm, BaseDIO, BaseAD, ErrorForm, PowerSupplyUnit;
+
+{$R *.dfm}
+
+const
+    MAX_RT_GRP_TIME_RANGE = 20;
+
+procedure TfrmSoundElec.ChartAfterDraw(Sender: TObject);
+begin
+     // 안전 체크 추가
+    if not Assigned(mTsWork) then
+        Exit;
+
+     // 모터가 초기화되었는지 확인
+    if not Assigned(mTsWork.Motors[tmSlide]) then
+        Exit;
+
+end;
+
+procedure TfrmSoundElec.GlobalExceptionHandler(Sender: TObject; E: Exception);
+begin
+    gLog.Error('예외 발생: %s', [E.Message]);
+    if E.StackTrace <> '' then         // 유레카 로그 활성화한 경우 StackTrace 가능
+        gLog.Error('호출 경로: %s', [E.StackTrace]);
+
+    Application.ShowException(E);
+end;
+
+procedure TfrmSoundElec.chtMtrDblClick(Sender: TObject);
+begin
+    if gWork.IsTesting then
+        Exit;
+
+    frmgrpConfig.Left := Left + Width div 2 - frmgrpConfig.Width div 2;
+    frmgrpConfig.Top := Top + Height div 2 - frmgrpConfig.Height div 2;
+
+    frmgrpConfig.BorderStyle := bsDialog;
+    frmgrpConfig.SetFrm(TComponent(Sender).Tag);
+
+    frmgrpConfig.ShowModal;
+
+end;
+
+procedure TfrmSoundElec.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+    inherited;
+    //
+    FreeAndNil(abPLC);
+    FreeAndNil(gWork);
+    gLog.Panel('------------>%s CLOSE<------------', [PROJECT_NAME]);
+end;
+
+procedure TfrmSoundElec.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+begin
+    inherited;
+
+    if not tmrMain.Enabled then
+        Exit;
+
+    mIsClose := True;
+
+    gLog.Debug('------------>%s 종료중...<------------', [PROJECT_NAME]);
+    tmrMain.Enabled := False;
+
+    if Assigned(gWork) then
+    begin
+
+        gWork.Stop;
+
+        if Assigned(gWork.Thread) then
+        begin
+             // WaitFor 대신 종료 플래그만 설정
+            gWork.Thread.Terminate;
+            CanClose := True;  // 첫 번째 시도에서는 종료하지 않음
+        end;
+
+    end;
+
+end;
+
+procedure TfrmSoundElec.FormCreate(Sender: TObject);
+begin
+    inherited;
+
+    if not gsysEnv.rOP.rUseScreenSaver then
+        SetsysSaverEnable(0);
+
+    mIsClose := False;
+    mSysIdle := True;
+    mScrIO := True;
+
+    gLog.ToFiles('------------>%s V%s START<------------', [PROJECT_NAME, gSysEnv.rOP.rVer]);
+
+    frmNotify := TfrmNotify.Create(Application);
+    frmError := TfrmError.Create(Application);
+
+    Application.OnException := GlobalExceptionHandler;
+end;
+
+procedure TfrmSoundElec.FormDestroy(Sender: TObject);
+begin
+    if not GetsysSaverEnable then
+        SetsysSaverEnable(1);
+
+    inherited
+
+end;
+
+procedure TfrmSoundElec.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+var
+    i: Integer;
+    DIOs: TArray<TBaseDIO>;
+    ADs: TArray<TBaseAD>;
+    StNames: TArray<string>;
+
+    procedure ShowModelSelForm;
+    var
+        i: integer;
+        StNames: array of string;
+    begin
+        SetLength(StNames, gTsWorks.Count);
+        for i := 0 to gTsWorks.Count - 1 do
+            StNames[i] := gTsWorks.Items[i].Name;
+
+        with TfrmModelSelSim.Create(Application) do
+        begin
+
+            FormStyle := fsStayOnTop;
+            SetForm(gLanDIO.DataRawIO, StNames);
+
+            Show;
+        end;
+        StNames := nil;
+    end;
+
+begin
+    case Key of
+        VK_F1:
+            begin
+                if (ssCtrl in Shift) or (ssShift in Shift) then
+                begin
+
+                end
+                else
+                begin
+
+                    TfrmDioReferForm.CloseForm;
+
+                    SetLength(StNames, MAX_ST_COUNT);
+                    SetLength(DIOs, MAX_ST_COUNT);
+                    SetLength(ADs, MAX_ST_COUNT);
+
+                    for i := 0 to MAX_ST_COUNT - 1 do
+                    begin
+                        StNames[i] := gTsPwrWorks[i].Name;
+                        DIOs[i] := gTsPwrWorks[i].DIO;
+                        ADs[i] := gTsPwrWorks[i].AD;
+                    end;
+
+                    with TfrmDioReferForm.Create(Application, StNames) do
+                    begin
+                        AddLIO('LAN DIO', gLanDIO, _LAN_IO_CH_COUNT, MAX_ST_COUNT, gLanDIO.GetDataIoAsWord);
+                        AddDIOs('내부 DIO', DIOs, _DIO_CH_COUNT);
+                        AddADs('AI', ADs);
+                        Show;
+                    end;
+                end;
+            end;
+        VK_F2:
+            begin
+                if (ssCtrl in Shift) or (ssShift in Shift) then
+                begin
+
+                end
+                else
+                begin
+
+                end;
+            end;
+        VK_F3:
+            begin
+{$IFDEF VIRTUALLANIO}
+                ShowModelSelForm;
+{$ELSE}
+                if not gLanDIO.Items[devREAD].Enabeld then
+                    ShowModelSelForm;
+{$ENDIF}
+            end;
+        VK_F5:
+            begin
+                frmStateView := TfrmStateView.Create(Application);
+                frmStateView.Show;
+            end;
+
+        VK_F7:
+            begin
+                if Shift = [ssShift] then
+                begin
+
+                end
+                else if Shift = [ssCtrl] then
+                begin
+                end
+                else if Shift = [ssAlt] then
+                begin
+                end;
+            end;
+        VK_F8:
+            begin
+                if Shift = [ssShift] then
+                begin
+                end
+                else if Shift = [ssCtrl] then
+                begin
+                    lblSimLanInMode.Visible := not lblSimLanInMode.Visible;
+                    gLanDIO.Items[devRead].Enabeld := not lblSimLanInMode.Visible;
+
+                end
+                else if Shift = [ssAlt] then
+                begin
+                end;
+            end;
+        VK_F9:
+            begin
+                if Shift = [ssShift] then
+                begin
+                end
+                else if Shift = [ssCtrl] then
+                begin
+                end
+                else if Shift = [ssAlt] then
+                begin
+                end;
+            end;
+        VK_F10:
+            begin
+                if Shift = [ssShift] then
+                begin
+                end
+                else if Shift = [ssCtrl] then
+                begin
+                end
+                else if Shift = [ssAlt] then
+                begin
+                end;
+            end;
+    end;
+
+end;
+
+procedure TfrmSoundElec.FormResize(Sender: TObject);
+begin
+    inherited;
+    CalcCtrlSize;
+end;
+
+procedure TfrmSoundElec.btnCanRDebugClick(Sender: TObject);
+begin
+  inherited;
+
+  gTsPwrWorks[0].CanRDebug := not gTsPwrWorks[0].CanRDebug;
+
+  if gTsPwrWorks[0].CanRDebug then
+  begin
+      btnCANRdebug.Font.Color := clBlue;
+  end
+  else
+  begin
+      btnCANRDebug.Font.Color := clGray;
+  end;
+
+end;
+
+procedure TfrmSoundElec.btnCanWDebugClick(Sender: TObject);
+begin
+  inherited;
+
+    gTsPwrWorks[0].CanWDebug := not gTsPwrWorks[0].CanWDebug;
+
+    if gTsPwrWorks[0].CanWDebug then
+    begin
+        btnCanWDebug.Font.Color := clRed;
+    end
+    else
+    begin
+        btnCanWDebug.Font.Color := clGray;
+
+    end;
+
+end;
+
+procedure TfrmSoundElec.CalcCtrlSize;
+var
+    i: Integer;
+    MtrIt: TMotorOrd;
+    MtrFrameHgts: TArray<Integer>;
+begin
+    inherited;
+
+    MtrFrameHgts := CalcSizes(pnlLeft.Height - 5, [1, 1, 1, 1]);
+
+    i := 0;
+    for MtrIt := Low(TMotorOrd) to MtrOrdHi do
+    begin
+        if mMtrFrames[MtrIt].Visible then
+        begin
+            mMtrFrames[MtrIt].Height := MtrFrameHgts[i];
+            Inc(i);
+        end;
+    end;
+
+end;
+
+procedure TfrmSoundElec.WorkClose(Sender: TObject);
+begin
+    Close;
+end;
+
+procedure TfrmSoundElec.WorkError(Sender: TObject);
+begin
+    gWork.Thread := nil;
+    SetErrorTxt(Caption, '메인 프로세스 오류발생', '프로그램을 종료후 다시 실행하십시요!', umtError);
+
+    mTsWork.ShowProcState;
+
+    gWork.Stop;
+end;
+
+procedure TfrmSoundElec.FormShow(Sender: TObject);
+var
+    i: Integer;
+    DevComOrd: TDevComORD;
+    MtrIt: TMotorORD;
+begin
+    inherited;
+
+    {$IFDEF VIRTUALIO}
+    Application.MessageBox(PWideChar(_TR('시뮬레이션 모드입니다.') + #13 + Format(_TR('Mtr Spec:%d, Model:%d, MotorData:%d, IMS Data:%d, TResult:%d, TModels:%d 납품위치:%d'), [sizeof(TMotorSpec), sizeof(TModel), sizeof(TMotorData), sizeof(TImsData), sizeof(TResult), sizeof(TModels), sizeof(TMotorDeliveryPos)])), '');
+    {$ENDIF}
+
+    gWork := TWork.Create(Self);
+
+    if Assigned(gWork) then
+    begin
+        gWork.Thread.OnTerminate := WorkClose;
+{$IFNDEF VIRTUALIO}
+        gWork.Thread.OnError := WorkError;
+{$ENDIF}
+    end;
+
+    for i := 1 to MAX_ST_COUNT - 1 do
+    begin
+        DevComOrd := Succ(DevComOrd);
+        AddSubForm(TfrmSoundElec.Create(Self)).ShowPLCInfo(False);
+    end;
+
+    DevComOrd := dcPS_01;
+
+    AddDevComInfo(Ord(DevComOrd), GetDevComName(DevComOrd));
+
+    DisplayDiskFree;
+
+    tmrShow.Enabled := True;
+    tmrMain.Enabled := True;
+
+    if mFormIdx >= Length(gTsPwrWorks) then
+        Exit;
+
+    mTsWork := gTsPwrWorks[mFormIdx];
+
+    mTsWork.Handle := Handle;
+    gPopSys.Items[mFormIdx].DestHandle := Handle;
+    Caption := mTsWork.Name + '  ' + PROJECT_NAME;
+
+{$IFDEF VIRTUALIO}
+    pnlTitle.Caption := Caption + ' : SIMUL.MODE';
+{$ELSE}
+    pnlTitle.Caption := Caption;
+{$ENDIF}
+
+
+    mTsWork.CreateGrpExtenders([fmSMTSlide.Graph, fmSMTTilt.Graph, fmSMTHeight.Graph, fmSMTLeg.Graph, fmSMTSwivel.Graph]);
+
+    mMtrFrames[tmSlide] := fmSMTSlide;
+    mMtrFrames[tmTilt] := fmSMTTilt;
+    mMtrFrames[tmHeight] := fmSMTHeight;
+    mMtrFrames[tmLegSupt] := fmSMTLeg;
+    mMtrFrames[tmSwivel] := fmSMTSwivel;
+
+    for MtrIt := Low(TMotorORD) to MtrOrdHi do
+    begin
+        if not Assigned(mMtrFrames[MtrIt]) then
+            Continue;
+
+        mMtrFrames[MtrIt].lblCaption.Caption := '  ' + GetMotorName(MtrIt);
+        mMtrFrames[MtrIt].grpData.OnDblClick := chtMtrDblClick;
+        mMtrFrames[MtrIt].SetDirStr(MtrIt in [tmSlide, tmTilt, tmHeight, tmLegSupt, tmSwivel]);
+        mMtrFrames[MtrIt].Graph.Tag := Ord(MtrIt) * 2;
+        mMtrFrames[MtrIt].SetViewMode(vmGrpData);
+
+    end;
+
+    tcCon.Tabs.Clear;
+
+    for i := 0 to mTsWork.ConCount - 1 do
+        tcCon.Tabs.Add(mTsWork.Connectors[i].Name);
+
+    tcCon.TabWidth := 70;
+
+    sgCon.Cells[0, 0] := 'No';
+    sgCon.Cells[1, 0] := 'Name';
+    sgCon.Cells[2, 0] := '(A)';
+    sgCon.Cells[3, 0] := '(V)';
+
+    ReadCount;
+
+    mHVFrames[hvdHeatDrv] := fmHtrHost;
+    mHVFrames[hvdVentDrv] := fmVntHost;
+
+    mHVFrames[hvdHeatPsg] := nil;
+    mHVFrames[hvdVentPsg] := nil;
+
+    mHVFrames[hvdHeatDrv].Init(mTsWork.HVTester.HDrvTest.Ctrler);
+    mHVFrames[hvdVentDrv].Init(mTsWork.HVTester.VDrvTest.Ctrler);
+
+    //mHVFrames[hvdHeatPsg].Init(mTsWork.HVTester.HPsgTest.Ctrler);
+    //mHVFrames[hvdVentPsg].Init(mTsWork.HVTester.VPsgTest.Ctrler);
+
+
+    UpdateGraph(True);
+
+    tmrPoll.Enabled := True;
+
+    Top := 0;
+    Width := 1920;
+    Height := 1080;
+
+//    with fmModelInfo do
+//    begin
+//        SetColRatios([pnlPartInfo, pnlClass, pnlDriver, pnlPos, pnlOpt], [4, 2, 2, 1, 2]);
+//    end;
+
+    mTsWork.Initial(False);
+
+    Left := 0;
+    Top := 0;
+    Width := 1920;
+    Height := 1080;
+
+    CalcCtrlSize;
+
+end;
+
+procedure TfrmSoundElec.DisplayData(Lbl: TLabel3D; RO: TResultORD; IsJudgeColor: Boolean);
+var
+    Judge: Boolean;
+begin
+    with mTsWork.DBX do
+    begin
+        Lbl.Caption := GetResultToATxt(ord(RO), false);
+
+        if IsJudgeColor then
+        begin
+            Judge := GetResult(RO);
+
+            if Judge then
+            begin
+                Lbl.Font.Color := clWhite;
+                Lbl.Color := COLOR_OK
+
+            end
+            else
+            begin
+                Lbl.Font.Color := clWhite;
+                Lbl.Color := COLOR_NG;
+            end;
+
+        end
+        else
+        begin
+            Lbl.Font.Color := clBlack;
+            Lbl.Color := clWhite;
+        end;
+
+    end;
+end;
+
+procedure TfrmSoundElec.DisplayDiskFree;
+var
+    dTm: double;
+    iTm, Total: int64;
+begin
+    if DirectoryExists('C:\') then
+    begin
+        iTm := GetDiskFreeSize('C:\', Total);
+        dTm := ((Total - iTm) / Total) * 100.0;
+
+        abDiskC.Caption := Format('Disk(C:) %0.0f %%', [dTm]);
+
+        abDiskC.Checked := True;
+        if dTm < 70.0 then
+            abDiskC.LED.ColorOn := clLime
+        else if dTm < 90.0 then
+            abDiskC.LED.ColorOn := clYellow
+        else
+            abDiskC.LED.ColorOn := clRed;
+
+        abDiskC.Flashing := abDiskC.LED.ColorOn = clRed;
+    end
+    else
+    begin
+        abDiskC.Checked := False;
+    end;
+
+    if DirectoryExists('D:\') then
+    begin
+        iTm := GetDiskFreeSize('D:\', Total);
+        dTm := ((Total - iTm) / Total) * 100.0;
+        abDiskD.Caption := Format('Disk(D:) %0.0f %%', [dTm]);
+
+        abDiskD.Checked := True;
+        if dTm < 70.0 then
+            abDiskD.LED.ColorOn := clLime
+        else if dTm < 90.0 then
+            abDiskD.LED.ColorOn := clYellow
+        else
+            abDiskD.LED.ColorOn := clRed;
+
+        abDiskD.Flashing := abDiskD.LED.ColorOn = clRed;
+    end
+    else
+    begin
+        abDiskD.Checked := False;
+    end;
+end;
+
+procedure TfrmSoundElec.DisplayJudgeData(Lbl: TLabel3D; ValStr: string; IsOK: Boolean);
+begin
+    if IsOK then
+    begin
+        Lbl.Font.Color := clWhite;
+        Lbl.Color := COLOR_OK
+    end
+    else
+    begin
+        Lbl.Font.Color := clWhite;
+        Lbl.Color := COLOR_NG;
+    end;
+
+    Lbl.Caption := ValStr;
+end;
+
+procedure TfrmSoundElec.DisplaySpec(Lbl: TLabel3D; RO: TResultOrd);
+begin
+    if Lbl.ShowTitle then
+    begin
+        Lbl.Title := mTsWork.DBX.GetResultToATxt(Ord(RO), False);
+        Lbl.Caption := '';
+        Lbl.Color := clWhite;
+    end
+    else
+    begin
+        Lbl.Caption := mTsWork.DBX.GetResultToATxt(Ord(RO), False);
+    end;
+
+end;
+
+procedure TfrmSoundElec.fmSMTSlidesbtnViewModeClick(Sender: TObject);
+begin
+  inherited;
+  fmSMTSlide.sbtnViewModeClick(Sender);
+
+end;
+
+procedure TfrmSoundElec.HandleReadMessage(var myMsg: TMessage);
+begin
+
+    case myMsg.WParam of
+        SYS_GRAPH:
+            begin
+                if gWork.IsTesting then
+                    Exit;
+                UpdateGraph(false);
+            end;
+        SYS_MODEL:
+            begin
+                if not Assigned(gModels) then
+                    Exit;
+
+                if gWork.IsTesting then
+                    Exit;
+
+                if not mTsWork.IsModelChange then
+                    Exit;
+
+                OnWorkStatus(ord(tw_None));
+
+            end;
+        SYS_RUN_MODE:
+            begin
+            end;
+        SYS_UPDATES, SYS_COUNT_UPDATES:
+            begin
+                ReadCount();
+            end;
+        // ----------------------------
+        SYS_POP_CONNECTED:
+            begin
+                if myMsg.LParam <> mFormIdx then
+                    Exit;
+                HideMsg;
+                abPOP.Checked := True;
+                abPOP.LED.ColorOn := clLime;
+            end;
+        SYS_POP_CONNECTING:
+            begin
+                if myMsg.LParam <> mFormIdx then
+                    Exit;
+                abPOP.Checked := True;
+                abPOP.LED.ColorOn := clYellow;
+            end;
+        SYS_POP_DISCONNECTED:
+            begin
+                if myMsg.LParam <> mFormIdx then
+                    Exit;
+                DisplayMsg(_TR('POP 연결 끊김'), _TR('LAN 연결 상태를 점검 하세요'), mtErr);
+                abPOP.Checked := false;
+            end;
+        SYS_ETHERNET_ERROR:
+            begin
+                if myMsg.LParam <> mFormIdx then
+                    Exit;
+                abPOP.Checked := True;
+                abPOP.LED.ColorOn := clRed;
+            end;
+    end;
+
+end;
+
+procedure TfrmSoundElec.lblSimLanInModeClick(Sender: TObject);
+begin
+    lblSimLanInMode.Visible := False;
+    gLanDIO.Items[devRead].Enabeld := not lblSimLanInMode.Visible;
+end;
+
+procedure TfrmSoundElec.OnWorkStatus(AStatus: Integer);
+
+    procedure ClearComponents(AModel: TModel);
+    var
+        HVDevTypeIt: THVDevType;
+        MtrIt: TMotorORD;
+        HVTestType: THVTestType;
+    begin
+        if TfrmPinIO.mIsShow then
+        begin
+            // 스위치 커넥터는 없음
+        end;
+
+        fmModelInfo.SetModel(AModel.rTypes);
+        fmModelInfo.PopLinkMode := mTsWork.IsPopLinkMode;
+        fmModelInfo.lblCarType.Caption := AModel.rTypes.GetCarTypeStr;
+
+        if mTsWork.IsPopLinkMode then
+        begin
+            fmModelInfo.lblPartNo.Caption := mTsWork.Pop.rcvPartNo; // string(AModel.rPartNo);
+            fmModelInfo.lblLotNo.Caption := mTsWork.Pop.rcvLotNo;
+        end;
+
+        lblResult.Caption := '';
+        lblResult.Color := $00555555;
+        lblResult.Font.Color := clLime;
+
+        lblStatus.Caption := '';
+
+        for MtrIt := Low(TMotorORD) to MtrOrdHi do
+        begin
+            if not Assigned(mMtrFrames[MtrIt]) then
+                continue;
+            mMtrFrames[MtrIt].lblCaption.Caption := '  ' + UpperCase(GetMotorName(MtrIt));
+            mMtrFrames[MtrIt].ClearGrid;
+            mMtrFrames[MtrIt].Init(AModel, MtrIt, false, true, true, false);
+        end;
+
+        for HVDevTypeIt := Low(THVDevType) to High(THVDevType) do
+        begin
+
+            if Assigned(mHVFrames[HVDevTypeIt]) then
+            begin
+                mHVFrames[HVDevTypeIt].Clear;
+                if HVDevTypeIt in [hvdHeatDrv] then
+                    mHVFrames[HVDevTypeIt].SetCurrSpec(AModel.rSpecs.rOnCurr[hvtHeat].ToStrWithUnit('0.0', 'A'), AModel.rSpecs.rOffCurr[hvtHeat].ToStrWithUnit('0.0', 'A'))
+                else
+                    mHVFrames[HVDevTypeIt].SetCurrSpec(AModel.rSpecs.rOnCurr[hvtVent].ToStrWithUnit('0.0', 'A'), AModel.rSpecs.rOffCurr[hvtVent].ToStrWithUnit('0.0', 'A'));
+
+            end;
+
+        end;
+
+        if gSysEnv.rElec.rHV.rUseSenseVent then
+        begin
+            mHVFrames[hvdVentDrv].VisibleVentSensor(True);
+            //mHVFrames[hvdVentPsg].VisibleVentSensor(True);
+        end;
+
+        for MtrIt := Low(TMotorORD) to MtrOrdHi do
+        begin
+            mTsWork.Motors[MtrIt].mCurRepeatCount := 0;
+            SetBurnishingCount(mTsWork.Motors[MtrIt]);
+        end;
+
+        fmSMTSlide.Visible := AModel.rTypes.IsSlideExists and not AModel.rTypes.isSwivelExists;
+        fmSMTHeight.Visible := AModel.rTypes.IsHeightExists;
+        fmSMTTilt.Visible := AModel.rTypes.IsTiltExists;
+        //fmSMTLeg.Visible := AModel.rTypes.IsLegSuptExists;
+        fmSMTLeg.EnableOpaque(not AModel.rTypes.IsLegSuptExists);
+        fmSMTSwivel.Visible := AModel.rTypes.isSwivelExists;
+
+        // ECU Info
+        DisplaySpec(lblEcuPartNo, roSpecEcuPartNo);
+        DisplaySpec(lblEcuSwVer, roSpecEcuSwVer);
+        DisplaySpec(lblEcuHwVer, roSpecEcuHwVer);
+
+        // IMS
+        ClearLabel(lblmem1);
+        ClearLabel(lblmem2);
+        ClearLabel(lblmem3);
+        ClearLabel(lblEasyAccess);
+
+        // 기타 전장
+        DisplaySpec(lblAncPT, rospecAncPT);
+
+        if AModel.rTypes.IsWarnBuckle then
+        begin
+            lblBuckle.TitleColor := $00F7F8F9;
+            lblBuckle.Title := '판정';
+        end
+        else
+        begin
+            lblBuckle.TitleColor := COLOR_SPEC;
+            DisplaySpec(lblBuckle, roSpecBuckleHiLo);
+        end;
+
+        ClearLabel(lblDTCClear);
+
+    end;
+
+var
+    RoRs, RODat: TResultOrd;
+    MtrIt: TMotorORD;
+begin
+
+    with mTsWork, mTsWork.DBX do
+    begin
+        case AStatus of
+            ord(tw_None):
+                begin
+                    ClearComponents(mTsWork.RsBuf.rModel);
+                    Exit;
+                end;
+
+            ord(tw_INIT):
+                begin
+                    HideMsg;
+
+                    ClearComponents(RsBuf.rModel);
+                    lblStatus.Caption := _TR('대기 중');
+                end;
+
+            ord(tw_TEST_MODE):
+                begin
+
+                    if mTsWork.IsAuto then
+                    begin
+                        lblMode.Font.Color := $00FFFFBD;
+                        lblMode.Caption := 'AUTO';
+
+                    end
+                    else
+                    begin
+                        lblMode.Font.Color := $000EC9FF;
+                        lblMode.Caption := 'MANUAL';
+
+                    end;
+
+                end;
+            ord(tw_POP_LINK_MODE):
+                begin
+                    fmModelInfo.PopLinkMode := mTsWork.IsPopLinkMode;
+                    {
+                    if mTsWork.IsPopLinkMode then
+                        lblCarType.Caption := mTsWork.CurModelType.GetCarTypeStr
+                    else
+                        lblCarType.Caption := mTsWork.CurModelType.GetCarTypeStr + _TR(' : 단동');
+                    }
+
+                end;
+            ord(tw_POP_RCVD_MODEL):
+                begin
+                    fmModelInfo.lblPartNo.Caption := mTsWork.Pop.rcvPartNo;
+                    fmModelInfo.lblLotNo.Caption := mTsWork.Pop.rcvLotNo;
+                end;
+            ord(tw_PDT_LOADED):
+                begin
+                    lblStatus.Caption := _TR('제품 도착');
+                    DisplayMsg('커넥터 체결 후, 시작 버튼을 누르세요', '커넥터를 체결하세요', mtNotify, GetEnvPath('ICON\Start.png'));
+                end;
+            ord(tw_CON_CHK):
+                begin
+                    ClearComponents(mTsWork.RsBuf.rModel);
+
+                    if mTsWork.IsAuto then
+                        DisplayMsg(_TR('커넥터를 체결하세요'), _TR('측정을 위해 커넥터를 체결해 주세요'));
+                end;
+            ord(tw_SPEC_CHK_START):
+                begin
+                    lblStatus.Caption := _TR('제품 사양 검사');
+                    DisplayMsg(_TR('모델 사양 검사 중 입니다'), _TR('커넥터 체결 후 잠시만 기다리세요..'), mtNotify, GetEnvPath('ICON\Loading3.gif'));
+                end;
+            ord(tw_SPEC_CHK_END):
+                begin
+                    lblStatus.Caption := _TR('제품 사양 검사 완료');
+                    HideMsg;
+                end;
+
+            ord(tw_CHK_DISCONNECT):
+                begin
+                    lblStatus.Caption := _TR('커넥터 체결 유무  검사');
+                    DisplayMsg(_TR('커넥터 체결 유무 검사 중 입니다'), _TR('해제시 완료버튼을 다시 눌러 진행하세요'), mtNotify, GetEnvPath('ICON\Loading3.gif'));
+                end;
+
+            ord(tw_FP_START):
+                lblStatus.Caption := _TR('F/P 검사 시작');
+            ord(tw_FP_END):
+                begin
+                end;
+            ord(tw_START):
+                begin
+
+                    HideMsg;
+
+                    lblStatus.Caption := _TR('검사 시작');
+                    lblResult.Caption := '▶';
+                    mCT.Start;
+                end;
+            ord(tw_STOP):
+                begin
+                    {
+                    if imgIcon.Visible then
+                        HideMsg; // 사양체크시만 닫고, 나머지는 사용자 인지 위해 계속 표시
+                    }
+
+                    lblStatus.Caption := _TR('검사 중지');
+                    lblResult.Caption := '';
+                    mCT.Stop;
+                    if lblResult.Color <> $00555555 then
+                    begin
+                        lblResult.Color := $00555555;
+                    end;
+
+                end;
+            ord(tw_END):
+                begin
+                    mCT.Stop;
+                    lblStatus.Caption := _TR('작업 완료');
+                    DisplayMsg(_TR('작업 완료!'), _TR('작업을 종료하였습니다. 커넥터를 뽑은 뒤 버튼을 눌러주세요.'), mtNotify, GetEnvPath('ICON\TestEnd.png'));
+                end;
+            ord(tw_SAVE):
+                begin
+                    lblResult.Caption := 'OK';
+                    lblResult.Color := JUDGE_COLOR[True];
+                    lblResult.Font.Color := clWhite;
+                end;
+            ord(tw_ARRANGE):
+                lblStatus.Caption := _TR('데이타 정리');
+
+            ord(tw_BURNISHING_START):
+                begin
+                    lblStatus.Caption := _TR('버니싱 수행 중');
+                end;
+            ord(tw_BURNISHING_CYCLE):
+                begin
+                    SetBurnishingCount(mTsWork.CurMotor);
+                end;
+
+            ord(tw_BURNISHING_END):
+                begin
+                    lblStatus.Caption := _TR('버니싱 완료');
+                end;
+
+            ord(tw_MEAS_START):
+                begin
+
+                end;
+
+            ord(tw_MEAS_STOP):
+                begin
+
+                end;
+
+            ord(tw_INIT_POS_START):
+                begin
+                    lblStatus.Caption := _TR('모터초기위치 이동');
+                end;
+            ord(tw_INIT_POS_END):
+                lblStatus.Caption := _TR('모터초기위치 완료');
+
+            ord(tw_CHECK_LOAD_RELEASE):
+                lblStatus.Caption := _TR('부하 로딩 대기중');
+
+            ord(tw_UNLOADING):
+                lblStatus.Caption := _TR('부하 언로딩 중');
+
+            ord(tw_CHECK_ALL_TEST_END):
+                lblStatus.Caption := _TR('검사완료 대기중');
+
+            ord(tw_DELIVERY_START):
+                lblStatus.Caption := _TR('납품위치 이동');
+            ord(tw_DELIVERY_END):
+                begin
+                    lblStatus.Caption := _TR('납품위치 완료');
+                  {  if not pnlError.Visible and not gSysEnv.rAutoConnect then
+                    begin
+                        DisplayMsg(_TR('커넥터를 제거해 주세요'),  _TR('시험이 완료되었습니다, 커넥터 제거후 완료버튼을 누르세요'), 1);
+                    end; }
+                end;
+            ord(tw_MID_POS_OK):
+                begin
+                    lblStatus.Caption := _TR('SLIDE M 납품위치 완료');
+                end;
+
+            ord(tw_MOTOR_INIT):
+                begin
+                    lblStatus.Caption := _TR('모터 정렬 시작')
+                end;
+
+            ord(tw_ERROR):
+                begin
+
+                    lblStatus.Caption := _TR('에러 발생');
+                    lblResult.Caption := '';
+
+                    HideMsg;
+                    DisplayMsg(ErrorMsg, ErrorToDo, mtWarn, GetEnvPath('ICON\Warn.gif'));
+
+                    {
+                    pnlError.Visible := false;
+                    if ErrorMsg <> '' then
+                        MsgForm.ShowErrMsg(self, ErrorMsg, ErrorToDo);
+                    }
+                end;
+
+            ord(tw_MSG):
+                begin
+
+                    HideMsg;
+                    DisplayMsg(ErrorMsg, ErrorToDo, mtNotify);
+
+                end;
+
+            ord(tw_MSG2):
+                begin
+
+                end;
+
+            ord(tw_ALARM):
+                begin
+                    DisplayMsg(_TR('ALARM'), _TR('기구 ALARM이 발생했습니다, 상황을 해제하고 RESET을 누르세요'), mtErr, GetEnvPath('ICON\Warn.png'));
+                end;
+
+            ord(tw_EMERGY):
+                begin
+                    DisplayMsg(_TR('비상정지'), _TR('비상정지 버튼을 누르셨습니다, 상황을 해제하고 RESET을 누르세요'), mtErr, GetEnvPath('ICON\Error.png'));
+                end;
+            ord(tw_HIDE_MSG):
+                begin
+                    HideMsg;
+                end;
+            ord(tw_STATUS):
+                ;
+            ord(tw_POWER_CHECK):
+                lblStatus.Caption := _TR('전원 확인중');
+
+            // ----------------------------------------------------------------------
+            // 모터 검사
+            // ----------------------------------------------------------------------
+
+            ord(tw_MTR_TEST_START):
+                begin
+                    with CurMotor do
+                    begin
+                        with mTsWork.RsBuf.rModel.rTypes do
+                        begin
+                            lblStatus.Caption := GetMotorName(ID) + ' ' + SeatMotor.GetMotorDirStr(CurMotor) + _TR(' 시작');
+                        end;
+
+                        {
+                        if TestStep = 0 then
+                            mMtrFrames[ID].ClearGrid;
+                        }
+                    end;
+                end;
+            ord(tw_MTR_TEST_STOP):
+                begin
+                    with CurMotor do
+                    begin
+                        with mTsWork.RsBuf.rModel.rTypes do
+                        begin
+                            lblStatus.Caption := GetMotorName(ID) + ' ' + SeatMotor.GetMotorDirStr(CurMotor) + _TR(' 완료');
+                        end;
+
+                        // 속도 데이터 - 컬럼 1
+                        mMtrFrames[ID].SetCells(1, 1 + ord(Dir), mTsWork.DBX, GetDataRO('Speed', Dir));
+
+                        // 전류 데이터 - 컬럼 2 (누락되어 있었음!)
+                        mMtrFrames[ID].SetCells(2, 1 + ord(Dir), mTsWork.DBX, GetDataRO('Curr', Dir));
+
+// 초기 소음 - 컬럼 3
+                        mMtrFrames[ID].SetCells(3, 1 + ord(Dir), mTsWork.DBX, GetDataRO('InitNoise', Dir));
+
+// 작동 소음 - 컬럼 4
+                        mMtrFrames[ID].SetCells(4, 1 + ord(Dir), mTsWork.DBX, GetDataRO('RunNoise', Dir));
+
+                        mMtrFrames[ID].grpData.Repaint;
+
+                    end;
+
+                end;
+
+            ord(tw_LIMIT_START):
+                begin
+                    lblStatus.Caption := _TR('LIMIT 설정 중');
+                end;
+
+            ord(tw_LIMIT_READED):
+                begin
+                    for MtrIt := Low(TMotorOrd) to High(TMotorOrd) do
+                    begin
+                        if mTsWork.Motors[MtrIt].Limit then
+                        begin
+                            mTsWork.RsBuf.rCurMtr := MtrIt;
+                            mMtrFrames[MtrIt].SetCells(7, 1, mTsWork.DBX, roRsLimit); // 리미트는 전,후진 구분 없이
+//                            mMtrFrames[MtrIt].SetCells(7, 2, mTsWork.DBX, roRsLimit);
+                        end;
+                    end;
+                end;
+
+            ord(tw_HALL_SENSOR):
+                begin
+                end;
+            ord(tw_BLUE_LINK):
+                begin
+
+                end;
+
+            // 이음
+                ord(tw_ABNML_SOUND):
+                begin
+                    DisplayMsg(_TR('이음 감지 NG'), _TR('제품을 NG처리 합니다'), mtErr);
+                end;
+
+            ord(tw_CON_INFO_LOADED):
+                begin
+                    tcConChange(tcCon);
+                end;
+
+            // ----------------------------------------------------------------------
+            // 바코드 스캔
+            // ----------------------------------------------------------------------
+                ord(tw_BC_READED):
+                begin
+                    HideMsg;
+                end;
+
+            // DTC Clear
+                Ord(tw_DTC_CLEAR_START):
+                begin
+                    lblStatus.Caption := _TR('DTC Clear Start');
+                    lblDTCClear.Caption := '▶';
+                end;
+
+            Ord(tw_DTC_CLEAR_END):
+                begin
+                    lblStatus.Caption := _TR('DTC Clear Finish');
+                    DisplayData(lblDTCClear, roRsDTCClear, True);
+                end;
+
+            // ─── APT ───────────────────────────
+                ord(tw_APT_START):
+                begin
+                    lblStatus.Caption := _TR('AnchorPT 저항 측정 시작');
+                    lblAncPT.Caption := '▶';
+
+                end;
+
+            ord(tw_APT_END):
+                begin
+                    lblStatus.Caption := _TR('AnchorPT 저항 측정 종료');
+                    DisplayData(lblAncPT, roRsAncPT, True);
+                end;
+
+            // ─── ECU Info Read ───────────────────────────
+                Ord(tw_ECU_INFO_START):
+                begin
+                    lblStatus.Caption := _TR('ECU 정보 읽기 시작');
+                    lblEcuPartNo.Caption := '▶';
+                    lblEcuHWVer.Caption := '▶';
+                    lblEcuSWVer.Caption := '▶';
+                end;
+
+            Ord(tw_ECU_INFO_END):
+                begin
+                    lblStatus.Caption := _TR('ECU 정보 읽기 종료');
+                    DisplayData(lblEcuPartNo, roDataEcuPartNo, true);
+                    DisplayData(lblEcuHWVer, roDataEcuHwVer, true);
+                    DisplayData(lblEcuSWVer, roDataEcuSwVer, true);
+                end;
+
+
+            // ─── 메모리 검사 ───────────────────────────
+                Ord(tw_MEMORY_START):
+                begin
+                    lblStatus.Caption := _TR('메모리 테스트 시작');
+
+                end;
+            Ord(tw_MEM1_ARRANGE):
+                begin
+                    lblStatus.Caption := _TR('메모리 1 저장 위치로 이동');
+                    lblMem1.Caption := '▶';
+                end;
+
+            Ord(tw_MEM1_SAVE):
+                begin
+                    lblStatus.Caption := _TR('메모리 1 저장');
+                    lblMem1.Caption := 'SAVE';
+
+                end;
+
+            Ord(tw_MEM2_ARRANGE):
+                begin
+                    lblStatus.Caption := _TR('메모리 2 저장 위치로 이동');
+                    lblMem2.Caption := '▶';
+
+                end;
+            Ord(tw_MEM2_SAVE):
+                begin
+                    lblStatus.Caption := _TR('메모리 2 저장');
+                    lblMem2.Caption := 'SAVE';
+                end;
+
+            Ord(tw_MEM1_PLAY):
+                begin
+                    lblStatus.Caption := _TR('메모리 1 플레이');
+                    lblMem1.Caption := 'PLAY';
+
+                end;
+
+            Ord(tw_MEM2_PLAY):
+                begin
+                    lblStatus.Caption := _TR('메모리 1 플레이');
+                    lblMem2.Caption := 'PLAY';
+                    DisplayData(lblMem1, roRsMem1, True);
+
+                end;
+
+            ord(tw_MEMORY_END):
+                begin
+                    lblStatus.Caption := _TR('메모리 테스트 완료');
+                    DisplayData(lblMem1, roRsMem1, True);
+                    DisplayData(lblMem2, roRsMem2, True);
+
+                end;
+
+            // ─── H/V 검사 ───────────────────────────
+                Ord(tw_HV_TEST_START):
+                begin
+                    with CurHVTest do
+                    begin
+                        if TestType = hvtHeat then
+                            lblStatus.Caption := _TR('히터 검사 중')
+                        else
+                        begin
+                            lblStatus.Caption := _TR('통풍 검사 중');
+                        end;
+                    end;
+                end;
+            Ord(tw_HV_TEST_END):
+                begin
+                    with CurHVTest do
+                    begin
+                        if TestType = hvtHeat then
+                            lblStatus.Caption := _TR('히터 검사 완료 ')
+                        else
+                        begin
+                            lblStatus.Caption := _TR('통풍 검사 완료 ');
+                        end;
+                    end;
+                end;
+
+            ord(tw_HV_STEP_START):
+                begin
+                    with CurHVTest do
+                    begin
+                        if not Assigned(mHVFrames[DevType]) then
+                            Exit;
+
+                        mHVFrames[DevType].StartLed(CurStep);
+
+                        if UseCurrTest then
+                        begin
+                            if CurStep = CurrRStep then
+                            begin
+                                mHVFrames[DevType].StartOnCurr;
+                            end
+                            else if CurStep = 0 then
+                            begin
+                                mHVFrames[DevType].StartOffCurr;
+                            end;
+                        end;
+
+                    end;
+
+                end;
+
+            ord(tw_HV_STEP_END):
+                begin
+                    with CurHVTest do
+                    begin
+                        // 디버그 로그 추가 - 간단한 방식
+                        if TestType = hvtHeat then
+                            gLog.Panel('히터 STEP_END - CurStep: %d, LedData: $%02X', [CurStep, GetCurLedData])
+                        else
+                            gLog.Panel('통풍 STEP_END - CurStep: %d, LedData: $%02X', [CurStep, GetCurLedData]);
+
+        // nil 체크 추가
+                        if not Assigned(mHVFrames[DevType]) then
+                        begin
+                            gLog.Panel('ERROR: mHVFrames[%d] is nil!', [Ord(DevType)]);
+                            Exit;
+                        end;
+
+        // LED 결과 확인
+                        gLog.Panel('LED 판정 결과: %s', [BoolToStr(DBX.GetResult(GetLedRsRO(DevType, CurStep)), True)]);
+
+                        if UseCurrTest then
+                        begin
+                            // 컨텍스트 설정
+                            SetHVContext(DevType);
+
+                            if CurStep = 0 then
+                            begin
+                                UpdateHVCurrDisplay(DevType, CurStep, False);
+                            end
+                            else if CurStep = CurrRStep then
+                            begin
+                                UpdateHVCurrDisplay(DevType, CurStep, true);
+                            end;
+                        end;
+
+                        mHVFrames[DevType].SetLed(CurStep, GetCurLedData, DBX.GetResult(GetLedRsRO(DevType, CurStep)));
+                        mHVFrames[DevType].SetVentSensor(DBX.GetResult(tsFlowTest));
+                    end;
+                end;
+
+
+
+                   {
+
+                Ord(tw_DTC_CLEAR_NG):
+                begin
+                    lblStatus.Caption := _TR('DTC Clear Finish');
+                    lblDTCClear.Caption := 'NG';
+                    lblDTCClear.Color := JUDGE_COLOR[False];
+                    lblDTCClear.Font.Color := clWhite;
+                end;
+                    }
+        end;
+    end;
+end;
+
+procedure TfrmSoundElec.SetHVContext(DevType: THVDevType);
+begin
+    with mTsWork do
+    begin
+        case DevType of
+            hvdHeatDrv:
+                DBX.RsBuf.SetCurHVIdx(hvpDrv, hvtHeat);
+            hvdHeatPsg:
+                DBX.RsBuf.SetCurHVIdx(hvpPsg, hvtHeat);
+            hvdVentDrv:
+                DBX.RsBuf.SetCurHVIdx(hvpDrv, hvtVent);
+            hvdVentPsg:
+                DBX.RsBuf.SetCurHVIdx(hvpPsg, hvtVent);
+        end;
+
+    end;
+
+end;
+
+procedure TfrmSoundElec.UpdateHVCurrDisplay(DevType: THVDevType; CurStep: integer; IsOn: boolean);
+var
+    RODat, RoRs: TResultOrd;
+begin
+    with mTsWork do
+    begin
+        // 컨텍스트 설정
+        SetHVContext(DevType);
+
+    // ON/OFF에 따른 열거형 선택
+        if IsOn then
+        begin
+            RODat := roDatOnCurr;
+            RoRs := roRsOnCurr;
+        end
+        else
+        begin
+            RODat := roDatOffCurr;
+            RoRs := roRsOffCurr;
+        end;
+
+    // 데이터 표시
+        if IsOn then
+            mHVFrames[DevType].SetOnCurrStr(DBX.GetResultToATxt(Ord(RODat), true, false), DBX.GetResult(RoRs))
+        else
+            mHVFrames[DevType].SetOffCurrStr(DBX.GetResultToATxt(Ord(RODat), true, false), DBX.GetResult(RoRs));
+
+    end;
+
+end;
+
+function GetInvertColor(Color: TColor): TColor;
+begin
+    if ((GetRValue(Color) + GetGValue(Color) + GetBValue(Color)) > 384) then
+        Result := clBlack
+    else
+        Result := clWhite;
+end;
+
+function IsZeroVal(Val: double): boolean;
+begin
+    Result := (-0.2 <= Val) and (Val <= 0.2);
+end;
+
+function IsPlusVal(Val: double): boolean;
+begin
+    Result := Val >= 0.02;
+end;
+
+procedure TfrmSoundElec.ShowConnectorForm(Station: integer);
+begin
+    if not TfrmPinIO.mIsShow then
+    begin
+        frmPinIO := TfrmPinIO.Create(Application);
+        with frmPinIO do
+        begin
+            BorderStyle := bsSizeable;
+            FormStyle := fsStayOnTop;
+            with mTsWork do
+            begin
+                frmPinIO.Caption := mTsWork.Name;
+                //mPinIO.InitPinDAQ(AD, AI_MAIN_CON_VOLT_START, MAX_MAIN_PIN_COUNT );
+                //mTsWork.SwCon.WriteAsPinName(sgPinIO.Cols[sgPinIO.ColCount - 1], 1);
+            end;
+            Show;
+        end;
+    end;
+
+    if not frmDIOEx.mIsShow then
+    begin
+        frmDIOEx := TfrmDIOEx.Create(Application);
+        with frmDIOEx do
+        begin
+            BorderStyle := bsSizeable;
+            FormStyle := fsStayOnTop;
+            Init(gTsPwrWorks[Station].DIO, [12], [12, 12], ['모터구동', 'IGN/사양', '사양출력']);
+            LoadNames(GetEnvPath('IOList.ini'));
+            Show;
+        end;
+    end;
+
+    frmPinIO.AddChild(frmDIOEx.Handle);
+
+    frmPinIO.Top := 150; // Screen.Height - ((frmPinIO.Height + frmDIOEx.Height) div 2);
+//    frmPinIO.Width := frmDIOEx.Width;
+    frmDIOEx.Left := frmPinIO.Left;
+    frmDIOEx.Top := frmPinIO.Top + frmPinIO.Height;
+
+    frmPinIO.CheckGlueing;
+
+end;
+
+procedure TfrmSoundElec.SpeedButton1Click(Sender: TObject);
+begin
+    inherited;
+    ShowMessage('TEST');
+end;
+
+procedure TfrmSoundElec.sbtnConClick(Sender: TObject);
+begin
+    ShowConnectorForm(Ord(mTsWork.StationID));
+end;
+
+procedure TfrmSoundElec.sbtnExitClick(Sender: TObject);
+begin
+    with TExitFrm.Create(Application, gSysEnv.rOP.rVer) do
+    begin
+        Position := poScreenCenter;
+        Caption := PROJECT_NAME + _TR(' 종료');
+        SetTitile(PROJECT_NAME);
+        SetsubTitle('2024.11 kii@kii-fa.co.kr');
+
+        if ShowModal = mrCancel then
+            Exit;
+    end;
+    mIsClose := true;
+    // -----------------------------
+    frmNotify.Caption := Caption + _TR(' 프로그램 종료중...');
+    frmNotify.SetFrm(_TR('잠시 기다려 주십시요'));
+    frmNotify.Show;
+    // 각모듈에 연결된 포인트 청소.
+    PostMessage(gUsrMsg, WM_CLOSE, 0, 0);
+    gLog.Debug('MEASURE FORM CLOSE', []);
+
+end;
+
+procedure TfrmSoundElec.sbtnModelClick(Sender: TObject);
+begin
+    if not ShowPasswordForm then
+        Exit;
+
+    if Assigned(frmUserModel) then
+        SendMessage(frmUserModel.Handle, WM_CLOSE, 0, 0);
+    frmUserModel := TfrmUserModel.Create(Self);
+    frmUserModel.FormStyle := fsStayOnTop;
+    frmUserModel.Height := 980;
+    frmUserModel.Show();
+
+end;
+
+procedure TfrmSoundElec.sbtnReferenceClick(Sender: TObject);
+begin
+    if not ShowPasswordForm then
+        Exit;
+
+    SendMessage(gDioReferwnd, WM_CLOSE, 0, 0);
+    if Assigned(frmUserRefer) then
+        SendMessage(frmUserRefer.Handle, WM_CLOSE, 0, 0);
+    frmUserRefer := TfrmUserRefer.Create(Self);
+    frmUserRefer.FormStyle := fsStayOnTop;
+    frmUserRefer.Show();
+
+end;
+
+procedure TfrmSoundElec.sbtnRetrieveClick(Sender: TObject);
+var
+    sTm: string;
+    nP: IProcesses;
+    nF: TfrmWait;
+    dTm: double;
+begin
+    sTm := GetHomeDirectory + '\DataViewer.exe';
+    if not FileExists(sTm) then
+    begin
+        MessageDlg(_TR('조회 프로그램을 찾을 수 없습니다. 확인 후 다시 시도하세요.'), mtERROR, [mbYes], 0);
+        Exit;
+    end;
+    nF := TfrmWait.Create(Application);
+    with nF do
+    begin
+        Execute('PwrSeatTester.exe', 30.0);
+        // Execute();
+    end;
+
+    nP := Processes('DataViewer.exe');
+    if nP.IsStillRunning then
+    begin
+        nP.Minimize();
+        nP.Restore();
+        Exit;
+    end;
+    dTm := GetAccurateTime;
+    ShellExecute(0, 'OPEN', PChar(sTm), '', PChar(ExtractFileDir(sTm)), SW_SHOW);
+    gLog.Panel('ShowTime: %f', [GetAccurateTime - dTm]);
+end;
+
+procedure TfrmSoundElec.SetBurnishingCount(Motor: TSeatMotor);
+begin
+    case Motor.ID of
+        tmSlide:
+            begin
+                //lblSlideBrnCnt.Caption := Format('%d/%d', [Motor.CurRepeatCount, Motor.TotRepeatCount]);
+            end;
+        tmTilt:
+            begin
+
+            end;
+        tmHeight:
+            begin
+            end;
+        tmLegSupt:
+            begin
+
+            end;
+    end;
+end;
+
+procedure TfrmSoundElec.sgConDrawCell(Sender: TObject; ACol, ARow: Integer; Rect: TRect; State: TGridDrawState);
+var
+    FontColor, BkColor: TColor;
+    CellStr: string;
+    Grid: TStringGrid;
+    Val: double;
+    FontSize: Integer;
+
+    procedure SetCurrCell;
+    begin
+        Val := mCurCon.GetPinCurr(ARow);
+        CellStr := Format('%f', [Val]);
+        if IsPlusVal(Val) then
+            FontColor := clRed
+        else
+            FontColor := clBlack;
+    end;
+
+    procedure SetVoltCell;
+    begin
+        Val := mCurCon.GetPinVolt(ARow);
+        CellStr := Format('%f', [Val]);
+        if IsPlusVal(Val) then
+            FontColor := clBlue
+        else
+            FontColor := clBlack;
+    end;
+
+begin
+
+    Grid := TStringGrid(Sender);
+    Grid.Canvas.Font := Grid.Font;
+    FontSize := 10;
+
+    FontColor := Grid.Font.Color;
+    if (ARow mod 2) = 0 then
+        BkColor := IncRGB(Grid.Color, -10)
+    else
+        BkColor := Grid.Color;
+
+    CellStr := Grid.Cells[ACol, ARow];
+
+    if ARow = 0 then
+    begin
+        FontColor := GetInvertColor(Grid.FixedColor);
+        BkColor := Grid.FixedColor;
+    end
+    else if Assigned(mCurCon) then
+    begin
+
+        case ACol of
+            0, 1:
+                begin
+                    FontColor := clBlack;
+
+                    if ACol = 1 then
+                        FontSize := 8;
+
+                end;
+            2, 3:
+                begin
+                    if Grid.Cells[ACol, 0] = '(A)' then
+                        SetCurrCell
+                    else
+                        SetVoltCell;
+                end;
+        end;
+
+    end;
+
+    SetBkMode(Grid.Canvas.Handle, TRANSPARENT);
+    Grid.Canvas.Font.Size := FontSize;
+    Grid.Canvas.Font.Color := FontColor;
+    Grid.Canvas.Brush.Color := BkColor;
+    Inc(Rect.Bottom);
+    Grid.Canvas.FillRect(Rect);
+    DrawText(Grid.Canvas.Handle, CellStr, Length(CellStr), Rect, DT_CENTER or DT_VCENTER or DT_SINGLELINE);
+
+end;
+
+procedure TfrmSoundElec.tcConChange(Sender: TObject);
+begin
+
+    UpdateConUI(mTsWork.Connectors[tcCon.TabIndex]);
+
+end;
+
+procedure TfrmSoundElec.ReadWorkCycleTime;
+const
+    _HiNLo: array[false..true] of string = ('Lo ', 'Hi');
+    _NorNIdle: array[false..true] of string = ('NOR ', 'IDLE');
+var
+    sTm: string;
+begin
+    if not Assigned(gWork) then
+        Exit;
+    sTm := Format('[P/C] %f >>%s | %s<< ', [gWork.LoopTime, _HiNLo[gWork.IsTesting], _NorNIdle[gWork.IsSystemIDLE]]);
+
+    lblWorkMonitor.Caption := sTm;
+end;
+
+procedure TfrmSoundElec.tmrDiskChkTimer(Sender: TObject);
+begin
+    inherited;
+
+    DisplayDiskFree;
+
+end;
+
+procedure TfrmSoundElec.tmrMainTimer(Sender: TObject);
+var
+    dTm: double;
+    sTm: string;
+begin
+
+    if mIsClose then
+        Exit;
+
+    if mLock then
+        Exit;
+
+    mLock := True;
+
+    if Assigned(gWork) then
+    begin
+        gWork.SetUsrFileUpdates();
+    end;
+
+    case mState of
+        0:
+            begin
+                labDate.Caption := FormatDateTime('ddddd hh:nn:ss', Now());
+            end;
+        1:
+            begin
+                ReadWorkCycleTime();
+                if Assigned(gWork) then
+                    lblMemory.Caption := gWork.GetUsrBuffCounts();
+            end;
+        2:
+            begin
+                if gsysEnv.rOP.rUseScreenSaver and Assigned(gWork) and (gWork.IsSystemIDLE <> mscrIO) then
+                begin
+                    mScrIO := gWork.IsSystemIDLE;
+                    SetsysSaverEnable(integer(mScrIO));
+                    if not mScrIO then
+                    begin
+                        SaverTurnOff;
+                        gLog.Panel('SCREEN SET OFF');
+                    end
+                    else
+                    begin
+                        gLog.Panel('SCREEN SET ON');
+                    end;
+                end;
+            end;
+        3:
+            begin
+                SysEnvUpdates;
+            end;
+        4:
+            begin
+                if not mIsClose and Assigned(gWork) and (gWork.IsSystemIDLE <> mSysIdle) then
+                begin
+                    mSysIdle := gWork.IsSystemIDLE;
+                end;
+            end;
+        5:
+            begin
+
+                // 오래된 그래프 파일 제거 2012.08.29
+                if not mIsClose and (Now() > gsysEnv.rOP.rGraphCheckTimeStart) then
+                begin
+
+                    if gWork.IsSystemIDLE then
+                    begin
+                        try
+                            if gsysEnv.rOP.rKeepGraphMonth > 0 then
+                            begin
+                                frmNotify.Caption := Caption + _TR(' 그래프 파일 정리 시작');
+                                frmNotify.SetFrm(_TR('그래프 파일 정리중...'));
+                                frmNotify.Show;
+
+                                gLog.Panel('그래프 파일 정리 중...', []);
+                                dTm := IncMonth(Now(), -gsysEnv.rOP.rKeepGraphMonth);
+                                SetGraphFileDelete(dTm);
+                                gLog.Panel('그래프 파일 정리 끝', []);
+                            end;
+                        finally
+                            gsysEnv.rOP.rGraphCheckTimeStart := Trunc(Now() + 1) + Frac(gsysEnv.rOP.rGraphCheckTimeStart);
+                            gsysEnv.rOP.rGraphCheckTimeEnd := Trunc(Now() + 1) + Frac(gsysEnv.rOP.rGraphCheckTimeEnd);
+                            frmNotify.Close;
+                        end;
+                    end
+                    else if (Now() > gsysEnv.rOP.rGraphCheckTimeEnd) then
+                    begin
+                        gsysEnv.rOP.rGraphCheckTimeStart := Trunc(Now() + 1) + Frac(gsysEnv.rOP.rGraphCheckTimeStart);
+                        gsysEnv.rOP.rGraphCheckTimeEnd := Trunc(Now() + 1) + Frac(gsysEnv.rOP.rGraphCheckTimeEnd);
+                    end;
+
+                end;
+
+            end;
+        6:
+            begin
+                sTm := GetUsrFloatToStr(GetSeconds(gCycleTime[0]), 1);
+                if MAX_ST_COUNT > 1 then
+                begin
+                    sTm := sTm + '  /  ';
+                    sTm := sTm + GetUsrFloatToStr(GetSeconds(gCycleTime[1]), 1);
+                end;
+
+                if lblCycleTime.Caption <> sTm then
+                begin
+                    lblCycleTime.Caption := sTm;
+                end;
+            end;
+    end;
+    Inc(mState);
+    mState := mState mod 7;
+    mLock := False;
+
+end;
+
+procedure TfrmSoundElec.tmrPollTimer(Sender: TObject);
+begin
+
+    tmrPoll.Enabled := False;
+    try
+        Inc(mDAQTimerCnt);
+        if (mDAQTimerCnt mod 20) = 0 then   // 약 200 ms 예상
+        begin
+            ReadDAQValues;
+        end
+        else if (mDAQTimerCnt mod 50) = 0 then
+        begin
+            abCable.Checked := mTsWork.IsSpecChkOK;
+        end;
+
+    finally
+        tmrPoll.Enabled := True;
+
+    end;
+
+end;
+
+procedure TfrmSoundElec.tmrShowTimer(Sender: TObject);
+begin
+    inherited;
+
+    tmrShow.Enabled := false;
+
+    ShowAllForms;
+
+    if Assigned(gWork) then
+        gWork.ComRefresh := True;
+
+    { Thread Run }
+    if gsysEnv.rOP.rEnabled and Assigned(gWork) then
+        gWork.Start;
+
+end;
+
+procedure TfrmSoundElec.UpdateConUI(Con: TBaseSeatConnector);
+var
+    i, ColCount, TotWidth: Integer;
+const
+    WidthRatios: array[0..3] of Double = (0.6, 3, 1, 1);
+begin
+    mCurCon := Con;
+
+    lblConName.Caption := mCurCon.Name;
+
+    ColCount := 2;
+
+    if mCurCon.IsCurrReadable then
+    begin
+        sgCon.Cells[ColCount, 0] := '(A)';
+        Inc(ColCount);
+    end;
+    if mCurCon.IsVoltReadable then
+    begin
+        sgCon.Cells[ColCount, 0] := '(V)';
+        Inc(ColCount);
+    end;
+
+    sgCon.ColCount := ColCount;
+    sgCon.RowCount := mCurCon.PinCount + 1;
+
+    for i := 1 to sgCon.RowCount - 1 do
+    begin
+        sgCon.Cells[0, i] := IntToStr(i);
+    end;
+
+    SetGridColWidths(sgCon, WidthRatios, ColCount);
+
+    mCurCon.WriteAsPinName(sgCon.Cols[1], 1);
+
+end;
+
+procedure TfrmSoundElec.UpdateGraph(IsClear: Boolean);
+var
+    i: integer;
+    grpEnv: TFaGraphEnv;
+    MtrIt: TMotorORD;
+begin
+    // 재진입 방지
+    if gWork.IsTesting then
+        Exit;
+
+    for MtrIt := Low(TMotorORD) to MtrOrdHi do
+    begin
+        if not Assigned(mMtrFrames[MtrIt]) then
+            continue;
+
+        try
+            mMtrFrames[MtrIt].UpdateGraph(IsClear);
+        except
+            on E: Exception do
+            begin
+                gLog.Error('UpdateGraph Error [%s]: %s', [GetMotorName(MtrIt), E.Message]);
+            end;
+        end;
+
+    end
+
+end;
+
+procedure TfrmSoundElec.ReadCount;
+var
+    nOK, nNG: Integer;
+begin
+    nOK := GetResultCount(mFormIdx, True);
+    nNG := GetResultCount(mFormIdx, false);
+    lblOK.Caption := IntToStr(nOK);
+    lblNG.Caption := IntToStr(nNG);
+    lblTot.Caption := IntToStr(nOK + nNG);
+
+end;
+
+procedure TfrmSoundElec.ReadDAQValues;
+var
+    SlideCurr, HgtCurr, TiltCurr, CushLegCurr, SwivelCurr: Double;
+begin
+    with mTsWork do
+    begin
+        SlideCurr := GetMotorCurr(tmSlide);
+        HgtCurr := GetMotorCurr(tmHeight);
+        TiltCurr := GetMotorCurr(tmTilt);
+        CushLegCurr := GetMotorCurr(tmLegSupt);
+        SwivelCurr := GetMotorCurr(tmSwivel);
+
+        sgCon.Repaint;
+
+        lblOutVolt.Caption := Format('%0.1f', [GetOutVolt]);
+        lblOutCurr.Caption := Format('%0.1f', [GetOutCurr]);
+        lblMainCurr.Caption := Format('%0.1f', [GetMainCurr]);
+        lblMotorCurr.Caption := Format('%0.1f', [GetMotorCurr(tmSlide)]);
+        lblSHVU1Curr.Caption := Format('%0.1f', [GetSHVUCurr]);
+        lblNoise.Caption := Format('%0.1f', [GetNoise]);
+        lblLaserDistance.Caption := Format('%0.1f', [GetDistance1]);
+        lblAPT.Caption := Format('%0.1f', [GetResistor]);
+        {
+        lblOutVolt.Caption := Format('%0.1f', [GetOutVolt]);
+        lblNoise1.Caption := Format('%0.1f', [GetNoise]);
+        lblNoise2.Caption := lblNoise1.Caption;
+
+        lblValueCT.Caption := Format('%0.0f', [mCT.GetPassTimeAsSec]);
+
+//        abCAN.Checked := GetCanConneted;
+
+        ledSensorLH.OnOff := Cardinal(DIO.IsIO(DI_OUTPOS_SENSOR_LH));
+        ledSensorRH.OnOff := Cardinal(DIO.IsIO(DI_OUTPOS_SENSOR_RH));
+        }
+
+
+    end;
+end;
+
+end.
+

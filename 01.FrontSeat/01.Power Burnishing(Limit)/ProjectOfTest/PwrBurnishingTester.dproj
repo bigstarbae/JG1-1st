@@ -1,0 +1,342 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{89DD3501-17AF-47ED-BCB3-A73247BD481A}</ProjectGuid>
+			<ProjectVersion>12.0</ProjectVersion>
+			<MainSource>PwrBurnishingTester.dpr</MainSource>
+			<Config Condition="'$(Config)'==''">Debug</Config>
+			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_1)'!=''">
+			<Cfg_1>true</Cfg_1>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_2)'!=''">
+			<Cfg_2>true</Cfg_2>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_DcuOutput>..\Dcu\</DCC_DcuOutput>
+			<DCC_ExeOutput>..\Exe\</DCC_ExeOutput>
+			<DCC_DependencyCheckOutputName>..\Exe\PwrBurnishingTester.exe</DCC_DependencyCheckOutputName>
+			<DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;$(DCC_UnitAlias)</DCC_UnitAlias>
+			<DCC_UsePackage>vclx;vcl;vclimg;dbrtl;Rave77VCL;bdertl;rtl;vclactnband;vcldb;vcldbx;vcltouch;xmlrtl;dsnap;dsnapcon;TeeUI;TeeDB;Tee;vclib;ibxpress;adortl;IndyCore;IndySystem;IndyProtocols;inet;intrawebdb_100_140;Intraweb_100_140;VclSmp;vclie;websnap;webdsnap;inetdb;inetdbbde;inetdbxpress;soaprtl;vclribbon;dbexpress;DbxCommonDriver;DataSnapIndy10ServerTransport;DataSnapProviderClient;DbxClientDriver;DataSnapServer;DBXInterBaseDriver;DBXMySQLDriver;dbxcds;DBXFirebirdDriver;DBXSybaseASEDriver;DBXSybaseASADriver;DBXOracleDriver;DBXMSSQLDriver;DBXInformixDriver;DBXDb2Driver;AbkStdD2010;AbkLibD2010;FaAsKiiD2010;tmsd2010</DCC_UsePackage>
+			<DCC_Platform>x86</DCC_Platform>
+			<DCC_ImageBase>00400000</DCC_ImageBase>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_1)'!=''">
+			<DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
+			<DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
+			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+			<DCC_DebugInformation>false</DCC_DebugInformation>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_2)'!=''">
+			<DCC_MapFile>3</DCC_MapFile>
+			<DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
+			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
+		</PropertyGroup>
+		<ItemGroup>
+			<DelphiCompile Include="PwrBurnishingTester.dpr">
+				<MainSource>MainSource</MainSource>
+			</DelphiCompile>
+			<DCCReference Include="..\..\..\Common\Form\ADForm.pas">
+				<Form>frmAD</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\BkForm.pas">
+				<Form>frmBk</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\CanCtrlForm.pas">
+				<Form>frmCanCtrl</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\CANMatrixFrame.pas">
+				<Form>CanFrameMatrix</Form>
+				<DesignClass>TFrame</DesignClass>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\CanOperForm.pas">
+				<Form>frmCanOper</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\colorListForm.pas">
+				<Form>frmColorList</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\DAQValFrame.pas">
+				<Form>DAQValFrme</Form>
+				<DesignClass>TFrame</DesignClass>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\DIOExForm.pas">
+				<Form>frmDIOEx</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\DIOform.pas">
+				<Form>frmDio</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\DioReferForm.pas">
+				<Form>frmDioReferForm</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\ExitForm.pas">
+				<Form>ExitFrm</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\MagneticForm.pas">
+				<Form>frmMagnetic</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\MsgForm.pas">
+				<Form>frmMsg</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\NotifyForm.pas">
+				<Form>frmNotify</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\PinIOForm.pas">
+				<Form>frmPinIO</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\PinUpForm.pas">
+				<Form>frmPinUp</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\PopCheckForm.pas">
+				<Form>frmPopChecker</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\ReferBaseForm.pas">
+				<Form>frmReferBase</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\SeatConnectorForm.pas">
+				<Form>frmSeatConnector</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\StateViewForm.pas">
+				<Form>frmStateView</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\TechSupportForm.pas">
+				<Form>frmTechSupport</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\TsUsrReason.pas">
+				<Form>frmReason</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Form\TsUsrReasonForm.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\BaseCAN.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\BaseDataBox.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\BaseTsWork.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\BoxLibEC.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\BuckleTester.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\CanIDFilter.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\CANLogger.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\DelphiZXIngQRCode.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\DIOPairChecker.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\ExcelTableDrawer.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\FaGraphExDataMaker.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\FaGraphExTSExtender.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\FastIniFile.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\GdiPlus.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\GridHead.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\HorzGauge.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\HVBlowerTest.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\HVCanCtrler.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\HVDIOCtrler.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\HVGrpHelper.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\HVSimulCtrler.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\HVTester.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\IntervalCaller.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\KiibaseUnit.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\KiiFaGraphDB.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\KiiMessages.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\Label3D.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\LangTran.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\Log.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\LSuptCanMoveCtrler.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\Magnetic.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\MelsecPackEx.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\MotorJogOperator.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\MsgData.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\PCANBasic.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\PEAKCanUnit.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\PLCAddInfo.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\PngFileMerger.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\RefVoltSetter.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\Rs232.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\SeatMotor.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\siAPD.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\SingleTypeRange.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\Spec.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\StepValMaker.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\superobject.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\TableMaker.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\TransparentPanel.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\UDPBroadcaster.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\UDPDataTransfer.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\UserIDUnit.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\UserSocketUnit.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\ValueGenerator.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\VideoMsgLauncher.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\WiringTester.pas"/>
+			<DCCReference Include="..\..\Common\Forms\BaseMainForm.pas">
+				<Form>frmBaseMain</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Forms\ModelInfoFrame.pas">
+				<Form>MdllInfoFrame</Form>
+				<DesignClass>TFrame</DesignClass>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Forms\ModelSelSimForm.pas">
+				<Form>frmModelSelSim</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\..\Common\Lib\SOEM\ECSOEMCore.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\SOEM\EtherCatUnit.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\SOEM\SOEMFunctions.pas"/>
+			<DCCReference Include="..\..\..\Common\Lib\SOEM\SOEMLIB.PAS"/>
+			<DCCReference Include="..\..\..\Common\Lib\SOEM\SOEMParams.pas"/>
+			<DCCReference Include="..\Forms\PwrSeatBurnishingForm.pas">
+				<Form>frmPwrBurnishing</Form>
+			</DCCReference>
+			<DCCReference Include="..\Libs\ComUnit.pas"/>
+			<DCCReference Include="..\Libs\DataBox.pas"/>
+			<DCCReference Include="..\Libs\DataUnit.pas"/>
+			<DCCReference Include="..\Libs\Global.pas"/>
+			<DCCReference Include="..\Libs\PopWork.pas"/>
+			<DCCReference Include="..\Libs\SysEnv.pas"/>
+			<DCCReference Include="..\Libs\TsWorkUnit.pas"/>
+			<DCCReference Include="..\..\Common\Libs\myUtils.pas"/>
+			<DCCReference Include="..\..\Common\Libs\PowerSupplyUnit.pas"/>
+			<DCCReference Include="..\..\Common\Libs\SeatType.pas"/>
+			<DCCReference Include="..\..\Common\Libs\ModelType.pas"/>
+			<DCCReference Include="..\..\Common\Libs\DataUnitHelper.pas"/>
+			<DCCReference Include="..\Libs\ModelUnit.pas"/>
+			<DCCReference Include="..\Libs\IODef.pas"/>
+			<DCCReference Include="..\..\Common\Libs\SeatMotorType.pas"/>
+			<DCCReference Include="..\..\Common\Libs\SeatTypeUI.pas"/>
+			<DCCReference Include="..\Libs\SubDataBox4Elec.pas"/>
+			<DCCReference Include="..\Libs\SubDataBox4IMS.pas"/>
+			<DCCReference Include="..\Libs\SubDataBox4Mtr.pas"/>
+			<DCCReference Include="..\Libs\LanIoUnit.pas"/>
+			<DCCReference Include="..\Libs\Work.pas"/>
+			<DCCReference Include="..\..\Common\Libs\SeatConnector.pas"/>
+			<DCCReference Include="..\Libs\DIOChs.pas"/>
+			<DCCReference Include="..\Forms\UserModelForm.pas">
+				<Form>frmUserModel</Form>
+			</DCCReference>
+			<DCCReference Include="..\Forms\UserReferForm.pas">
+				<Form>frmUserRefer</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Forms\Graphconfigform.pas">
+				<Form>frmgrpConfig</Form>
+			</DCCReference>
+			<DCCReference Include="..\Forms\EditForm.pas">
+				<Form>frmEdit</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Libs\SeatIMSCtrler.pas"/>
+			<DCCReference Include="..\..\Common\Libs\SeatMoveCtrler.pas"/>
+			<DCCReference Include="..\Forms\SelModelForm.pas">
+				<Form>frmSelModels</Form>
+			</DCCReference>
+			<DCCReference Include="..\Forms\ComReferForm.pas">
+				<Form>frmComsRefer</Form>
+			</DCCReference>
+			<DCCReference Include="..\Forms\ComsForm.pas">
+				<Form>frmComsForm</Form>
+			</DCCReference>
+			<DCCReference Include="..\Forms\AComReferForm.pas">
+				<Form>frmAComRefer</Form>
+			</DCCReference>
+			<DCCReference Include="..\Forms\LanSetupform.pas">
+				<Form>frmLanSetup</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Forms\PowerSupplyForm.pas">
+				<Form>frmPowerSuppy</Form>
+			</DCCReference>
+			<DCCReference Include="..\Forms\ADCheckform.pas">
+				<Form>frmADChecker</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Forms\ErrorForm.pas">
+				<Form>frmError</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Forms\PasswdForm.pas">
+				<Form>frmPasswd</Form>
+			</DCCReference>
+			<DCCReference Include="..\..\Common\Libs\UDSCarConfig.pas"/>
+			<DCCReference Include="..\Libs\DataUnitOrd.pas"/>
+			<DCCReference Include="..\..\Common\Libs\UDSDef.pas"/>
+			<DCCReference Include="..\Forms\ReferenceForm.pas">
+				<Form>frmReference</Form>
+			</DCCReference>
+			<DCCReference Include="..\Libs\StateDefineUnit.pas"/>
+			<DCCReference Include="..\..\Common\Libs\PeriodicCanData.pas"/>
+			<None Include="myDefine.INC"/>
+			<BuildConfiguration Include="Base">
+				<Key>Base</Key>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Release">
+				<Key>Cfg_1</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Debug">
+				<Key>Cfg_2</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+		</ItemGroup>
+		<Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
+		<ProjectExtensions>
+			<Borland.Personality>Delphi.Personality.12</Borland.Personality>
+			<Borland.ProjectType/>
+			<BorlandProject>
+				<Delphi.Personality>
+					<Source>
+						<Source Name="MainSource">PwrBurnishingTester.dpr</Source>
+					</Source>
+					<Parameters>
+						<Parameters Name="UseLauncher">False</Parameters>
+						<Parameters Name="LoadAllSymbols">True</Parameters>
+						<Parameters Name="LoadUnspecifiedSymbols">False</Parameters>
+					</Parameters>
+					<VersionInfo>
+						<VersionInfo Name="IncludeVerInfo">False</VersionInfo>
+						<VersionInfo Name="AutoIncBuild">False</VersionInfo>
+						<VersionInfo Name="MajorVer">1</VersionInfo>
+						<VersionInfo Name="MinorVer">0</VersionInfo>
+						<VersionInfo Name="Release">0</VersionInfo>
+						<VersionInfo Name="Build">0</VersionInfo>
+						<VersionInfo Name="Debug">False</VersionInfo>
+						<VersionInfo Name="PreRelease">False</VersionInfo>
+						<VersionInfo Name="Special">False</VersionInfo>
+						<VersionInfo Name="Private">False</VersionInfo>
+						<VersionInfo Name="DLL">False</VersionInfo>
+						<VersionInfo Name="Locale">1042</VersionInfo>
+						<VersionInfo Name="CodePage">949</VersionInfo>
+					</VersionInfo>
+					<VersionInfoKeys>
+						<VersionInfoKeys Name="CompanyName"/>
+						<VersionInfoKeys Name="FileDescription"/>
+						<VersionInfoKeys Name="FileVersion">1.0.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="InternalName"/>
+						<VersionInfoKeys Name="LegalCopyright"/>
+						<VersionInfoKeys Name="LegalTrademarks"/>
+						<VersionInfoKeys Name="OriginalFilename"/>
+						<VersionInfoKeys Name="ProductName"/>
+						<VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="Comments"/>
+					</VersionInfoKeys>
+					<Excluded_Packages>
+						<Excluded_Packages Name="C:\Users\Public\Documents\RAD Studio\7.0\Bpl\dac140.bpl">Devart Data Access Components</Excluded_Packages>
+						<Excluded_Packages Name="C:\Users\Public\Documents\RAD Studio\7.0\Bpl\SynEdit_R2010.bpl">SynEdit component suite runtime</Excluded_Packages>
+						<Excluded_Packages Name="C:\Users\Public\Documents\RAD Studio\7.0\Bpl\fqb140.bpl">FastQueryBuilder 1.03</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\dcloffice2k140.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\dclofficexp140.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+						<Excluded_Packages Name="C:\Users\Public\Documents\RAD Studio\7.0\Bpl\FAASKII7.bpl">KII FA Components</Excluded_Packages>
+					</Excluded_Packages>
+				</Delphi.Personality>
+			</BorlandProject>
+			<ProjectFileVersion>12</ProjectFileVersion>
+		</ProjectExtensions>
+	</Project>
+
+<!-- EurekaLog First Line
+[Exception Log]
+EurekaLog Version=7001
+Activate=0
+atVCL=1
+DeleteMapAfterCompile=0
+dpJCL=1
+Encrypt Password=""
+idEurekaLog=1
+idEurekaLogDetailed=1
+idMSClassic=1
+idStepsToReproduce=1
+ProjectID="{F430ED67-0078-4267-8696-B3C15B083870}"
+sndShowFailureMsg=1
+EurekaLog Last Line -->

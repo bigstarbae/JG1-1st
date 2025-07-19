@@ -1,0 +1,113 @@
+object frmUserRefer: TfrmUserRefer
+  Left = 2
+  Top = 60
+  BorderStyle = bsSingle
+  Caption = 'Reference'
+  ClientHeight = 869
+  ClientWidth = 1255
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -13
+  Font.Name = #44404#47548
+  Font.Style = []
+  FormStyle = fsStayOnTop
+  OldCreateOrder = False
+  Position = poOwnerFormCenter
+  Visible = True
+  OnClose = FormClose
+  OnCloseQuery = FormCloseQuery
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnShow = FormShow
+  PixelsPerInch = 96
+  TextHeight = 13
+  object Panel1: TPanel
+    Left = 0
+    Top = 38
+    Width = 188
+    Height = 831
+    Align = alLeft
+    BevelOuter = bvNone
+    BorderWidth = 2
+    TabOrder = 1
+    object lbList: TListBox
+      Left = 2
+      Top = 2
+      Width = 184
+      Height = 827
+      Style = lbOwnerDrawFixed
+      Align = alClient
+      BevelInner = bvNone
+      Color = clWhite
+      ImeName = 'Microsoft Office IME 2007'
+      TabOrder = 0
+      OnClick = lbListClick
+      OnDrawItem = lbListDrawItem
+    end
+  end
+  object pnlDock: TPanel
+    Tag = 222
+    Left = 188
+    Top = 38
+    Width = 1067
+    Height = 831
+    Align = alClient
+    BevelOuter = bvNone
+    Caption = 'Connection... wait a moment'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = #44404#47548
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 2
+  end
+  object Panel4: TPanel
+    Left = 0
+    Top = 0
+    Width = 1255
+    Height = 38
+    Align = alTop
+    BevelOuter = bvNone
+    Color = 3684408
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Name = #44404#47548
+    Font.Style = [fsBold]
+    ParentBackground = False
+    ParentFont = False
+    TabOrder = 0
+    object sbtnsave: TSpeedButton
+      Left = 2
+      Top = 1
+      Width = 145
+      Height = 33
+      Caption = #51200#51109'(&S)'
+      Flat = True
+      OnClick = sbtnsaveClick
+    end
+    object Panel18: TPanel
+      Left = 1106
+      Top = 0
+      Width = 149
+      Height = 38
+      Align = alRight
+      AutoSize = True
+      BevelOuter = bvNone
+      BorderWidth = 2
+      Color = 3684408
+      TabOrder = 0
+      object sbtnClose: TSpeedButton
+        Left = 2
+        Top = 2
+        Width = 145
+        Height = 33
+        Caption = #45803#44592'(&C)'
+        Flat = True
+        OnClick = sbtnCloseClick
+      end
+    end
+  end
+end

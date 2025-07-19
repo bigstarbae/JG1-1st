@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>구속전류 감지 파라미터 마법사</title>
+  <meta charset="utf-8">
+  <style>
+    body {
+      font-family: 'Segoe UI', 'Malgun Gothic', Arial, sans-serif;
+      background: linear-gradient(120deg, #f4f8fb 70%, #dde8ef 100%);
+      margin: 0;
+      padding: 0;
+      overflow-y: auto; /* 기본 스크롤바는 브라우저가 관리하도록 auto로 설정 */
+    }
+    .wizard {
+      max-width: 1200px;  /* 너비 확장 */
+      margin: 3em auto;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 6px 22px rgba(25,55,90,0.11), 0 1.5px 7px rgba(25,55,90,0.08);
+      padding: 2.4em 2.3em 2em 2.3em;
+      border-left: 5px solid #41a1f6;
+      position: relative;
+      z-index: 2;
+    }
+    h2 {
+      color: #2684d9;
+      letter-spacing: -0.5px;
+      font-weight: bold;
+      margin-bottom: 0.45em;
+    }
+    .advice {
+      background: linear-gradient(97deg, #e4f2fc 60%, #d6eafd 100%);
+      color: #21597e;
+      border-left: 4px solid #41a1f6;
+      border-radius: 8px;
+      padding: 0.8em 1em 0.8em 1.2em; /* 수직 패딩 감소 */
+      font-size: 1.01em;
+      margin-bottom: 1.7em;
+      box-shadow: 0 0.5px 5px #d4e8f7;
+      width: 100%;
+      max-width: 100%;
+    }
+    .advice p { /* 가이드 텍스트의 줄 간격을 조절하기 위한 p 태그 스타일 추가 */
+      margin: 0.4em 0;
+      line-height: 1.4;
+    }
+    /* 개별 입력 필드 그룹 스타일 */
+    .input-group {
+      display: flex;
+      align-items: center; /* 수직 중앙 정렬 */
+      margin-top: 1.1em; /* 각 입력 줄 사이 간격 */
+      flex-wrap: wrap; /* 작은 화면에서 줄바꿈 허용 */
+    }
+    .input-group label {
+      flex-shrink: 0; /* 레이블이 줄어들지 않도록 고정 */
+      min-width: 235px; /* 레이블 너비 고정하여 정렬 유지 */
+      color: #234366;
+      font-weight: 500;
+      margin-top: 0; /* input-group에서 마진을 관리하므로 제거 */
+    }
+    input[type=number] {
+      width: 85px;
+      padding: 0.15em 0.6em;
+      margin-left: 0.5em;
+      border: 1px solid #cbe2f7;
+      border-radius: 7px;
+      font-size: 1.07em;
+      background: #fafdff;
+      box-shadow: 0 0.5px 1.5px #cbe2f7;
+      flex-shrink: 0; /* 입력 필드가 줄어들지 않도록 고정 */
+    }
+    .tip-text {
+      flex-grow: 1; /* 팁 텍스트가 남은 공간을 차지하도록 확장 */
+      margin-left: 1em; /* 입력 필드와 팁 사이 간격 */
+      font-size: 0.88em; /* 팁 텍스트 크기 조정 */
+      color: #555; /* 팁 텍스트 색상 조정 */
+      line-height: 1.3; /* 팁 텍스트 줄 간격 조정 */
+    }
+    .general-tip {
+      background: linear-gradient(97deg, #f0f8ff 60%, #e0f0ff 100%);
+      color: #336699;
+      border-left: 3px solid #66b2ff;
+      border-radius: 8px;
+      padding: 0.8em 1em;
+      font-size: 0.95em;
+      margin-top: 2em;
+      box-shadow: 0 0.5px 3px #cceeff;
+    }
+    .general-tip ul {
+      margin: 0.4em 0 0.4em 1.2em;
+      padding: 0;
+      list-style-type: disc;
+    }
+    .general-tip li {
+      margin-bottom: 0.2em;
+    }
+
+    .params {
+      margin-top: 2.2em;
+      background: linear-gradient(100deg,#fafdff 60%,#d8ecfa 120%);
+      padding: 0.5em 1em; /* 상하 패딩 감소 */
+      border-radius: 11px;
+      font-size: 1.07em; /* 기본 폰트 사이즈 유지 */
+      color: #115277; /* 기본 색상 유지 */
+      box-shadow: 0 2px 7px #e4eef9;
+      font-family: 'Consolas', 'Courier New', monospace;
+      border-left: 3px solid #41a1f6;
+      width: 100%; /* 너비 100%로 조정 */
+      max-width: 100%;
+      overflow-x: auto;
+      white-space: pre-wrap; /* 텍스트 줄바꿈 유지 */
+      text-align: left; /* 좌측 정렬 추가 */
+    }
+    /* #params span에 대한 스타일 추가 */
+    .params #params {
+      display: block; /* 블록 레벨 요소로 설정하여 좌측 정렬을 확실히 함 */
+      padding: 0;     /* 기본 패딩 제거 */
+      margin: 0;      /* 기본 마진 제거 */
+      text-align: left; /* 텍스트 정렬 명시 */
+    }
+    /* 추천 파라미터 제목 스타일 */
+    .params .params-title {
+      font-size: 0.95em; /* general-tip의 p 태그와 동일한 폰트 크기 */
+      color: #336699; /* general-tip의 p 태그와 동일한 색상 */
+      font-weight: bold;
+      margin-bottom: 0.2em; /* 아래 내용과의 간격 감소 */
+    }
+
+    button {
+      margin-top: 1.3em;
+      background: #41a1f6;
+      color: white;
+      border: none;
+      padding: 0.7em 2em;
+      font-size: 1.1em;
+      font-weight: bold;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px #bbe2fd;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #1d8eda;
+    }
+    .watermark {
+      position: fixed;
+      bottom: 11px;
+      right: 24px;
+      color: #b4d1ee;
+      font-size: 1.09em;
+      z-index: 3;
+      pointer-events: none;
+      letter-spacing: 2px;
+    }
+    @media (max-width: 1250px) { /* wizard max-width에 맞춰 미디어 쿼리 조정 */
+      .wizard { max-width: 99vw; }
+      .input-group { flex-direction: column; align-items: flex-start; } /* 작은 화면에서 수직 정렬 */
+      .input-group label { min-width: auto; margin-bottom: 0.2em; }
+      .input-group input[type=number] { margin-left: 0; width: calc(100% - 1em); }
+      .tip-text { margin-left: 0; margin-top: 0.5em; font-size: 0.9em; }
+    }
+  </style>
+</head>
+<body>
+<div class="wizard">
+  <h2>구속전류 감지 파라미터 마법사</h2>
+  <div class="advice">
+    <p><b>파라미터 입력 가이드:</b> 각 입력 필드 옆 설명을 참고하여 정확한 값을 입력하세요.</p>
+  </div>
+  
+  <div class="input-group">
+    <label for="avgCurrent">주행구간 평균 전류(A):</label>
+    <input type="number" step="0.1" id="avgCurrent" value="5.0">
+    <span class="tip-text">초기 구동 후 안정 구간 평균</span>
+  </div>
+  <div class="input-group">
+    <label for="earlyMax">기동 피크 전류(A):</label>
+    <input type="number" step="0.1" id="earlyMax" value="7.5">
+    <span class="tip-text">시동 직후 1초 내 최고값</span>
+  </div>
+  <div class="input-group">
+    <label for="lockMax">구속 피크 전류(A):</label>
+    <input type="number" step="0.1" id="lockMax" value="8.0">
+    <span class="tip-text">종단 도달 후 최고값 (구속 직후 0.3~0.5초 내)</span>
+  </div>
+  <div class="input-group">
+    <label for="maxRisePerc">초기 최대값 대비 상승률(%):</label>
+    <input type="number" step="0.01" id="maxRisePerc" value="0.6">
+    <span class="tip-text">기동 피크 대비 구속 피크의 상대적 상승률 (권장: 0.1 ~ 0.8)</span>
+  </div>
+  <div class="input-group">
+    <label for="holdMs">구속구간 지속 시간(ms):</label>
+    <input type="number" step="10" id="holdMs" value="100">
+    <span class="tip-text">구속 피크 유지 시간 (권장 80~150ms)</span>
+  </div>
+  <div class="input-group">
+    <label for="earlyWin">기동(초기) 구간 제외(ms):</label>
+    <input type="number" step="100" id="earlyWin" value="1000">
+    <span class="tip-text">모터 구동 후 감지 제외 시간 (보통 800~1200ms)</span>
+  </div>
+
+  <div class="general-tip">
+    <p><b>실전 TIP:</b></p>
+    <ul>
+      <li>레일 부하로 전류 서서히 상승 시, 구속 직전 0.5~1초 평균을 "주행 전류"로 입력하세요.</li>
+      <li>구속구간 전류 천천히 상승 시, "구속 피크"와 "지속시간"을 별도 입력하세요.</li>
+      <li>값 애매 시, 여러 샘플 최소/최대값 비교.</li>
+      <li>노이즈/이상값 무시, 전체 흐름 기준 입력.</li>
+    </ul>
+  </div>
+
+  <div class="params">
+    <p class="params-title"><b>추천 파라미터 (Delphi 코드):</b></p>
+    <span id="params"></span> <!-- span 태그 부활 -->
+  </div>
+  <button onclick="copyResult()">델파이 코드 복사</button>
+</div>
+<div class="watermark">MARU DELPHI WIZARD</div>
+<script>
+function calcParams() {
+  var avg = parseFloat(document.getElementById('avgCurrent').value);
+  var early = parseFloat(document.getElementById('earlyMax').value);
+  var lock = parseFloat(document.getElementById('lockMax').value);
+  var maxRisePercInput = parseFloat(document.getElementById('maxRisePerc').value); // MaxRisePerc 입력값
+  var hold = parseInt(document.getElementById('holdMs').value);
+  var earlyWin = parseInt(document.getElementById('earlyWin').value);
+
+  // 추천 알고리즘 (실전 기준)
+  var absOverload = Math.max(lock - 0.3, avg * 1.5);           // 구속피크-0.3, 또는 평균x1.5
+  var relRise = ((lock / avg) - 1).toFixed(2);                 // (구속피크-평균)/평균
+  var didtThres = ((lock - avg) / hold * 0.8).toFixed(2);      // dI/dt 임계, 보수적 계수 적용
+
+  // FMaxRisePerc 계산 (기동 피크 대비 구속 피크의 상대적 상승률)
+  var calculatedMaxRisePerc;
+  if (early > 0) {
+    calculatedMaxRisePerc = ((lock / early) - 1);
+    // 기본값 0.6과 계산된 값 중 적절한 것을 선택하거나, 입력값을 우선
+    calculatedMaxRisePerc = Math.max(0.1, Math.min(0.8, calculatedMaxRisePerc)); // 합리적인 범위로 제한
+  } else {
+    calculatedMaxRisePerc = 0.6; // early가 0이면 기본값 사용
+  }
+  // 사용자가 입력한 값이 있다면 그 값을 우선적으로 사용
+  var finalMaxRisePerc = isNaN(maxRisePercInput) ? calculatedMaxRisePerc.toFixed(2) : maxRisePercInput.toFixed(2);
+
+
+  var paramText = "";
+  paramText += "MyMotorGuard.AbsOverload := " + absOverload.toFixed(2) + ";\n";
+  paramText += "MyMotorGuard.RelRisePerc := " + relRise + ";\n";
+  paramText += "MyMotorGuard.MaxRisePerc := " + finalMaxRisePerc + ";\n"; // MaxRisePerc 추가
+  paramText += "MyMotorGuard.HoldTimeMs := " + hold + ";\n";
+  paramText += "MyMotorGuard.EarlyWindowMs := " + earlyWin + ";\n";
+  paramText += "MyMotorGuard.DIdtThreshold := " + didtThres + ";";
+
+  // span 태그에 결과 코드를 표시
+  document.getElementById('params').innerText = paramText;
+}
+function copyResult() {
+  // span 태그의 텍스트를 복사
+  var resultText = document.getElementById('params').innerText;
+  var tempInput = document.createElement('textarea');
+  tempInput.value = resultText;
+  document.body.appendChild(tempInput);
+  tempInput.select();
+  document.execCommand('copy');
+  document.body.removeChild(tempInput);
+
+  var messageBox = document.createElement('div');
+  messageBox.innerText = "복사되었습니다!";
+  messageBox.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #4CAF50; color: white; padding: 15px 20px; border-radius: 8px; z-index: 1000; opacity: 0; transition: opacity 0.5s;";
+  document.body.appendChild(messageBox);
+
+  setTimeout(function() {
+    messageBox.style.opacity = 1;
+  }, 10);
+
+  setTimeout(function() {
+    messageBox.style.opacity = 0;
+    messageBox.addEventListener('transitionend', function() {
+      messageBox.remove();
+    }, {once: true});
+  }, 1500);
+}
+['avgCurrent','earlyMax','lockMax','maxRisePerc','holdMs','earlyWin'].forEach(function(id){
+  document.getElementById(id).oninput = calcParams;
+});
+calcParams();
+</script>
+</body>
+</html>

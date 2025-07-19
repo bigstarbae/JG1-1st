@@ -1,0 +1,51 @@
+unit MotorLIDConfig;
+
+interface
+
+uses
+    SeatMotorType, ModelType;
+
+type
+    TMotorLIDMap = array[TMotorORD] of WORD;
+
+    TMotorLIDConfig = record
+        LIDMap: TMotorLIDMap;
+
+        procedure Create;
+    end;
+
+implementation
+
+const
+    // 차종별 LID 맵 (rtJG1, rtRJ1, rtHI 순서)
+    MOTOR_LID_CONFIGS: array[TCarType] of TMotorLIDMap =((  // rtJG1
+        $11,  // tmSlide
+        $15,  // tmTilt
+        $17,  // tmHeight
+        $1B,  // tmLegSupt
+        $5B   // tmSwivel
+        ),(  // rtRJ1
+        $01,  // tmSlide
+        $05,  // tmTilt
+        $07,  // tmHeight
+        $0B,  // tmLegSupt
+        $0F   // tmSwivel
+        ),(  // rtHI
+        $21,  // tmSlide
+        $25,  // tmTilt
+        $27,  // tmHeight
+        $2B,  // tmLegSupt
+        $2F   // tmSwivel
+        ));
+
+
+
+{ TMotorLIDConfig }
+
+procedure TMotorLIDConfig.Create;
+begin
+
+end;
+
+end.
+

@@ -1,0 +1,361 @@
+unit UDSDef;
+
+interface
+
+uses
+    SeatType, SeatMoveCtrler, SeatMotorType;
+
+const
+
+{
+
+
+--------------------------------------------------------
+    UDS 개념: Limit, Pos, 모터 작동 공용 진단 명령들
+--------------------------------------------------------
+Ex> req command : http://hoyoung2.blogspot.com/2013/11/can-protocols.html
+    ISO 15765-2 : VectorDiagnosticsSeminar.pdf 참조
+
+0. 프레임 종류
+  - 짧은 메시지 : SF(Single Frame) :
+  - 긴 메시지   : FF(First Frame) 이후 CF(Consecutive Frame)  : CAN Multi Frame
+
+
+1. 진단 항목 : PSM (Power Seat Module)
+  - CAN MSG ID (차종별, 전/후석 별로 다름)
+    . REQ : 0x706,	.
+    . RESP : 0x726
+
+    # 응답시 명령 Type 판별
+    - PCI(Protocol Control Information) bits : 선두 1Byte의 7~4bit로  Frame Type을 구별,
+        0:  single (4bit) + data length(4bit)
+        1: first frame(4bit), + data length(4bit + 8bit)
+        2: consecutive frame(4bit) + sequence number(4bit)
+        3: flow control frame(4bit)  + flow state(4bit)
+
+
+2. 위치 읽기(RDBI: Read Data By ID) : Req ID 0x22, Resp 0x62
+ - REQ  : 706 : 04 22 B4 02 00 00 00 00     // SF:
+ - RES  : 726 : 10 0E 62 B4 02 F0 00 00 	// FF: 1, 2번째 Byte에 거친 12bit 0x00E가 길이 , 3번째 0x62 읽기 응답(Positive Response Message ID)  FF
+ - REQ 	: 706 : 30 08 08 AA AA AA AA AA 	// FC: Flow Ctrl 전송
+ - RES  : 726 : 21 00 xx yy zz 00 00 00     // CF: 응답 두개가 함께 날라옴($21, $22로 판별)
+          726 : 22 00 00 00 00 00 00 00 00         `
+
+3. LIMIT 관련 읽기 (RC: Routine Control)  : Req ID 0x31, Resp 0x71
+ - REQ : 706 : 05 31 02 12 A3 00 00 00		// SF:3번째 바이트 :  01: 쓰기, 02 : 삭제, 	03 : 상태 읽기기; 4,5바이트: RC ID, 6 바이트 :옵션
+ - RES : 726 : 10 08 71 02 12 A3 01 01		// FF:2번재 0x08: 다음 프레임 포함 데이터 길이, 3번째 0x71(Positive Response Message ID) : LIMIT 응답, 7번째 슬라이드 8번째 리클라이너(사용안 함)
+ - REQ : 706 : 30 08 08 AA AA AA AA AA		// FC:
+ - RES : 726 : 21 01 01 00 00 00 00 00		// CF:2번째 틸트, 3번째 하이트
+
+
+4. 모터 제어 (IOCBI : Input output Control By Local ID of DPSU, APSU)
+   706 :05 2F B4 01 03 00 00 00 -> SLIDE START
+   706 :05 2F B4 01 00 00 00 00 -> SLIDE STOP
+        |  |  |     |
+        |  |  |     START, STOP = 00
+        |  |  B4 PSM DID, 01 모터 지정.
+        |  IO 제어명령의 ID.
+        유효개수로 2F 부터 03 (START/STOP) 까지 5개.
+
+
+--------------------------------------------------------
+    용어정리:
+--------------------------------------------------------
+    IBU: Integrated Body Unit
+    PSM: Power Seat Module
+    CGW : Central Gateway
+    SJB : Smart Junction Box
+    BCM : Body Control Module
+    RDBI : Read Data By Id
+    IOCBI : Input Output Control By Identifier
+    RC: Routine Control
+
+
+    // DBC 맵 엑셀시트
+    DPSS: Driver Power Seat Switch, 운전석 모터 작동(전,후진) 관련
+    DPSU: Driver Power Seat Unit, 운전석 히터, 통풍 전장 관련
+
+    APSS: Assist Power Seat Switch, 조수석 모터 작동 관련
+    APSU:  Assist Power Seat Unit, 조수석 히터, 통풍 전장 관련
+    ALU: Assist Lumbar Unit
+    RLHVU/RLHU : Rear LH Heater + Ventilation Unit / Rear LH Heater Unit
+    RRHVU/RRHU : Rear RH Heater + Ventilation Unit / Rear RH Heater Unit
+    RRPSU : Rear RH Power Seat Unit
+    RARS : Rear ArmRest Switch
+
+
+    // CAN MSG/DATA ID
+    SID = Service ID
+    LID = Local ID
+    DID = Data ID
+
+}
+    //-------------------------------------
+    // CAN MSG ID
+    //-------------------------------------
+
+    // 2세대 CAN
+    _UDS_MSG_2GEN_TAGET_PSM_ID = $706;  //BCM -> PSM 으로 전송하는 ID
+    _UDS_MSG_2GEN_RESP_PSM_ID = $726;  //응답 ID.
+
+    _UDS_MSG_2GEN_TAGET_APSM_ID = $709;
+    _UDS_MSG_2GEN_RESP_APSM_ID = $729;
+
+
+    // 3세대 CAN
+    _UDS_MSG_3GEN_TAGET_PSM_ID = $7A3;  //BCM -> PSM 으로 전송하는 ID
+    _UDS_MSG_3GEN_RESP_PSM_ID = $7AB;  //응답 ID.
+
+    _UDS_MSG_3GEN_TAGET_APSM_ID = $797;  //BCM -> PSM 으로 전송하는 ID
+    _UDS_MSG_3GEN_RESP_APSM_ID = $79F;  //응답 ID.
+
+
+    // 2열
+
+    // 2열 히터/밴트 ECU
+    _UDS_RG3_RL_CCSM_REQ_PE_ID = $712;
+    _UDS_RG3_RL_CCSM_RES_PE_ID = $71A;
+    //-- RG3 CCSM RR
+    _UDS_RG3_RR_CCSM_REQ_ID = $707;
+    _UDS_RG3_RR_CCSM_RES_ID = $70F;
+
+
+    // IO CTRL : 모터 작동 CMD
+    _UDS_IOCBI_REQ_SID = $2F;           // Request Service ID
+    _UDS_IOCBI_RESP_SID = $6F;
+    _UDS_IOCBI_START = $03;
+    _UDS_IOCBI_STOP = $00;
+    //----------
+    // Ex> 모터 위치 확인
+    //----------
+    // 706 04 22 B4 02 00 00 00 00
+    //     |  |  B4 PSM DID, 02 모터 위치 요구.
+    //     |  명령의 ID.
+    //     유효개수로 22 부터  4개.
+    // 응답
+    // 726 10 XX 62 B4 02 F0 00 00
+    //            |
+    //            위치 요청에 대한 응답 이 응답이 오면 확장 명령을 전송.
+    // 확장명령 전송하면 다음과 같이 2개가 수신됨.
+    // 726 21 00 xx yy zz 00 00 00
+    // 726 22 00 00 00 00 00 00 00
+    // xx -> Lift R, yy -> Lift F, zz -> SLIDE.
+    // SLIDE 만 확인했는데 최전방과 최후방(리미트 설정상태) 약 112 차이가 남.
+
+
+    //-------------------------------------
+    // 위치 읽기 관련
+    // RDBI : Read Data By ID
+    _UDS_RDBI_DID_DRV = $B4;         // 1열: LHD:$B4,  RH:$B7     2열: RL:$BA, RR:$BB
+    _UDS_RDBI_DID_PSG = $B7;
+    _UDS_RDBI_DID_RL = $BA;          // 2열
+    _UDS_RDBI_DID_RR = $BB;
+
+    // CMD
+    _UDS_RDBI_REQ_SID = $22;
+    _UDS_RDBI_RESP_SID = $62;
+    _UDS_RDBI_EASY_ACCESS = $01;
+    _UDS_RDBI_POSITION = $02;
+
+    //-------------------------------------
+    //LIMIT 관련
+    //Routine Control   : 원격 작동
+    _UDS_RC_REQ_SID = $31;
+    _UDS_RC_RESP_SID = $71;
+
+    // RC TYPE (Limit)
+    // Limit CMD
+    _UDS_RC_SET = $01;
+    _UDS_RC_CLEAR = $02;
+    _UDS_RC_GET = $03;
+    _UDS_RC_OP_ALL_LMT_CLEAR = $80;
+    _UDS_RC_OP_REQ_ENABLE = $F0;
+
+    // 운전, 조수, 2열 구분
+    _UDS_RC_DID_DRV = $12A3;
+    _UDS_RC_DID_HI = $12;
+    _UDS_RC_DID_LO = $A3;          // 운전/조수석, 차종마다 달라짐.
+
+    _UDS_RC_DID_PSG = $12A5;
+    _UDS_RC_DID_HI_PSG = $12;
+    _UDS_RC_DID_LO_PSG = $A5;
+    _UDS_RC_DID_LO_RL = $A6;           // 2열
+    _UDS_RC_DID_LO_RR = $A7;
+
+
+    // RC OPTION
+    _UDS_RC_OP_ALL = $00;
+    _UDS_RC_OP_SLIDE = $01;
+    _UDS_RC_OP_LiftF = $03;
+    _UDS_RC_OP_LiftR = $04;
+    _UDS_RC_OP_CUSH_EXT = $06;
+
+
+    //  LIMIT 상태
+    _UDS_RC_LIMIT_NO = $01;
+    _UDS_RC_LIMIT_OK = $02;
+    _UDS_RC_LIMIT_DO = $11;
+    _UDS_NAK_RESP = $7F;
+    _UDS_REQ_FC_DATA: array[0..7] of BYTE = ($30, $08, $08, $AA, $AA, $AA, $AA, $AA);
+    _UDS_REQ_CF_RESP = $21;
+    _UDS_REQ_CF_RESP2 = $22;
+
+    //-------------------------------------
+    // MEMORY
+    _DDM_MEM_ID = $121;          // 시그널명: C_DrvIMSSW1, C_DrvIMSSW2, C_DrvIMSSWSet
+    _DDM_MEM_ID2 = $402;          // 시그널명: IMS_DrvrImsSw1Sta, IMS_DrvrImsSw2Sta, IMS_DrvrImsSwSet
+
+    _DDM_MEM_ENABLE1 = $80 or $40;    //ENABLE = $80
+    _DDM_MEM_ENABLE2 = $80 or $20;
+    _DDM_MEM_PLAY1 = $80 or $10;
+    _DDM_MEM_PLAY2 = $80 or $08;
+
+
+
+    //-------------------------------------
+    // Easy Access / 이그니션 관련
+    // 아래 CanMsg ID는 차종마다 달라지고 프레임 위치/내역 또한 달라지니 참조만 하고, 상속받은 클래스에 개별 구현할 것!
+
+
+    // CAN ID
+    _KEY_LESS_BCM_ID = $168;
+    _C_IGNSW_BCM_ID = $3E0;
+    //_C_IGNSW_BCM_ID       = $100 ;
+    _KEY_LESS_BCM_ID2 = $411;       // 고급차량 추세 ID
+
+    _C_VehicSpd_ID = $510;
+    _C_DE_VehicSpd_ID = $589;
+    _C_Auth_ID = $111;
+
+
+    //
+    _KEY_LESS_DE_DR_OPEN = $20;
+    _KEY_LESS_DR_OPEN = $10;
+    _KEY_LESS_DR_CLOSE = $00;
+
+
+    //KeyOFF
+    _C_IGNSW_KEYOFF = $00; //4th BYTE
+    _C_IGNSW_KEYIN = $18;
+    _CIGNSW1_KEYOFF = $00;
+    _CIGNSW1_KEYIN = $80;
+    _CIGNSW2_KEYOFF = $00;
+    _CIGNSW2_KEYIN = $40;
+
+    //
+    _C_P_POS_ON = $04; //6th BYTE
+
+    //
+    _C_AuthState = $40;
+
+    //
+
+type
+    TUDSIDSet = record
+        ReqID: Cardinal;
+        RespID: Cardinal;
+    end;
+
+const
+    UDS_ID_CONFIG: array[TCAR_TYPE, Boolean] of TUDSIDSet =
+    (
+    // rtJG1
+        (
+      // 조수석 (False)
+            (
+            ReqID: _UDS_MSG_3GEN_TAGET_APSM_ID;
+            RespID: _UDS_MSG_3GEN_RESP_APSM_ID;
+            ),
+            // 운전석 (True)
+            (
+            ReqID: _UDS_MSG_3GEN_TAGET_PSM_ID;
+            RespID: _UDS_MSG_3GEN_RESP_PSM_ID;
+            )
+        ),
+    // rtRJ1
+        (
+            // 조수석 (False)
+            (
+            ReqID: _UDS_MSG_2GEN_TAGET_APSM_ID;
+            RespID: _UDS_MSG_2GEN_RESP_APSM_ID;
+            ),
+            // 운전석 (True)
+            (
+            ReqID: _UDS_MSG_2GEN_TAGET_PSM_ID;
+            RespID: _UDS_MSG_2GEN_RESP_PSM_ID;
+            )
+        ),
+         // rtHI
+        (
+            // 조수석 (False)
+            (
+            ReqID: _UDS_MSG_2GEN_TARGET_APSM_ID;
+            RespID: _UDS_MSG_2GEN_RESP_APSM_ID;
+            ),
+            // 운전석 (True)
+            (
+            ReqID: _UDS_MSG_2GEN_TARGET_PSM_ID;
+            RespID: _UDS_MSG_2GEN_RESP_PSM_ID;
+            )
+        ),
+        // SPARE1
+        (
+            // 조수석 (False)
+            (
+            ReqID: _UDS_MSG_2GEN_TARGET_APSM_ID;
+            RespID: _UDS_MSG_2GEN_RESP_APSM_ID;
+            ),
+            // 운전석 (True)
+            (
+            ReqID: _UDS_MSG_2GEN_TARGET_PSM_ID;
+            RespID: _UDS_MSG_2GEN_RESP_PSM_ID;
+            )
+        ),
+        // SPARE2
+        (
+            // 조수석 (False)
+            (
+            ReqID: _UDS_MSG_2GEN_TARGET_APSM_ID;
+            RespID: _UDS_MSG_2GEN_RESP_APSM_ID;
+            ),
+            // 운전석 (True)
+            (
+            ReqID: _UDS_MSG_2GEN_TARGET_PSM_ID;
+            RespID: _UDS_MSG_2GEN_RESP_PSM_ID;
+            )
+        )
+    );
+
+    // JG1 차종용 모터 ID 맵
+  JG1_UDS_LID_MAP: TMotorLIDMap = (
+    $43,      // tmSlide
+    $45,      // tmTiltmoRecline (또는 두 번째 모터)
+    $47,      // tmHeightmoTilt
+    $4D,      // tmLegSupt
+    $5B      // tnSwivel
+  );
+
+  // HI/RJ1 차종용 모터 ID 맵 (IMS 사용)
+  HI_RJ1_IMS_UDS_LID_MAP: TMotorLIDMap = (
+    $01,      // tmSlide
+    $05,      // tmTiltmoRecline (또는 두 번째 모터)
+    $07,      // tmHeightmoTilt
+    $0B,      // tmLegSupt
+    $00      // tnSwivel
+  );
+
+  // HI/RJ1 차종용 모터 ID 맵 (IMS 미사용)
+  RJ1_EMC_MOTOR_LID_MAP: TMotorLIDMap = (
+    $11,
+    $15,
+    $17,
+    $1B,
+    $00
+  );
+
+
+
+implementation
+
+end.
+

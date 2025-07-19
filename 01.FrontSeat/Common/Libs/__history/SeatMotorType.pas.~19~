@@ -1,0 +1,56 @@
+{
+    // 프로젝트 종속, 1열 백프레임 맞춤
+}
+unit SeatMotorType;
+
+interface
+
+
+type
+
+    TMotorORD = (tmSlide, tmTilt, tmHeight, tmCushOrLeg, tmSWIVEL, tmSP1);  // tmBolster는 Bolseter 혹은 메카 업/다운 , tmSP1은 키워드 유지 필수
+    TMotorWayORD = (twForw, twBack);    // 점진적 삭제
+    TMotorDir = TMotorWayOrd;
+    TMemoryORD = (meMEM1, meMEM2, meKEY_ON, meKEY_OFF);
+    TSeatMotorTestStatus =
+        (msStart, msStop, msLimitReaded, msTestEnd, msError, msBurnishCycle, msLimitSetStart,msSlideLimitStart,
+        msTiltLimitStart, msHeightLimitStart, msCushExtStart, mReclLimitStart, msBurnishStart, msBurnishStop);
+        // 전/후진 시작, 전/후진 정지, 리미트상태 읽기 시작/완료,  시험완료, 에러발생, 버니싱 1회 주기 완료, 리미트 설정 완료
+
+    // 진동검사
+    TVbStatus = (vbERROR, vbNONE, vbREADY, vbRESET, vbSTART, vbTESTER, vbRUN, vbsndSTOP, vbSTOP, vbReqRST, vbEND);
+    TVbObject = (voMAIN, voSLIDE, voLiftF, voLiftR, voCushExt);
+
+
+    function MtrOrdHi: TMotorOrd;                       // 필수 구현 체크!!!
+    function GetMotorName(aMotor: TMotorORD): string;
+
+
+
+const
+    _MOTOR_ID_STR: array[TMotorOrd] of string = ('Slide', 'Height', 'Tilt', 'CushOrLeg', 'Swivel', 'Spare1');         // DataUnitHelper용도 etc...
+    _MOTOR_DIR_STR: array[TMotorDir] of string = ('Fw', 'Bw');
+
+
+implementation
+uses
+    LangTran;
+
+function MtrOrdHi: TMotorOrd;
+begin
+    Result := tmSWIVEL;       // Project 종속! 주의!!
+end;
+
+
+
+function GetMotorName(aMotor: TMotorORD): string;
+begin
+    case aMotor of
+        tmSlide:
+            Result := 'Slide';
+    end;
+end;
+
+
+
+end.

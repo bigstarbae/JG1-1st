@@ -1,0 +1,1771 @@
+
+{
+    Ver.250617.00
+
+  ------------------------------------------------------------
+  - 기능 :
+
+  # 기본 시험 동작
+  - 단(STEP)설정 및 단 증감 방향
+  - 순차 / 동시 시험
+  - 블로워 시험
+  - ECU-팬 케이블 연결 유무  시험 : 15초 후 LED OFF시 미연결 : 19.07.13
+
+  - BackFrame 전류 스펙, 판정 추가 중..: 20.11.13
+
+
+
+}
+unit HVTester;
+
+interface
+
+uses
+    BaseAD, BaseFSM, TimeChecker, Range, Generics.Collections, Generics.Defaults;
+
+const
+    MAX_HV_ITEM_COUNT = 4;
+
+type
+    // -------------------------------------------------------------------------------------
+    THVDevType = (hvdHeatDrv, hvdHeatPsg, hvdVentDrv, hvdVentPsg);
+
+    THVTestType = (hvtHeat, hvtVent);
+
+    THVPosType = (hvpDrv, hvpPsg);
+
+    THVTestStatus = (hvsTesterStart, hvsTestStart, hvsStepStart, hvsLedReaded, hvsStepEnd, hvsFanChkStart, hvsFanChkEnd, hvsTestEnd, hvsTesterEnd);
+
+    THVTest = class;
+
+    THVBaseBlowerTest = class;
+
+    THVReadingEvent = procedure(Sender: THVTest) of object;
+
+    THVStatusEvent = procedure(Sender: THVTest; TestStatus: THVTestStatus) of object;
+
+    THVDecFunc = function(IsCurrOk: Boolean): Boolean of object;
+
+    TCurrList = TList<Double>;
+
+
+
+    THVMatrix<T> = record
+    private
+        mData: array[THVPosType, THVTestType] of T;
+        mDefaultValue: T;
+
+        function GetItem(APos: THVPosType; ATestType: THVTestType): T;
+        procedure SetItem(APos: THVPosType; ATestType: THVTestType; const Value: T);
+        class function AreEqual(const Value1, Value2: T): Boolean; static;
+    public
+        constructor Create(const ADefaultValue: T);
+
+        procedure Clear(UseDefVal: Boolean);
+        function IsEmpty: Boolean;
+
+        property Items[APos: THVPosType; ADev: THVTestType]: T read GetItem write SetItem; default;
+
+    end;
+
+    // -------------------------------------------------------------------------------------
+    // 전류 취급자
+    THVCurr = class
+    private
+        mSpec: TRange;
+        mRunOut: TRange;
+
+        mList: TCurrList;
+        function GetAvg: Double;
+        function GetMax: Double;
+        function GetMin: Double;
+    public
+        constructor Create(Spec: TRange);
+        destructor Destroy; override;
+
+        procedure Clear;
+
+        function FSMSet(Val: Double; msec: Integer): Integer;   // msec시간 동안 누적해서 Avg
+
+
+        property Min: Double read GetMin;
+        property Max: Double read GetMax;
+        property Avg: Double read GetAvg;
+        property Spec: TRange read mSpec write mSpec;
+
+    end;
+
+    // -------------------------------------------------------------------------------------
+    // 실제 기기 작동용 추상 클래스
+
+    TBaseHVCtrler = class(TBaseFSM)
+    protected
+        mHVTest: THVTest;
+
+        mAD: TBaseAD;
+        mAICurrCh: Integer;
+    public
+        destructor Destroy; override;
+
+        function Init: Boolean; virtual;
+
+        procedure SetZero; virtual;
+        procedure ResetZero; virtual;
+
+        function SetIgn2(IsOn: Boolean): Boolean; virtual;          // CAN Type인 경우 필요함.
+
+        function SwOn(CurStep: Integer = 0): Boolean; virtual; abstract;
+        function SwOff(CurStep: Integer = 0): Boolean; virtual; abstract;
+
+        function GetLedData: BYTE; virtual; abstract;
+        function GetCurr: Double; virtual;
+
+        function GetDOSwVal: Boolean; virtual;
+        function GetStateStr: string; virtual;
+
+        function IsSwType: Boolean; virtual; abstract;          // ON -> OFF 스위치 형식인가?
+
+    end;
+
+    // -------------------------------------------------------------------------------------
+    THVTester = class(TBaseFSM)
+    private
+        function GetOnStatus: THVStatusEvent;
+        procedure SetOnStatus(HVStatus: THVStatusEvent);
+
+        procedure SetTotStep(TotStep: Integer);
+        procedure SetCurrRStep(CurrRStep: Integer);
+
+        procedure InternalInit(CurrRStep, TotStep: Integer);
+        function Init: Boolean;
+
+    protected
+        mIsSeqTest: Boolean;
+
+        mTC: TTimeChecker;
+
+        mHDrvTest, mHPsgTest, mVDrvTest, mVPsgTest: THVTest;
+        mHVTests: array[THVDevType] of THVTest;
+
+        mHVSeqTests, mDrvTests, mPsgTests: TCompoFSM;
+
+        mBlowerTest: THVBaseBlowerTest;
+
+        mHOnCurrSpec, mHOffCurrSpec, mHOnBkCurrSpec,           // 백전류 판정
+        mVOnCurrSpec, mVOffCurrSpec, mVOnBkCurrSpec: TRange;
+
+        mIsRevTest: Boolean; // 3단 -> 2단 -> 1단 -> 0단
+
+        mFSMRet2, mLocalState1, mLocalState2: Integer;
+
+        mCurrRStep, mTotStep: Integer;
+
+        mIsFanChkOK: Boolean;
+        mUseIgn2: Boolean;
+
+        mStepDelaySec: Double;          // 단 전환시 Delay
+        mTaskSwDelaySec: Double;           // 동시 검사시 운전/조수 전환(Switching) Delay
+
+        mBinaryLedType: Boolean;        // 2진연산 Led Step
+
+        function GetHVTest(Idx: THVDevType): THVTest;
+
+        function IsInOnCurrSpec(TestType: THVTestType; Curr: Double): Boolean;
+        function IsInOffCurrSpec(TestType: THVTestType; Curr: Double): Boolean;
+
+    public
+        mBeforeStartSec: Double;
+
+        property HDrvTest: THVTest read mHDrvTest;
+        property HPsgTest: THVTest read mHPsgTest;
+        property VDrvTest: THVTest read mVDrvTest;
+        property VPsgTest: THVTest read mVPsgTest;
+        property BlowerTest: THVBaseBlowerTest read mBlowerTest;
+
+        property HVTests[Idx: THVDevType]: THVTest read GetHVTest;
+        property OnStatus: THVStatusEvent read GetOnStatus write SetOnStatus;
+
+        property IsSeqTest: Boolean read mIsSeqTest write mIsSeqTest;
+        property IsRevTest: Boolean read mIsRevTest write mIsRevTest;
+
+        property TotStep: Integer read mTotStep write SetTotStep;
+        property CurrRStep: Integer read mCurrRStep write SetCurrRStep;
+
+        property IsFanChkOK: Boolean read mIsFanChkOK;
+
+        ///
+        constructor Create(CurrRStep: Integer = 3; TotStep: Integer = 3; IsRevTest: Boolean = true); overload;
+
+        constructor Create(BlowerTest: THVBaseBlowerTest; CurrRStep: Integer = 3; TotStep: Integer = 3; IsRevTest: Boolean = true); overload;
+        constructor Create(BlowerTest: THVBaseBlowerTest; HDrvTest, VDrvTest, HPsgTest, VPsgTest: THVTest; IsRevTest: Boolean = true); overload;
+        destructor Destroy; override;
+
+        procedure ClearFSM; override;
+
+        procedure FSMStart; override;
+        procedure FSMStop; override;
+
+        procedure ClearIO;
+        procedure SetZero;
+        procedure ResetZero;
+
+        // 시간 설정
+        procedure SetTestTime(OnSec, ReadSec, BlowerOnSec: Double);
+
+        // 전류 Spec
+        procedure SetHCurrRange(OnSpec: TRange; OffMax: Double);
+        procedure SetVCurrRange(OnSpec: TRange; OffMax: Double);
+
+        function FSMIRun(): Integer; override;
+
+        function SetIgn2(IsOn: Boolean): Boolean;
+
+        property StepDelaySec: Double read mStepDelaySec write mStepDelaySec;
+        property TaskSwDelaySec: Double read mTaskSwDelaySec write mTaskSwDelaySec;
+        property UseIgn2: Boolean read mUseIgn2 write mUseIgn2;
+
+        property BinaryLedType: Boolean read mBinaryLedType write mBinaryLedType;
+    end;
+
+    // -------------------------------------------------------------------------------------
+
+    THVTest = class(TBaseFSM)
+    protected
+        mAutoFree: Boolean;
+
+        mHVTester: THVTester;
+
+        mPosType: THVPosType;
+        mTestType: THVTestType;
+
+        mUse: Boolean;
+
+        mCurStep, mTotStep, mCurrRStep: Integer; // 전류 읽어야할 단(Step)
+
+        mLedData: BYTE;
+
+        mOnCurrList: TCurrList; // On전류 평균용 버퍼
+
+        mCurCurr, mMinCurr, mMaxCurr, // Step별 최대 전류
+        mOnCurr, mOffCurr: Double; // 판정용 전류
+
+        mCurrRO: TRange;            // 특정 시간 간격내 전류 RunOut
+
+        mOnSec, mReadSec: Double;
+        mNoOnDelay: Boolean;
+
+        mLclTC, mTC: TTimeChecker;
+        mCtrler: TBaseHVCtrler;
+        mCtrlerAutoFree: Boolean;
+
+        mDecFunc: THVDecFunc;
+        mUseInTimeDec: Boolean;
+
+        mUseCurrTest: Boolean; // 전류검사 사용 유무
+        mIsRetest: Boolean; // 재시험 여부
+
+        mOnStatus: THVStatusEvent;
+        mOnReading: THVReadingEvent;
+
+        mRetryCnt: Integer;
+        mSubRptCnt: Integer;            // FSMGotoStep 사용
+
+    private
+        procedure SetTotStep(TotStep: Integer);
+        procedure SetCtrler(Ctrler: TBaseHVCtrler);
+
+        function IsLedDataForStep(Step: Integer): Boolean; // Step에 맞는 LED Data인가 ex) Step: 3 -> Led Data(Bit): 0x7, mBinaryLedType: 0x03
+        function GetStartStep: Integer;
+        function InstDecFunc(IsCurrOk: Boolean): Boolean;
+        function InTimeDecFunc(IsCurrOk: Boolean): Boolean;
+        function LedOnlyDecFunc(IsCurrOk: Boolean): Boolean; // 무조건 true, 전류 없이 LED 조건만 볼때
+        function FSMReadUntilCurrInSpec: Integer;
+
+        function FSMGotoStep(TarStep: Integer): Integer;   // 특정 단(Stop)으로 변경
+
+        function GetDevType: THVDevType;
+        function GetIsRevTest: Boolean;
+
+    public
+        constructor Create(Parent: THVTester; TestType: THVTestType; PosType: THVPosType; AutoFree: Boolean = true);
+        destructor Destroy; override;
+
+        procedure Init;
+
+        procedure FSMStart; override;
+
+        procedure ClearFSM; override;
+
+        function IsStart(): Boolean;
+        function IsEnd(): Boolean;
+        function IsCurrRStep(): Boolean;
+
+        function GetCurLedData: BYTE;
+        function GetCurr: Double; virtual;
+
+        function SwOn(CurStep: Integer = 0): Boolean;
+        function SwOff(CurStep: Integer = 0): Boolean;
+
+        function SetIgn2(IsOn: Boolean): Boolean; virtual;          // CAN Type인 경우 필요함.
+
+        function FSMRunStep(Step: Integer = -1): Integer; virtual;
+        function FSMIRun: Integer; override;
+
+        procedure ClearIO; virtual;
+        procedure SetZero; virtual;
+        procedure ResetZero; virtual;
+
+        //
+        property Use: Boolean read mUse write mUse;
+        property UseCurrTest: Boolean read mUseCurrTest write mUseCurrTest;
+
+        property IsRetest: Boolean read mIsRetest write mIsRetest;
+        property AutoFree: Boolean read mAutoFree;
+        property IsRevTest: Boolean read GetIsRevTest;
+
+        property DevType: THVDevType read GetDevType;
+        property PosType: THVPosType read mPosType;
+        property TestType: THVTestType read mTestType;
+
+        property CurStep: Integer read mCurStep;
+        property TotStep: Integer read mTotStep write SetTotStep;
+        property CurrRStep: Integer read mCurrRStep write mCurrRStep; // 전류값 취합 시작하는 Step
+
+        property LedData: BYTE read mLedData;
+
+        property NoOnDelay: Boolean read mNoOnDelay write mNoOnDelay;       // On -> Off사이 Delay없음  ex> LIN통신 제어
+        property OnSec: Double read mOnSec write mOnSec;
+        property ReadSec: Double read mReadSec write mReadSec;
+
+        property MaxCurr: Double read mMaxCurr;
+        property OnCurr: Double read mOnCurr;
+        property OffCurr: Double read mOffCurr;
+
+        property Ctrler: TBaseHVCtrler read mCtrler write SetCtrler;
+        property CtrlerAutoFree: Boolean read mCtrlerAutoFree write mCtrlerAutoFree;
+
+        property OnReading: THVReadingEvent read mOnReading write mOnReading;
+
+        property UseInTimeDec: Boolean read mUseInTimeDec write mUseInTimeDec;
+    end;
+
+    THVFanChkTest = class(THVTest) // ECU있는 조수석 팬  : 케이블 연결 안될시 15초 이후 LED OFF 되는 특성으로 검사 => 용도 폐기
+    protected
+        mFanChkSec: Integer;
+        mFanChkTC: TTimeChecker;
+    public
+        constructor Create(FanChkSec: Integer = 15);
+        function FSMIRun: Integer; override;
+
+        function GetFanChkSec: Double;
+    end;
+
+    THVBaseBlowerTest = class(THVTest) // 운전석 팬
+    protected
+        mUseRpmCheck, mRPMDec: Boolean;
+
+    public
+        procedure InitRpmCheck(DIRpmCh, DINtcCheck: Integer; TotRpmCnt: Integer = 3); virtual;
+
+        procedure SetZero; override;
+
+        procedure Run(IsRun: Boolean); virtual; abstract;
+
+        property UseRpmCheck: Boolean read mUseRpmCheck write mUseRpmCheck;
+        property RPMDec: Boolean read mRPMDec;
+    end;
+
+    THVSimBlowerTest = class(THVBaseBlowerTest)
+    public
+        constructor Create(AutoFree: Boolean);
+    end;
+    // -------------------------------------------------------------------------------------
+
+    // -------------------------------------------------------------------------------------
+
+implementation
+
+uses
+    Windows, SysUtils, Math, TypInfo, Log;
+
+{ THVTest }
+
+procedure THVTest.ClearFSM;
+begin
+    inherited;
+    if Assigned(mCtrler) then
+        mCtrler.ClearFSM();
+
+end;
+
+procedure THVTest.ClearIO;
+begin
+    if Assigned(mCtrler) then
+        mCtrler.SwOff();
+end;
+
+constructor THVTest.Create(Parent: THVTester; TestType: THVTestType; PosType: THVPosType; AutoFree: Boolean);
+begin
+
+    mHVTester := Parent;
+
+    mTestType := TestType;
+    mPosType := PosType;
+
+    mUse := true;
+    mAutoFree := AutoFree;
+
+    mOnCurrList := TCurrList.Create;
+
+    mUseInTimeDec := false; // 시간과 전류 만족 or 검사
+
+    mUseCurrTest := true;
+
+end;
+
+destructor THVTest.Destroy;
+begin
+    mOnCurrList.Free;
+
+    if Assigned(mCtrler) then
+    begin
+        if CtrlerAutoFree or mCtrler.OwnerFree then
+            FreeAndNil(mCtrler);
+    end;
+
+    inherited;
+end;
+
+function CalcCurrAvg(List: TCurrList; BothExcludeOffset: Integer): Double;
+var
+    Offset, i: Integer;
+begin
+
+    List.Sort; // 노이즈성값 배제하기 위해 정렬 후 양단 Offset은 제외하고 평균
+
+    if BothExcludeOffset * 2 >= List.Count then
+        Offset := 0
+    else
+        Offset := BothExcludeOffset;
+
+    Result := 0;
+    for i := Offset to List.Count - 1 - Offset do
+    begin
+        Result := Result + List[i];
+    end;
+
+    Result := Result / (List.Count - Offset);
+
+end;
+
+function THVTest.InTimeDecFunc(IsCurrOk: Boolean): Boolean; // 시간내 조건 판정
+begin
+    Result := mTC.IsTimeOut and IsCurrOk;
+end;
+
+procedure THVTest.Init;
+begin
+    mCurStep := mTotStep;
+end;
+
+function THVTest.InstDecFunc(IsCurrOk: Boolean): Boolean; // 조건 만족시 바로 판정 : 디폴트 사용
+begin
+    Result := mTC.IsTimeOut or (IsCurrOk and (mTC.GetPassTimeAsSec() > mHVTester.mStepDelaySec));
+end;
+
+function THVTest.LedOnlyDecFunc(IsCurrOk: Boolean): Boolean; // 전류 없이 LED 조건 만족
+begin
+    Result := (mTC.GetPassTimeAsSec() > mHVTester.mStepDelaySec) and IsCurrOk;
+end;
+
+procedure THVTest.ResetZero;
+begin
+    mCtrler.ResetZero;
+end;
+
+function THVTest.FSMRunStep(Step: Integer): Integer;
+begin
+    Result := 0;
+    case mState of
+        0:
+            begin
+                if Step < 0 then
+                    Step := mCurStep;
+
+                mCtrler.SwOn(Step);
+                mTC.Start(mOnSec * 1000);
+
+                IncState;
+
+            end;
+        1:
+            begin
+                if Step < 0 then
+                    Step := mCurStep;
+                if mTC.IsTimeOut or IsLedDataForStep(Step) or mNoOnDelay then
+                begin
+                    mCtrler.SwOff(Step);
+                    if Step < 0 then
+                        Dec(mCurStep);
+                    mState := 0;
+                    Exit(1);
+                end;
+
+            end;
+    end;
+
+end;
+
+
+{
+  - 1단때 ON 전류(통풍은 전류 상승시간이 길어서 1단에서 검사함, 그에 따라 히터도 1단에서 검사로 변경) => CurrRStep이후 부터 0단 전까지 취합으로 변경
+  -  IGN검사는 3단OK면 무조건 OK 취급하자
+  - 0단때 OFF 전류 최소값
+}
+
+function THVTest.FSMGotoStep(TarStep: Integer): Integer;
+begin
+    Result := 0;
+
+    case mSubState of
+        0:
+            begin
+                mSubRptCnt := 0;
+                Inc(mSubState);
+            end;
+        1:
+            begin
+                mCtrler.SwOn(TarStep);
+                mLclTC.Start(400);
+                Inc(mSubState);
+
+            end;
+        2:
+            begin
+                if mLclTC.IsTimeout or IsLedDataForStep(TarStep) then
+                begin
+                    mCtrler.SwOff(TarStep);
+                    Inc(mSubRptCnt);
+                    gLog.Panel('%s: 재시도(%d): LED Data:%X, TarStep:%d', [Name, mSubRptCnt, mCtrler.GetLedData, TarStep]);
+                    if IsLedDataForStep(TarStep) then
+                    begin
+                        mSubState := 0;
+                        Exit(1);
+                    end
+                    else
+                    begin
+                        if mSubRptCnt >= 5 then
+                        begin
+                            Exit(-1);
+                        end;
+
+                        mLclTC.Start(200);
+                        Inc(mSubState);
+                    end;
+                end;
+            end;
+        3:
+            begin
+                if mLclTC.IsTimeout then
+                    mSubState := 1;
+            end;
+    end;
+end;
+
+function THVTest.FSMIRun: Integer;
+var
+    IsCurrOk: Boolean;
+
+    function IsRetryCond: Boolean;
+    begin
+        Result := not IsLedDataForStep(mCurStep);
+    end;
+
+begin
+    Result := 0;
+
+    case mState of
+        0:
+            ;
+        1: // SW ON
+            begin
+
+                if not mUse then
+                    Exit(1);
+
+                if not Assigned(mCtrler) then
+                    Exit(1);
+
+                if Assigned(mOnStatus) then
+                begin
+                    if IsStart() then
+                    begin
+                        mOnStatus(Self, hvsTestStart);
+                        if (GetCurr >= 0.2) and UseCurrTest then      // 시작시 이전 검사의 전류가 남아 있는 경우 Delay 처리
+                        begin
+                            gLog.Panel('%s 잔류 전류(%.2f A)검출, Delay돌입!', [mName, GetCurr]);
+                            SetState(100);
+                            mTC.Start(2000);
+                            Exit;
+                        end;
+
+                    end;
+
+                    mOnStatus(Self, hvsStepStart);
+                end;
+
+                mOnCurrList.Clear;
+                mMinCurr := 999;
+                mMaxCurr := -999;
+                mOnCurr := 0; // 평균 전류
+                mOffCurr := 999;
+
+                mCtrler.SwOn(mCurStep);
+                mTC.Start(mOnSec * 1000);
+
+                IncState;
+            end;
+
+        100:
+            begin
+                if mTC.IsTimeOut or (GetCurr <= 0.15) then
+                begin
+                    mCtrler.SwOn(mCurStep);
+                    mTC.Start(mOnSec * 1000);
+                    SetState(2);
+                end;
+            end;
+        2: // SW OFF
+            begin
+                if mTC.IsTimeOut or IsLedDataForStep(mCurStep) then
+                begin
+                    mCtrler.SwOff(mCurStep);
+
+                    mSubState := 0;
+                    // 판정함수 종류 설정
+                    if mUseInTimeDec and IsCurrRStep then
+                    begin
+                        mDecFunc := InTimeDecFunc;          // ex: 통풍 전류   // 시간 조건 충족, 시간내 SPEC OUT이면 바로 NG 처리 for Vnt
+                    end
+                    else
+                    begin
+                        mDecFunc := InstDecFunc;   // 조건 만족시 즉시 판정 for Htr
+                    end;
+                    gLog.Panel('%s: Step:%d LED Data:%X', [Name, mCurStep, mCtrler.GetLedData]);
+                    if IsRetryCond then
+                    begin
+                        if mCtrler.IsSwType then
+                        begin
+                            gLog.Panel('%s: SWType 재시도', [Name]);
+                            mState := 20;
+                            mSubState := 0;
+                            Exit;
+                        end
+                        else
+                        begin
+                            Inc(mRetryCnt);
+                            gLog.Panel('%s: %d단 재시도(%d/5)', [Name, mCurStep, mRetryCnt]);
+                            if mRetryCnt >= 5 then
+                            begin
+                                mState := 3;
+                            end
+                            else
+                            begin
+                                mTC.Start(400);
+                                mState := 21;
+                                Exit;
+                            end;
+                        end;
+
+                    end;
+
+                    mTC.Start(mReadSec * 1000);
+                    IncState;
+
+                end;
+            end;
+
+        20: // SW Type 재시도
+            begin
+                case FSMGotoStep(mCurStep) of
+                    -1, 1:
+                        begin
+                            mTC.Start(mReadSec * 1000);
+                            mState := 3;
+                            mSubState := 0;
+                        end
+                end;
+
+            end;
+
+        21: // Step Type 재시도 Delay
+            begin
+                if mTC.IsTimeOut then
+                    mState := 1;
+            end;
+
+        3: // LED READ 및 전류 판정
+            begin
+
+                if Assigned(mOnReading) then
+                    mOnReading(Self);
+
+                mCurCurr := mCtrler.GetCurr;
+
+                if mMinCurr > mCurCurr then
+                begin
+                    mMinCurr := mCurCurr;
+                end;
+                if mMaxCurr < mCurCurr then
+                begin
+                    mMaxCurr := mCurCurr;
+                end;
+
+                mOnCurrList.Add(mCurCurr);
+
+                mFSMRet := 1;
+
+                if mUseCurrTest then
+                begin
+                    if mCurStep = 0 then
+                    begin
+                        if mOffCurr > mCurCurr then // O단에서 최소값
+                        begin
+                            mOffCurr := mCurCurr;
+                            // gLog.Panel('%s: OFF,CUR: %0.2f', [mName, mOffCurr]);
+                        end;
+
+                        IsCurrOk := mHVTester.IsInOffCurrSpec(mTestType, mCurCurr)
+                    end
+                    else
+                    begin
+                        if IsCurrRStep then // 전류 읽는 단(Step)
+                        begin
+                            mFSMRet := FSMReadUntilCurrInSpec;
+                            if mFSMRet > 0 then
+                                IsCurrOk := true
+                            else if mFSMRet < 0 then
+                            begin
+                                mMaxCurr := mCurrRo.mMax;
+                                mTC.Stop;
+                                IsCurrOk := false;
+                            end;
+
+                        end
+                        else
+                            IsCurrOk := true;
+                    end;
+                end
+                else
+                begin
+                    IsCurrOk := true;
+                end;
+
+                // 측정 시간 지나거나 LED Data와 특정 단의 전류 (최소 0.5초 대기)만족시 다음 단계로.
+                // 측정시간은 통풍3단에서 전류 취하기 위해 시간을 크게 줄 것!!
+                // if mTC.IsTimeOut or (IsCurrOk and (mTC.GetPassTimeAsSec() > 0.5)) then
+                if mDecFunc(IsCurrOk) or (mFSMRet < 0) then
+                begin
+
+                    if Assigned(mOnStatus) then
+                    begin
+                        // if mCurStep = mCurrRStep then
+                        begin
+                            mOnCurr := CalcCurrAvg(mOnCurrList, 2);
+                        end;
+
+                        mOnStatus(Self, hvsStepEnd);
+                        if IsEnd() then
+                        begin
+                            mOnStatus(Self, hvsTestEnd);
+                        end;
+                    end;
+
+                    mTC.Start(200);
+                    IncState;
+
+                end;
+
+            end;
+
+        4:
+            begin
+                if not mTC.IsTimeOut then
+                    Exit;
+
+                if mHVTester.mIsRevTest then // 역 STEP
+                begin
+
+                    if mCurStep = 0 then
+                    begin
+                        if mIsRetest then
+                            FSMStart
+                        else
+                        begin
+                            FSMStop;
+                            Exit(1);
+                        end;
+                    end
+                    else
+                    begin
+                        Dec(mCurStep);
+                        SetState(1);
+                    end;
+
+                end
+                else
+                begin
+                    if mCurStep = 0 then // 정 STEP
+                    begin
+                        if mIsRetest then
+                            FSMStart
+                        else
+                        begin
+                            FSMStop;
+                            Exit(1);
+                        end;
+                    end
+                    else
+                    begin
+                        Inc(mCurStep);
+                        if mCurStep > mTotStep then
+                            mCurStep := 0;
+                        SetState(1);
+                    end;
+                end;
+
+            end;
+
+    end;
+
+end;
+
+function THVTest.FSMReadUntilCurrInSpec: Integer;
+var
+    Curr: Double;
+begin
+    // SPEC IN 조건 (ex: 히터 전류 )
+    if not mUseInTimeDec then
+    begin
+        if mHVTester.IsInOnCurrSpec(mTestType, mMaxCurr) then       // 원래 mMinCurr였으나 통풍 낮게 나오는 제품 감안해서 MaxCurr로 변경
+        begin
+            Exit(1);
+        end;
+
+        Exit(0);
+    end;
+
+    Curr := mCtrler.GetCurr;
+    // ex: 통풍 전류는 설정 시간 내에 계속 SPEC유지 해야 OK
+    case mSubState of
+        0:      // Spec In될때까지 대기후 다음 상태에서 안정적인 Spec In유지 되는지 제한 시간내 검사
+            begin
+                mCurrRO.SetRange(Curr, Curr);
+
+                mLclTC.Start(500);
+                Inc(mSubState);
+            end;
+        1:    // 500msec 내 최소값이 Spec in 검사
+            begin
+                mCurrRo.CalcMinMax(Curr);
+
+                if mLclTC.IsTimeOut then
+                begin
+                    if mHVTester.IsInOnCurrSpec(mTestType, mCurrRo.mMin) then
+                    begin
+                        mCurrRO.SetRange(Curr, Curr);
+                        mLclTC.Start(300);
+                        gLog.Panel('%s 전류(%.2f A) SPEC IN', [mName, mCurrRo.mMin]);
+                        Inc(mSubState);
+                    end
+                    else
+                        mLclTC.Start(500);
+                end;
+
+                if mTC.IsTimeOut then
+                begin
+                    gLog.Panel('NG: %s 전류 SPEC 만족 못함', [mName]);
+                    mSubState := 0;
+                    Exit(-1);
+                end;
+
+            end;
+        2:  // 300msec내 최대값이 Spec벗어나면
+            begin
+                mCurrRo.CalcMinMax(Curr);
+
+                if mLclTC.IsTimeOut then
+                begin
+                    if not mHVTester.IsInOnCurrSpec(mTestType, mCurrRo.mMax) then
+                    begin
+                        gLog.Panel('NG: %s 전류(%.2f A) SPEC OUT', [mName, mCurrRo.mMax]);
+                        mSubState := 0;
+                        Exit(-1);
+                    end;
+
+                    mLclTC.Start(300);
+                end;
+
+                if mTC.IsTimeOut then
+                begin
+                    mSubState := 0;
+                    Exit(1);
+                end;
+
+            end;
+    end;
+
+    Result := 0;
+end;
+
+procedure THVTest.SetCtrler(Ctrler: TBaseHVCtrler);
+begin
+
+    mCtrler := Ctrler;
+    mCtrler.Init;
+
+    mCtrler.mHVTest := Self;
+end;
+
+function THVTest.SetIgn2(IsOn: Boolean): Boolean;
+begin
+    Result := mCtrler.SetIgn2(IsOn);
+end;
+
+procedure THVTest.SetTotStep(TotStep: Integer);
+begin
+    if TotStep < 8 then // sizeof(BYTE)
+    begin
+        mTotStep := TotStep;
+
+        if mHVTester.mIsRevTest then
+        begin
+            mCurStep := mTotStep;
+            mCurrRStep := mTotStep;
+        end
+        else
+        begin
+            mCurStep := 1;
+            mCurrRStep := mTotStep;
+        end;
+    end;
+end;
+
+procedure THVTest.SetZero;
+begin
+    mCtrler.SetZero;
+end;
+
+function THVTest.SwOff(CurStep: Integer): Boolean;
+begin
+    Result := mCtrler.SwOff(CurStep);
+end;
+
+function THVTest.SwOn(CurStep: Integer): Boolean;
+begin
+    Result := mCtrler.SwOn(CurStep);
+end;
+
+procedure THVTest.FSMStart;
+begin
+    inherited;
+
+    mRetryCnt := 0;
+
+    if mHVTester.mIsRevTest then
+        mCurStep := mTotStep
+    else
+        mCurStep := 1;
+
+end;
+
+function THVTest.IsLedDataForStep(Step: Integer): Boolean;
+var
+    LedData: BYTE;
+    i: Integer;
+begin
+    if mHVTester.mBinaryLedType then
+    begin
+        Exit(mCtrler.GetLedData = Step);
+    end;
+
+    LedData := 0;
+    for i := 0 to Step - 1 do
+    begin
+        LedData := LedData + (1 shl i);
+    end;
+
+    Result := LedData = mCtrler.GetLedData();
+
+end;
+
+function THVTest.GetCurLedData: BYTE;
+begin
+    Result := mCtrler.GetLedData;
+end;
+
+function THVTest.GetCurr: Double;
+begin
+{$IFDEF _USE_PWS_CURR}
+    Result := 0.3;
+{$ENDIF}
+    Result := mCtrler.GetCurr;
+end;
+
+function THVTest.GetDevType: THVDevType;
+begin
+    if mTestType = hvtHeat then
+    begin
+        if mPosType = hvpDrv then
+            Exit(hvdHeatDrv);
+        Exit(hvdHeatPsg);
+
+    end
+    else if mTestType = hvtVent then
+    begin
+        if mPosType = hvpDrv then
+            Exit(hvdVentDrv);
+        Exit(hvdVentPsg);
+
+    end;
+end;
+
+function THVTest.GetIsRevTest: Boolean;
+begin
+    Result := mHVTester.mIsRevTest;
+end;
+
+function THVTest.GetStartStep: Integer;
+begin
+    if mHVTester.mIsRevTest then
+        Result := mTotStep
+    else
+        Result := 0;
+end;
+
+function THVTest.IsStart: Boolean;
+begin
+    if mHVTester.mIsRevTest then
+        Result := mCurStep = mTotStep
+    else
+        Result := mCurStep = 1;
+end;
+
+function THVTest.IsCurrRStep: Boolean;
+begin
+    Result := mCurStep = mCurrRStep;
+end;
+
+function THVTest.IsEnd: Boolean;
+begin
+    if mHVTester.mIsRevTest then
+        Result := mCurStep = 0
+    else
+        Result := mCurStep = mTotStep;
+
+end;
+
+{ THVTester }
+
+constructor THVTester.Create(CurrRStep: Integer; TotStep: Integer; IsRevTest: Boolean);
+begin
+    mName := 'HVTester';
+
+    mIsSeqTest := false;
+    mIsRevTest := IsRevTest;
+
+    mHDrvTest := THVTest.Create(Self, hvtHeat, hvpDrv, true);
+    mVDrvTest := THVTest.Create(Self, hvtVent, hvpDrv, true);
+    mHPsgTest := THVTest.Create(Self, hvtHeat, hvpPsg, true);
+    mVPsgTest := THVTest.Create(Self, hvtVent, hvpPsg, true);
+
+    InternalInit(CurrRStep, TotStep);
+
+    mBeforeStartSec := 0.5;
+    mStepDelaySec := 0.5; //1.0;
+    mTaskSwDelaySec := 0.05; //0.2;
+
+    mUseIgn2 := false;
+
+    SetTestTime(1, 1, 1); // 코드 위치 주의 : mBlowerTest생성후에
+
+end;
+
+constructor THVTester.Create(BlowerTest: THVBaseBlowerTest; CurrRStep: Integer; TotStep: Integer; IsRevTest: Boolean);
+begin
+
+    mBlowerTest := BlowerTest;
+    mBlowerTest.mHVTester := Self;
+    mBlowerTest.Name := 'Blower';
+
+    Create(CurrRStep, TotStep, IsRevTest);
+end;
+
+constructor THVTester.Create(BlowerTest: THVBaseBlowerTest; HDrvTest, VDrvTest, HPsgTest, VPsgTest: THVTest; IsRevTest: Boolean);
+begin
+
+    mIsSeqTest := false;
+
+    mIsRevTest := IsRevTest;
+
+    if BlowerTest <> nil then
+    begin
+        mBlowerTest := BlowerTest;
+        mBlowerTest.mHVTester := Self;
+        mBlowerTest.Name := 'Blower';
+    end;
+
+    mHDrvTest := HDrvTest;
+    mVDrvTest := VDrvTest;
+    mHPsgTest := HPsgTest;
+    mVPsgTest := VPsgTest;
+
+    mHDrvTest.mHVTester := Self;
+    mVDrvTest.mHVTester := Self;
+    mHPsgTest.mHVTester := Self;
+    mVPsgTest.mHVTester := Self;
+
+    InternalInit(3, 3);
+
+    mBeforeStartSec := 0.5;
+    mStepDelaySec := 1.0;
+
+    SetTestTime(1, 1, 1);
+
+end;
+
+destructor THVTester.Destroy;
+var
+    i: THVDevType;
+begin
+    mDrvTests.Free;
+    mPsgTests.Free;
+    mHVSeqTests.Free;
+
+    for i := Low(THVDevType) to High(THVDevType) do
+    begin
+        if mHVTests[i].AutoFree then
+            mHVTests[i].Free;
+    end;
+
+    if Assigned(mBlowerTest) then
+    begin
+        if mBlowerTest.AutoFree then
+            mBlowerTest.Free;
+    end;
+
+    inherited;
+end;
+
+function THVTester.Init: Boolean;
+begin
+    Result := true;
+end;
+
+procedure THVTester.InternalInit(CurrRStep, TotStep: Integer);
+begin
+
+    // Dummy
+    if not Assigned(mBlowerTest) then
+    begin
+        mBlowerTest := THVSimBlowerTest.Create(true);
+        mBlowerTest.mHVTester := Self;
+        mBlowerTest.Name := 'Blower.Dummy';
+    end;
+
+    mHDrvTest.Name := 'H.Drv';
+    mVDrvTest.Name := 'V.Drv';
+    mHPsgTest.Name := 'H.Psg';
+    mVPsgTest.Name := 'V.Psg';
+
+    mVDrvTest.UseInTimeDec := true;
+    mVPsgTest.UseInTimeDec := true;
+
+    mHVTests[hvdHeatDrv] := mHDrvTest;
+    mHVTests[hvdVentDrv] := mVDrvTest;
+    mHVTests[hvdHeatPsg] := mHPsgTest;
+    mHVTests[hvdVentPsg] := mVPsgTest;
+
+    SetTotStep(TotStep);
+    SetCurrRStep(CurrRStep);
+
+    // 입맛대로 쓰기위해 다 준비했건만...
+    // 시트 위치별 동시 시험용
+    mDrvTests := TCompoFSM.Create('Drv HV Test', Self, false);
+    mPsgTests := TCompoFSM.Create('Psg HV Test', Self, false);
+
+    mDrvTests.Add(mHDrvTest);
+    mDrvTests.Add(mVDrvTest);
+
+    mPsgTests.Add(mHPsgTest);
+    mPsgTests.Add(mVPsgTest);
+
+    // 순차 시험용
+    mHVSeqTests := TCompoFSM.Create('HV Seq. Test', Self, false);
+    mHVSeqTests.Add(mHDrvTest);
+    mHVSeqTests.Add(mHPsgTest);
+    mHVSeqTests.Add(mVDrvTest);
+    mHVSeqTests.Add(mVPsgTest);
+
+end;
+
+function THVTester.FSMIRun(): Integer;
+begin
+    Result := 0;
+
+    case mState of
+        0:
+            ;
+
+        1:
+            begin
+                mHVTests[hvdHeatDrv].mOnStatus(mHVTests[hvdHeatDrv], hvsTesterStart);
+                SetIgn2(true);
+                mTC.Start(mBeforeStartSec * 1000);
+                IncState;
+            end;
+        2:
+            begin
+                if not mTC.IsTimeOut then
+                    Exit(0);
+
+                if mBlowerTest.mUse then
+                begin
+                    SetState(300);
+                    mBlowerTest.FSMStart;
+                end
+                else if mIsSeqTest then
+                begin
+
+                    SetState(100);
+                    mHVSeqTests.FSMStart;
+                end
+                else
+                begin
+                    SetState(200);
+                    mFSMRet := 0;
+                    mFSMRet2 := 0;
+                    mDrvTests.FSMStart;
+                    mPsgTests.FSMStart;
+                    mTC.Start(1);
+                end;
+
+            end;
+
+        100: // 순차 검사
+            begin
+                mFSMRet := mHVSeqTests.FSMIRun;
+                if mFSMRet > 0 then
+                begin
+                    mHVTests[hvdHeatDrv].mOnStatus(THVTest(mHVSeqTests.CurFSM), hvsTesterEnd);
+                    SetIgn2(false);
+                    FSMStop;
+                    Exit(1);
+                end
+                else if mFSMRet < 0 then
+                begin
+                    FSMStop;
+                    Exit(mFSMRet);
+                end;
+
+            end;
+        200: // 동시 검사
+            begin
+                if not mTC.IsTimeOut then
+                    Exit(0);
+
+                if mFSMRet = 0 then
+                begin
+                    mFSMRet := mDrvTests.FSMIRun;
+                end;
+
+                mTC.Start(mTaskSwDelaySec * 1000);
+                IncState;
+            end;
+
+        201:
+            begin
+                if not mTC.IsTimeOut then
+                    Exit(0);
+
+                if mFSMRet2 = 0 then
+                begin
+                    mFSMRet2 := mPsgTests.FSMIRun;
+                end;
+
+                if (mFSMRet > 0) and (mFSMRet2 > 0) then
+                begin
+                    mHVTests[hvdHeatDrv].mOnStatus(THVTest(mPsgTests.CurFSM), hvsTesterEnd);
+                    SetIgn2(false);
+
+                    FSMStop;
+                    Exit(1);
+                end
+                else if (mFSMRet < 0) or (mFSMRet2 < 0) then
+                begin
+                    FSMStop;
+                    Exit(-1);
+                end;
+
+                IncState(-1);
+                mTC.Start(mTaskSwDelaySec * 1000);
+
+            end;
+        300: // Blower검사
+            begin
+                mFSMRet := mBlowerTest.FSMIRun;
+                if mFSMRet > 0 then
+                begin
+                    mBlowerTest.mOnStatus(mBlowerTest, hvsTesterEnd);
+                    FSMStop;
+                    Exit(1);
+                end
+                else if mFSMRet < 0 then
+                begin
+                    FSMStop;
+                    Exit(mFSMRet);
+                end;
+            end;
+    end;
+
+end;
+
+function THVTester.GetHVTest(Idx: THVDevType): THVTest;
+begin
+    Result := mHVTests[Idx];
+end;
+
+function THVTester.IsInOnCurrSpec(TestType: THVTestType; Curr: Double): Boolean;
+begin
+    if TestType = hvtHeat then
+    begin
+        Result := mHOnCurrSpec.IsIn(Curr)
+    end
+    else
+    begin
+        Result := mVOnCurrSpec.IsIn(Curr);
+    end;
+end;
+
+procedure THVTester.ResetZero;
+var
+    i: THVDevType;
+begin
+    for i := Low(THVDevType) to High(THVDevType) do
+    begin
+        mHVTests[i].ResetZero;
+    end;
+
+    mBlowerTest.ResetZero;
+end;
+
+procedure THVTester.ClearIO;
+begin
+    mHDrvTest.ClearIO;
+    mHPsgTest.ClearIO;
+    mVDrvTest.ClearIO;
+    mVPsgTest.ClearIO;
+
+    mBlowerTest.ClearIO;
+end;
+
+function THVTester.IsInOffCurrSpec(TestType: THVTestType; Curr: Double): Boolean;
+begin
+    if TestType = hvtHeat then
+        Result := mHOffCurrSpec.IsIn(Curr)
+    else
+        Result := mVOffCurrSpec.IsIn(Curr);
+end;
+
+procedure THVTester.SetOnStatus(HVStatus: THVStatusEvent);
+var
+    i: THVDevType;
+begin
+    mBlowerTest.mOnStatus := HVStatus;
+
+    for i := Low(THVDevType) to High(THVDevType) do
+    begin
+        mHVTests[i].mOnStatus := HVStatus;
+    end;
+
+end;
+
+function THVTester.GetOnStatus(): THVStatusEvent;
+begin
+    Result := mBlowerTest.mOnStatus;
+end;
+
+procedure THVTester.SetTestTime(OnSec, ReadSec, BlowerOnSec: Double);
+var
+    i: THVDevType;
+begin
+    for i := Low(THVDevType) to High(THVDevType) do
+    begin
+        mHVTests[i].mOnSec := OnSec;
+        mHVTests[i].mReadSec := ReadSec;
+    end;
+
+    if Assigned(mBlowerTest) then
+        mBlowerTest.mOnSec := BlowerOnSec;
+
+end;
+
+procedure THVTester.SetCurrRStep(CurrRStep: Integer);
+var
+    i: THVDevType;
+begin
+    mCurrRStep := CurrRStep;
+    for i := Low(THVDevType) to High(THVDevType) do
+    begin
+        mHVTests[i].CurrRStep := CurrRStep;
+    end;
+
+end;
+
+procedure THVTester.SetTotStep(TotStep: Integer);
+var
+    i: THVDevType;
+begin
+    mTotStep := TotStep;
+    for i := Low(THVDevType) to High(THVDevType) do
+    begin
+        mHVTests[i].TotStep := TotStep;
+    end;
+end;
+
+procedure THVTester.SetHCurrRange(OnSpec: TRange; OffMax: Double);
+var
+    i: THVDevType;
+begin
+    mHOnCurrSpec := OnSpec;
+    mHOffCurrSpec.mMax := OffMax;
+end;
+
+function THVTester.SetIgn2(IsOn: Boolean): Boolean;
+begin
+    if not mUseIgn2 then
+        Exit(true);
+
+    Result := HDrvTest.SetIgn2(IsOn);
+end;
+
+procedure THVTester.SetVCurrRange(OnSpec: TRange; OffMax: Double);
+begin
+    mVOnCurrSpec := OnSpec;
+    mVOffCurrSpec.mMax := OffMax;
+end;
+
+procedure THVTester.SetZero;
+var
+    i: THVDevType;
+begin
+    for i := Low(THVDevType) to High(THVDevType) do
+    begin
+        mHVTests[i].SetZero;
+    end;
+
+    mBlowerTest.SetZero;
+
+end;
+
+procedure THVTester.FSMStart;
+begin
+    inherited;
+
+end;
+
+procedure THVTester.FSMStop;
+begin
+    inherited;
+
+end;
+
+procedure THVTester.ClearFSM;
+var
+    i: THVDevType;
+begin
+    inherited;
+    mLocalState1 := 0;
+    mLocalState2 := 0;
+    for i := Low(THVDevType) to High(THVDevType) do
+    begin
+        mHVTests[i].ClearFSM;
+    end;
+
+    mBlowerTest.ClearFSM;
+end;
+
+{ TBaseHVCtrler }
+
+{ THVFanChkTest }
+
+constructor THVFanChkTest.Create(FanChkSec: Integer);
+begin
+    inherited Create(nil, hvtVent, hvpPsg);
+
+    mFanChkSec := FanChkSec;
+end;
+
+function THVFanChkTest.FSMIRun: Integer;
+begin
+    Result := 0;
+
+    case mState of
+        0:
+            ;
+        1: // SW ON
+            begin
+
+                if not mUse then
+                    Exit(1);
+
+                if not Assigned(mCtrler) then
+                    Exit(-1);
+
+                if Assigned(mOnStatus) then
+                begin
+                    if IsStart() then
+                    begin
+                        mOnStatus(Self, hvsTestStart);
+                    end;
+
+                    mOnStatus(Self, hvsStepStart);
+                end;
+
+                mCtrler.SwOn(mCurStep);
+                mTC.Start(mOnSec * 1000);
+
+                IncState;
+            end;
+        2: // SW OFF
+            begin
+                if mTC.IsTimeOut or IsLedDataForStep(mCurStep) or mNoOnDelay then
+                begin
+                    mCtrler.SwOff(mCurStep);
+                    mOnStatus(Self, hvsStepEnd);
+
+                    if mHVTester.mIsRevTest then // 역 STEP
+                    begin
+                        Dec(mCurStep);
+                    end
+                    else
+                    begin
+                        Inc(mCurStep);
+                    end;
+
+                    if IsEnd then
+                    begin
+                        mCurStep := mTotStep;
+                        mCtrler.SwOn(mTotStep); // 정방향시 단계 주의
+                        mTC.Start(mOnSec * 1000);
+                        IncState;
+                    end
+                    else
+                        IncState(-1);
+
+                end;
+            end;
+
+        3: // LED 꺼짐 시간으로 팬 부착 유무 판단하기 위해 HI 단 한번더 ON후 시간 경과 대기
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    mCtrler.SwOff(TotStep);
+
+                    if GetCurLedData <> 0 then
+                    begin
+                        mFanChkTC.Start(mFanChkSec * 1000);
+                        mOnStatus(Self, hvsFanChkStart);
+                        IncState;
+                    end;
+                end;
+            end;
+        4:
+            begin
+                if mFanChkTC.IsTimeOut then
+                begin
+                    mHVTester.mIsFanChkOK := GetCurLedData <> 0;
+                    mOnStatus(Self, hvsFanChkEnd);
+                    mOnStatus(Self, hvsTestEnd);
+
+                    Exit(1);
+                end;
+
+            end;
+    end;
+
+end;
+
+function THVFanChkTest.GetFanChkSec: Double;
+begin
+    Result := mFanChkTC.GetPassTimeAsSec;
+end;
+
+{ THVBaseBlowerTest }
+
+procedure THVBaseBlowerTest.InitRpmCheck(DIRpmCh, DINtcCheck, TotRpmCnt: Integer);
+begin
+
+end;
+
+procedure THVBaseBlowerTest.SetZero;
+begin
+
+end;
+
+{ THVSimBlowerTest }
+
+constructor THVSimBlowerTest.Create(AutoFree: Boolean);
+begin
+
+    mName := 'Sim.BlowerTest';
+    mAutoFree := AutoFree;
+
+end;
+
+{ TBaseHVCtrler }
+
+destructor TBaseHVCtrler.Destroy;
+begin
+
+    inherited;
+end;
+
+function TBaseHVCtrler.GetCurr: Double;
+begin
+    Result := abs(mAD.GetValue(mAICurrCh));
+end;
+
+function TBaseHVCtrler.GetDOSwVal: Boolean;
+begin
+    Result := false;
+end;
+
+function TBaseHVCtrler.GetStateStr: string;
+begin
+    Result := '';
+end;
+
+function TBaseHVCtrler.Init: Boolean;
+begin
+    Result := true;
+end;
+
+procedure TBaseHVCtrler.ResetZero;
+begin
+    mAD.ResetZero(mAICurrCh);
+    gLog.Panel('AD CH%d Reset Zero: %f', [mAICurrCh, GetCurr]);
+end;
+
+function TBaseHVCtrler.SetIgn2(IsOn: Boolean): Boolean;
+begin
+    Result := true;
+end;
+
+procedure TBaseHVCtrler.SetZero;
+begin
+    if Assigned(mAD) then
+        mAD.SetZero(mAICurrCh);
+    gLog.Panel('AD CH%d Zero: %f', [mAICurrCh, GetCurr]);
+end;
+
+{ THVCurr }
+
+procedure THVCurr.Clear;
+begin
+    mList.Clear;
+end;
+
+constructor THVCurr.Create(Spec: TRange);
+begin
+    mSpec := Spec;
+    mList := TCurrList.Create;
+end;
+
+destructor THVCurr.Destroy;
+begin
+    mList.Free;
+    inherited;
+end;
+
+function THVCurr.FSMSet(Val: Double; msec: Integer): Integer;
+begin
+    // Heater같은 즉시 판정과 Venter류의 알고리즘 판정을 구분할 것
+end;
+
+function THVCurr.GetAvg: Double;
+begin
+    Result := CalcCurrAvg(mList, 2);
+end;
+
+function THVCurr.GetMax: Double;
+begin
+    Result := mRunOut.mMax;
+end;
+
+function THVCurr.GetMin: Double;
+begin
+    Result := mRunOut.mMin;
+end;
+
+{ THVMatrix<T> }
+
+constructor THVMatrix<T>.Create(const ADefaultValue: T);
+var
+    Pos: THVPosType;
+    TestType: THVTestType;
+begin
+    mDefaultValue := ADefaultValue;
+    for Pos := Low(THVPosType) to High(THVPosType) do
+        for TestType := Low(THVTestType) to High(THVTestType) do
+            mData[Pos, TestType] := mDefaultValue;
+end;
+
+function THVMatrix<T>.GetItem(APos: THVPosType; ATestType: THVTestType): T;
+begin
+    Result := mData[APos, ATestType];
+end;
+
+procedure THVMatrix<T>.SetItem(APos: THVPosType; ATestType: THVTestType; const Value: T);
+begin
+    mData[APos, ATestType] := Value;
+end;
+
+procedure THVMatrix<T>.Clear(UseDefVal: Boolean);
+var
+    Pos: THVPosType;
+    Dev: THVTestType;
+begin
+
+    if UseDefVal then
+    begin
+        for Pos := Low(THVPosType) to High(THVPosType) do
+            for Dev := Low(THVTestType) to High(THVTestType) do
+                mData[Pos, Dev] := mDefaultValue;
+    end
+    else
+        ZeroMemory(@mData, SizeOf(mData));
+end;
+
+class function THVMatrix<T>.AreEqual(const Value1, Value2: T): Boolean;
+begin
+    Result := CompareMem(@Value1, @Value2, SizeOf(T));
+end;
+
+function THVMatrix<T>.IsEmpty: Boolean;
+var
+    Pos: THVPosType;
+    TestType: THVTestType;
+begin
+    Result := True;
+    for Pos := Low(THVPosType) to High(THVPosType) do
+        for TestType := Low(THVTestType) to High(THVTestType) do
+            if not AreEqual(mData[Pos, TestType], mDefaultValue) then
+            begin
+                Result := False;
+                Exit;
+            end;
+end;
+
+end.
+

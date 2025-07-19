@@ -1,0 +1,181 @@
+unit VentSensorChecker;
+
+{$I myDefine.inc}
+
+interface
+
+uses
+    Windows, SysUtils, Classes, BaseDIO, BaseFSM, TimeChecker, Global, Log;
+
+type
+  // TBaseFSM을 상속받은 Vent 센서 체커
+    TVentSensorChecker = class(TBaseFSM)
+    private
+        mDIO: TBaseDIO;                   // DIO 참조
+        mVentSensorCh: Integer;           // Vent 센서 DI 채널
+        mIsDetected: Boolean;             // 센서 감지 여부
+        mTimeoutSec: Integer;             // 타임아웃 시간 (초)
+        mTC: TTimeChecker;                // 타임 체커
+        mStationName: string;             // 스테이션 이름 (로그용)
+
+        procedure WriteLog(const Msg: string);
+
+    protected
+        procedure ClearFSM; override;
+
+    public
+        constructor Create(DIO: TBaseDIO; VentSensorChannel: Integer; const StationName: string = '');
+        destructor Destroy; override;
+
+    // TBaseFSM 필수 메서드들
+        function FSMIRun: Integer; override;
+        procedure FSMStart; override;
+        procedure FSMStop; override;
+
+    // 설정 메서드
+        procedure SetTimeout(TimeoutSeconds: Integer);
+        procedure Reset;
+
+    // 상태 확인
+        function IsDetected: Boolean;
+        function GetElapsedTime: Double;
+
+    // 속성
+        property VentSensorChannel: Integer read mVentSensorCh write mVentSensorCh;
+        property TimeoutSeconds: Integer read mTimeoutSec write mTimeoutSec;
+        property StationName: string read mStationName write mStationName;
+    end;
+
+implementation
+
+constructor TVentSensorChecker.Create(DIO: TBaseDIO; VentSensorChannel: Integer; const StationName: string);
+begin
+    inherited Create;
+
+    mName := 'VentSensorChecker';
+    mDIO := DIO;
+    mVentSensorCh := VentSensorChannel;
+    mStationName := StationName;
+
+    mIsDetected := False;
+    mTimeoutSec := 30;  // 기본 30초
+
+    WriteLog(Format('Vent 센서 체커 생성 - DI CH%d', [mVentSensorCh]));
+end;
+
+destructor TVentSensorChecker.Destroy;
+begin
+    mTC.Free;
+    WriteLog('Vent 센서 체커 해제');
+    inherited Destroy;
+end;
+
+procedure TVentSensorChecker.ClearFSM;
+begin
+    inherited ClearFSM;
+    mIsDetected := False;
+end;
+
+procedure TVentSensorChecker.FSMStart;
+begin
+    inherited FSMStart;
+
+    if not Assigned(mDIO) then
+    begin
+        WriteLog('ERROR: DIO가 할당되지 않음');
+        Exit;
+    end;
+
+    mIsDetected := False;
+    mTC.Start;
+
+    WriteLog(Format('Vent 센서 모니터링 시작 - 타임아웃: %d초', [mTimeoutSec]));
+end;
+
+procedure TVentSensorChecker.FSMStop;
+var
+    ElapsedSec: Double;
+begin
+    ElapsedSec := GetElapsedTime;
+
+    WriteLog(Format('Vent 센서 모니터링 종료 - 결과: %s, 경과시간: %.1f초', [BoolToStr(mIsDetected, 'OK', 'NG'), ElapsedSec]));
+
+    inherited FSMStop;
+end;
+
+function TVentSensorChecker.FSMIRun: Integer;
+begin
+    Result := 0;
+
+    case mState of
+        0:
+            begin
+                IncState;
+            end;
+
+        1: // 센서 모니터링 상태
+            begin
+        // 이미 감지된 경우 성공 종료
+                if mIsDetected then
+                    Exit(1);
+
+        // 타임아웃 체크
+                if mTC.GetPassTimeAsSec >= mTimeoutSec then
+                begin
+                    WriteLog('Vent 센서 타임아웃 발생');
+                    Exit(-1);
+                end;
+
+        // DI 센서 신호 확인
+                if mDIO.GetDI(mVentSensorCh) then
+                begin
+                    mIsDetected := True;
+                    WriteLog(Format('Vent 센서 감지됨! - 경과시간: %.1f초', [GetElapsedTime]));
+                    Exit(1);
+                end;
+            end;
+    end;
+end;
+
+procedure TVentSensorChecker.SetTimeout(TimeoutSeconds: Integer);
+begin
+    if TimeoutSeconds > 0 then
+    begin
+        mTimeoutSec := TimeoutSeconds;
+        WriteLog(Format('타임아웃 설정: %d초', [mTimeoutSec]));
+    end;
+end;
+
+procedure TVentSensorChecker.Reset;
+begin
+    FSMStop;
+    ClearFSM;
+    mIsDetected := False;
+    WriteLog('Vent 센서 상태 초기화');
+end;
+
+function TVentSensorChecker.IsDetected: Boolean;
+begin
+    Result := mIsDetected;
+end;
+
+function TVentSensorChecker.GetElapsedTime: Double;
+begin
+    Result := mTC.GetPassTimeAsSec;
+end;
+
+procedure TVentSensorChecker.WriteLog(const Msg: string);
+var
+    LogMsg: string;
+begin
+    if mStationName <> '' then
+        LogMsg := Format('[%s] %s', [mStationName, Msg])
+    else
+        LogMsg := Msg;
+
+    if Assigned(gLog) then
+        gLog.Panel(LogMsg);
+end;
+
+end.
+

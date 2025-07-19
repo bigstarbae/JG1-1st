@@ -1,0 +1,219 @@
+unit ModelInfoFrame;
+
+interface
+
+uses
+    Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+    Dialogs, StdCtrls, Label3D, ExtCtrls, ModelType;
+
+type
+    TMdllInfoFrame = class(TFrame)
+        pnlMdlInfo: TPanel;
+        pnlPartInfo: TPanel;
+        lblLotNo: TLabel3D;
+        lblPartNo: TLabel3D;
+        lblCarType: TLabel3D;
+        pnlDriver: TPanel;
+        lblPsg: TLabel3D;
+        lblDrv: TLabel3D;
+        pnlPos: TPanel;
+        lblRH: TLabel3D;
+        lblLH: TLabel3D;
+        pnlOpt: TPanel;
+        lblECU: TLabel3D;
+        pnlDriverTitle: TPanel;
+        pnlPosTitle: TPanel;
+        pnl1: TPanel;
+        lblZigNo: TLabel3D;
+        pnl2: TPanel;
+        pnl3: TPanel;
+        pnlClass: TPanel;
+        pnlClassTitle: TPanel;
+        pnlClassClient: TPanel;
+        pnlClassVal: TPanel;
+        pnlOptTop: TPanel;
+        pnlSeatSpec: TPanel;
+    lblLONG_S: TLabel3D;
+        lblSTD: TLabel3D;
+        lblIMS: TLabel3D;
+        pnl4: TPanel;
+        pnlPosTitle1: TPanel;
+        pnlBuckle: TPanel;
+        lblBuckleIO: TLabel3D;
+        lblBuckleCurr: TLabel3D;
+        lblBuckleNone: TLabel3D;
+        lblCushLeg: TLabel3D;
+        lblODS: TLabel3D;
+        pnl5: TPanel;
+        pnlPosTitle2: TPanel;
+        pnl6: TPanel;
+        lblHeat: TLabel3D;
+        lblHV: TLabel3D;
+        lblHVNone: TLabel3D;
+        lblACPT: TLabel3D;
+    lbl17MY: TLabel3D;
+    lblSwivel: TLabel3D;
+    lblPE: TLabel3D;
+    private
+    { Private declarations }
+        procedure SelectLabel(aLabel3D: TLabel3D; aVal: Boolean);
+        procedure SetPopLinkMode(const Value: Boolean);
+
+    public
+    { Public declarations }
+        procedure Clear;
+        procedure SetModel(ModelType: TModelType);
+
+        procedure SetColRatios(Ratios: array of Double); overload;
+        procedure SetColRatios(ChildPnls: array of TControl; Ratios: array of Double); overload;
+
+        property PopLinkMode: Boolean write SetPopLinkMode;
+    end;
+
+implementation
+
+uses
+    SeatType, myUtils, FormUtils, Generics.Collections, LangTran;
+
+const
+    _SELECT_COLOR = $00258B25;
+    _NON_SELECT_COLOR = $00C6C3C6;
+    _SELECT_FONT_COLOR = clWHITE;
+    _NON_SELECT_FONT_COLOR = $00ABA8AC;
+{$R *.dfm}
+
+
+{ TFrame1 }
+
+procedure TMdllInfoFrame.Clear;
+var
+    ComponentSub: TComponent;
+    itm: Integer;
+begin
+    for itm := 0 to self.ComponentCount - 1 do
+    begin
+        ComponentSub := self.Components[itm];
+        if (ComponentSub is TLabel3D) then
+        begin
+            if TLabel3D(ComponentSub).Tag >= 100 then
+                continue;
+
+            if TLabel3D(ComponentSub).Tag = 1 then
+            begin
+                TLabel3D(ComponentSub).Caption := '-';
+            end
+            else
+            begin
+                SelectLabel(TLabel3D(ComponentSub), False);
+            end;
+        end;
+    end;
+end;
+
+procedure TMdllInfoFrame.SelectLabel(aLabel3D: TLabel3D; aVal: Boolean);
+begin
+    if aVal then
+    begin
+        aLabel3D.Color := _SELECT_COLOR;
+        aLabel3D.Font.Color := _SELECT_FONT_COLOR;
+    end
+    else
+    begin
+        aLabel3D.Color := _NON_SELECT_COLOR;
+        aLabel3D.Font.Color := _NON_SELECT_FONT_COLOR;
+    end;
+end;
+
+procedure TMdllInfoFrame.SetColRatios(Ratios: array of Double);
+var
+    i: Integer;
+    OptRatios: array of Double;
+begin
+    SetCtrlColRatios(pnlMdlInfo, Ratios);
+
+    SetCtrlColRatios(pnlClassVal, [1, 1]);
+
+    SetLength(OptRatios, pnlOpt.ControlCount);
+
+    for i := 0 to Length(OptRatios) - 1 do
+    begin
+        OptRatios[i] := 1;
+    end;
+    SetCtrlColRatios(pnlOpt, OptRatios);
+
+end;
+
+procedure TMdllInfoFrame.SetColRatios(ChildPnls: array of TControl; Ratios: array of Double);
+var
+    i: Integer;
+    OptRatios: array of Double;
+begin
+    AdjustChildControlSizes(pnlMdlInfo, ChildPnls, Ratios);
+
+    SetCtrlColRatios(pnlClassVal, [1, 1]);
+
+    SetLength(OptRatios, pnlOpt.ControlCount);
+
+    for i := 0 to Length(OptRatios) - 1 do
+    begin
+        OptRatios[i] := 1;
+    end;
+    SetCtrlColRatios(pnlOpt, OptRatios);
+
+end;
+
+procedure TMdllInfoFrame.SetModel(ModelType: TModelType);
+begin
+    Clear;
+
+    lblCarType.Caption := ModelType.GetCarTypeStr;
+
+    SelectLabel(lblSTD, ModelType.IsSTD);
+    SelectLabel(lblLONG_S, ModelType.IsLong_S);
+    SelectLabel(lblSwivel, ModelType.IsSwivel);
+
+    SelectLabel(lblDrv, ModelType.IsDrvPos);
+    SelectLabel(lblPsg, ModelType.IsPsgPos);
+
+    SelectLabel(lblLH, ModelType.IsLHPos);
+    SelectLabel(lblRH, ModelType.IsRHPos);
+
+    SelectLabel(lblBuckleNone, not ModelType.IsBuckle);
+    SelectLabel(lblBuckleIO, ModelType.IsBuckleIO);
+    SelectLabel(lblBuckleCurr, ModelType.IsBuckleCurr);
+
+    SelectLabel(lblHVNone, ModelType.IsNoneHV);
+    SelectLabel(lblHEAT, ModelType.IsHeatType);
+    SelectLabel(lblHV, ModelType.IsVentType);
+
+    SelectLabel(lblACPT, ModelType.IsAnchorPT);
+    SelectLabel(lblECU, ModelType.IsECU);
+    SelectLabel(lblIMS, ModelType.IsIMS);
+    SelectLabel(lblODS, ModelType.IsODS);
+    SelectLabel(lblCushLeg, ModelType.IsCushLeg);
+    SelectLabel(lblPE, ModelType.isPE);
+    SelectLabel(lbl17MY, ModelType.Is17MY);
+
+end;
+
+procedure TMdllInfoFrame.SetPopLinkMode(const Value: Boolean);
+begin
+
+    lblPartNo.Visible := Value;
+
+    if Value then
+    begin
+        lblLotNo.Color := lblPartNo.Color;
+        lblLotNo.Font.Color := lblPartNo.Font.Color;
+        lblLotNo.Caption := '';
+    end
+    else
+    begin
+        lblLotNo.Color := $000EC9FF;
+        lblLotNo.Font.Color := clBlack;
+        lblLotNo.Caption := _TR('단동 모드');
+    end;
+end;
+
+end.
+

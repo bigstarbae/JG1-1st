@@ -1,0 +1,1214 @@
+{
+	Ver.240912.00
+}
+unit SubDataBox4Elec;
+
+interface
+uses
+    BaseDataBox, DataBox, DataUnit;
+
+type
+    TSubDataBox4Elec = class(TBaseDataBox)
+    private
+        mParent: TDataBox;
+        function GetTag: integer; override;
+
+        procedure SetValidity; override;
+
+    public
+        constructor Create(Parent: TDataBox) ;
+
+        procedure InitData(AReadEnv: boolean=false); override;
+        procedure SetDataInit(ATsMode: TTsORD) ;override;
+
+
+        function  IsExists(AORD: TResultORD): boolean ; overload ; override;
+        function  IsTested(AORD: TResultORD): boolean ; overload ; override;
+
+
+        function  GetData(AORD: TResultORD; ADigit:integer=0): double ; overload ; override;
+        function  GetResult(AORD: TResultORD): boolean ; overload ; override;
+        function  GetResult(ATsMode: TTsORD): boolean ;  overload ; override;
+        function  GetResultToATxt(APos:integer;  IsUnit: boolean; IsResult: boolean = false): string; override ;
+
+
+        procedure SetData(AORD: TResultORD; const Value: double) ; overload; override;
+        procedure SetData(AORD: TResultORD; const Value: string) ; overload; override;
+        procedure SetData(AORD: TResultORD; const Value: boolean); overload; override;
+        procedure SetData(AORD: TResultOrd; const Value: integer); overload; override;
+    end;
+
+
+implementation
+uses
+    SysEnv, HVTester, SeatType, ModelUnit;
+
+{ TSubDataBox4Elec }
+
+constructor TSubDataBox4Elec.Create(Parent: TDataBox);
+begin
+    inherited Create;
+    mParent := Parent
+
+end;
+
+
+
+
+function TSubDataBox4Elec.GetData(AORD: TResultORD; ADigit: integer): double;
+begin
+    mIsProcessDone := true;
+    with mParent do
+    begin
+
+        case AOrd of
+
+            roDatBuckle:
+                Result := RsBuf.rModel.rSpecs.rBuckleCurr.rHi;
+            roSpecHeatOnLo:
+                Result := RsBuf.rModel.rspecs.rHeatOnCurr.rLo;
+            roSpecHeatOnHi:
+                Result := RsBuf.rModel.rspecs.rHeatOnCurr.rHi;
+            roSpecHeatOffLo:
+                Result := RsBuf.rModel.rspecs.rHeatOffCurr.rLo;
+            rospecHeatOffHi:
+                Result := RsBuf.rModel.rspecs.rHeatOffCurr.rHi;
+
+            roSpecVentOnLo:
+                Result := RsBuf.rModel.rspecs.rVentOnCurr.rLo;
+            rospecVentOnHi:
+                Result := RsBuf.rModel.rspecs.rVentOnCurr.rHi;
+            roSpecVentOffLo:
+                Result := RsBuf.rModel.rspecs.rVentOffCurr.rLo;
+            rospecVentOffHi:
+                Result := RsBuf.rModel.rspecs.rVentOffCurr.rHi;
+
+            roDatHeatOnCurrDrv:
+                Result := RsBuf.rDatHVs[hvdHeatDrv].rOnCurr;
+            roDatHeatOffCurrDrv:
+                Result := RsBuf.rDatHVs[hvdHeatDrv].rOffCurr;
+
+            roDatHeatOnCurrAss:
+                Result := RsBuf.rDatHVs[hvdHeatPsg].rOnCurr;
+            roDatHeatOffCurrAss:
+                Result := RsBuf.rDatHVs[hvdHeatPsg].rOffCurr;
+
+            roDatVentOnCurrDrv, roDatOnBlow:
+                Result := RsBuf.rDatHVs[hvdVentDrv].rOnCurr;
+
+            roDatVentOffCurrDrv, roDatOffBlow:
+                Result := RsBuf.rDatHVs[hvdVentDrv].rOffCurr;
+
+            roDatVentOnCurrAss:
+                Result := RsBuf.rDatHVs[hvdVentPsg].rOnCurr;
+            roDatVentOffCurrAss:
+                Result := RsBuf.rDatHVs[hvdVentPsg].rOffCurr;
+
+        else
+            mIsProcessDone := false;
+            Result := 0.0;
+
+        end;
+    end;
+end;
+
+function TSubDataBox4Elec.GetResult(ATsMode: TTsORD): boolean;
+begin
+    mIsProcessDone := true;
+    with mParent do
+    begin
+        case ATsMode of
+
+            tsHeatDrv:
+                Result := GetResult(roRsHeatDrv);
+            tsHeatPsg:
+                Result := GetResult(roRsHeatAss);
+            tsVentDrv:
+                Result := GetResult(roRsVentDrv);
+            tsVentPsg:
+                Result := GetResult(roRsVentAss);
+            tsBlow:
+                Result := GetResult(roRsOnBlow);
+            tsBuckle:
+                Result := GetResult(roRsBuckle);
+            tsAccessory:
+                Result := GetResult(roRsAccessory);
+            tsElec:
+                Result := GetResult(roRsElec); // and GetResult(roRsConn);
+
+        else
+            mIsProcessDone := false;
+            Result := false;
+        end;
+    end;
+end;
+
+function TSubDataBox4Elec.GetResult(AORD: TResultORD): boolean;
+begin
+    mIsProcessDone := true;
+
+    with mParent do
+    begin
+
+        case AORD of
+            roDatHeatOnCurrDrv:
+                begin
+                    Result := (GetData(AOrd, 1) >= GetData(roSpecHeatOnLo)) and (GetData(AOrd, 1) <= GetData(roSpecHeatOnHi));
+                end;
+            roRsHeatOnDrv:
+                Result := GetResult(roDatHeatOnCurrDrv);
+            roDatHeatOffCurrDrv:
+                begin
+                    Result := { (GetData(Index, 1) >= GetData(roSpecHeatOffLo)) and }
+                    (GetData(AOrd, 1) <= GetData(rospecHeatOffHi));
+                end;
+            roRsHeatOffDrv:
+                Result := GetResult(roDatHeatOffCurrDrv);
+            roDatHeatLedOffBitDrv, roRsHeatLedOffDrv:
+                begin
+                    Result := RsBuf.rDatHVs[hvdHeatDrv].rLedOffBit = $00;
+                end;
+            roDatHeatLedHiBitDrv, roRsHeatLedHiDrv:
+                begin
+                    Result := RsBuf.rDatHVs[hvdHeatDrv].rLedHiBit = $07;
+                end;
+            roDatHeatLedMidBitDrv, roRsHeatLedMidDrv:
+                begin
+                    Result := RsBuf.rDatHVs[hvdHeatDrv].rLedMidBit = $03;
+                end;
+            roDatHeatLedLoBitDrv, roRsHeatLedLoDrv:
+                begin
+                    Result := RsBuf.rDatHVs[hvdHeatDrv].rLedLoBit = $01;
+                end;
+            roRsHeatLedDrv:
+                begin
+                    Result := GetResult(roRsHeatLedOffDrv) and GetResult(roRsHeatLedHiDrv) and GetResult(roRsHeatLedMidDrv) and GetResult
+                      (roRsHeatLedLoDrv);
+                end;
+            roRsHeatIgnDrv:
+                Result := RsBuf.rDatHVs[hvdHeatDrv].rIgn;
+            roRsHeatDrv:
+                begin
+                    Result := GetResult(roRsHeatLedDrv); // and GetResult(roRsHeatOnDrv) and GetResult(roRsHeatOffDrv) //  LED만 판정
+                end;
+
+            roDatHeatOnCurrAss:
+                begin
+                    Result := (GetData(AOrd, 1) >= GetData(roSpecHeatOnLo)) and (GetData(AOrd, 1) <= GetData(roSpecHeatOnHi));
+                end;
+            roRsHeatOnAss:
+                Result := GetResult(roDatHeatOnCurrAss);
+            roDatHeatOffCurrAss:
+                begin
+                    Result := { (GetData(Index, 1) >= GetData(roSpecHeatOffLo)) and }
+                    (GetData(AOrd, 1) <= GetData(rospecHeatOffHi));
+                end;
+            roRsHeatOffAss:
+                Result := GetResult(roDatHeatOffCurrAss);
+            roDatHeatLedOffBitAss, roRsHeatLedOffAss:
+                begin
+                    Result := RsBuf.rDatHVs[hvdHeatPsg].rLedOffBit = $00;
+                end;
+            roDatHeatLedHiBitAss, roRsHeatLedHiAss:
+                begin
+                    Result := RsBuf.rDatHVs[hvdHeatPsg].rLedHiBit = $07;
+                end;
+            roDatHeatLedMidBitAss, roRsHeatLedMidAss:
+                begin
+                    Result := RsBuf.rDatHVs[hvdHeatPsg].rLedMidBit = $03;
+                end;
+            roDatHeatLedLoBitAss, roRsHeatLedLoAss:
+                begin
+                    Result := RsBuf.rDatHVs[hvdHeatPsg].rLedLoBit = $01;
+                end;
+            roRsHeatLedAss:
+                begin
+                    Result := GetResult(roRsHeatLedOffAss) and GetResult(roRsHeatLedHiAss) and GetResult(roRsHeatLedMidAss) and GetResult
+                      (roRsHeatLedLoAss);
+                end;
+            roRsHeatIgnAss:
+                Result := RsBuf.rDatHVs[hvdHeatPsg].rIgn;
+            roRsHeatAss:
+                begin
+                    Result := GetResult(roRsHeatLedAss); // and GetResult(roRsHeatOnAss) and GetResult(roRsHeatOffAss);
+                end;
+
+            roRsHeat:
+                begin
+                    Result := GetResult(roRsHeatDrv) and GetResult(roRsHeatAss);
+                end;
+
+            roDatOnBlow,
+            roDatVentOnCurrDrv:
+                begin
+                    Result := (GetData(AOrd, 1) >= GetData(roSpecVentOnLo)) and (GetData(AOrd, 1) <= GetData(rospecVentOnHi));
+                end;
+
+            roRsOnBlow:
+                Result := GetResult(roDatOnBlow);
+
+
+            roRsOffBlow:
+                Result := GetResult(roDatOffBlow);
+            roDatOffBlow:
+                Result:= (GetData(AOrd,1) <= GetData(roSpecVentOnLo));
+
+
+            roRsVentOnDrv:
+                Result := GetResult(roDatVentOnCurrDrv);
+            roDatVentOffCurrDrv:
+                begin
+                    Result := { (GetData(Index, 1) >= GetData(roSpecVentOffLo)) and }
+                    (GetData(AOrd, 1) <= GetData(rospecVentOffHi));
+                end;
+            roRsVentOffDrv:
+                Result := GetResult(roDatVentOffCurrDrv);
+            roDatVentLedOffBitDrv, roRsVentLedOffDrv:
+                begin
+                    Result := RsBuf.rDatHVs[hvdVentDrv].rLedOffBit = $00;
+                end;
+            roDatVentLedHiBitDrv, roRsVentLedHiDrv:
+                begin
+                    Result := RsBuf.rDatHVs[hvdVentDrv].rLedHiBit = $07;
+                end;
+            roDatVentLedMidBitDrv, roRsVentLedMidDrv:
+                begin
+                    Result := RsBuf.rDatHVs[hvdVentDrv].rLedMidBit = $03;
+                end;
+            roDatVentLedLoBitDrv, roRsVentLedLoDrv:
+                begin
+                    Result := RsBuf.rDatHVs[hvdVentDrv].rLedLoBit = $01;
+                end;
+            roRsVentLedDrv:
+                begin
+                    Result := GetResult(roRsVentLedOffDrv) and GetResult(roRsVentLedHiDrv) and GetResult(roRsVentLedMidDrv) and GetResult
+                      (roRsVentLedLoDrv);
+                end;
+            roRsVentIgnDrv:
+                Result := RsBuf.rDatHVs[hvdVentDrv].rIgn;
+            roRsVentDrv:
+                begin
+                    Result := GetResult(roRsVentLedDrv) and GetResult(roRsOnBlow);
+                       // and GetResult(roRsVentOnDrv) and GetResult(roRsVentOffDrv);  // 운전석 전류 OS 사용 안 함
+                    // CHeck
+                end;
+
+            roDatVentOnCurrAss:
+                begin
+                    Result := (GetData(AOrd, 1) >= GetData(roSpecVentOnLo)) and (GetData(AOrd, 1) <= GetData(rospecVentOnHi));
+                end;
+            roRsVentOnAss:
+                Result := GetResult(roDatVentOnCurrAss);
+            roDatVentOffCurrAss:
+                begin
+                    Result := { (GetData(Index, 1) >= GetData(roSpecVentOffLo)) and }
+                    (GetData(AOrd, 1) <= GetData(rospecVentOffHi));
+                end;
+            roRsVentOffAss:
+                Result := GetResult(roDatVentOffCurrAss);
+            roDatVentLedOffBitAss, roRsVentLedOffAss:
+                begin
+                    Result := RsBuf.rDatHVs[hvdVentPsg].rLedOffBit = $00;
+                end;
+            roDatVentLedHiBitAss, roRsVentLedHiAss:
+                begin
+                    Result := RsBuf.rDatHVs[hvdVentPsg].rLedHiBit = $07;
+
+                end;
+            roDatVentLedMidBitAss, roRsVentLedMidAss:
+                begin
+                    Result := RsBuf.rDatHVs[hvdVentPsg].rLedMidBit = $03;
+                end;
+            roDatVentLedLoBitAss, roRsVentLedLoAss:
+                begin
+                    Result := RsBuf.rDatHVs[hvdVentPsg].rLedLoBit = $01;
+                end;
+            roRsVentLedAss:
+                begin
+                    Result := GetResult(roRsVentLedOffAss) and GetResult(roRsVentLedHiAss) and GetResult(roRsVentLedMidAss) and GetResult
+                      (roRsVentLedLoAss);
+                end;
+            roRsVentAss:
+                begin
+                    Result := GetResult(roRsVentLedAss) and GetResult(roRsVentOnAss) and GetResult(roRsVentOffAss);
+                end;
+
+            roRsVent:
+            begin
+                Result := GetResult(roRsVentDrv) and GetResult(roRsVentAss);
+            end;
+
+            roRsElec:
+            begin
+                Result := GetCompoJudge([roRsHeat, roRsVent, roRsOnBlow, roRsBuckle, roRsSmart]);
+            end;
+
+            roRsAccessory:
+                begin
+                    Result := RsBuf.rValidity[tsAccessory];
+                end;
+
+            
+
+            roDatBuckle, roRsBuckle:
+                begin
+                    if RsBuf.rModel.rTypes.GetBuckleType = btIO then
+                        Result := RsBuf.rValidity[tsBuckle]
+                    else
+                        Result := RsBuf.rModel.rspecs.rBuckleCurr.InRange(GetData(roDatBuckle));
+                end;
+
+            roRsWalkIn:
+                begin
+                    Result := RsBuf.rValidity[tsWalkIn]
+                end;
+
+        else
+            mIsProcessDone := false;
+            Result := false;
+        end;
+    end;
+
+end;
+
+function TSubDataBox4Elec.GetResultToATxt(APos: integer; IsUnit, IsResult: boolean): string;
+var
+    i: integer;
+begin
+    mIsProcessDone := true;
+    with mParent do
+    begin
+
+        case APos of
+//            ord(rospecHeatOnHiLo),
+//            ord(rospecHeatOffHiLo),
+
+            ord(rospecVentOnHiLo),
+            ord(rospecVentOffHiLo):
+                begin
+                    Result := GetModelToTxt(RsBuf.rModel, APos, IsUnit);
+                end;
+
+            ord(roDatHeatOnCurrDrv), ord(roDatHeatOffCurrDrv), ord(roDatVentOnCurrDrv), ord(roDatVentOffCurrDrv),
+            ord(roDatHeatOnCurrAss), ord(roDatHeatOffCurrAss), ord(roDatVentOnCurrAss),
+            ord(roDatVentOffCurrAss), ord(roDatOnBlow), ord(roDatOffBlow), ord(roDatBuckle):
+                begin
+                    if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                        Exit;
+
+                    if not IsExists(TResultOrd(APos)) or (abs(GetData(TResultOrd(APos))) = 999) then
+                        Result := '--'
+                    else
+                        Result := GetFloatToStr(GetData(TResultOrd(APos), 1), 1);
+
+                    if IsUnit and (Result <> '--') then
+                    begin
+                        if APos = ord(roDatBuckle) then
+                            Result := Result + ' mA'
+                        else
+                            Result := Result + ' A';
+                    end;
+
+                    if IsResult and IsTested(TResultOrd(APos)) then
+                    begin
+                        // --SJD 이부분은 결과조회 컴파일시만 주석해제 할것
+                        // Result := ARY_TAG[GetResult(TResultORD(APos))]+Result ;
+                    end;
+                end;
+
+        ord(roDatHeatLedOffBitDrv):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdHeatDrv].rLedOffBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+        ord(roDatHeatLedHiBitDrv):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdHeatDrv].rLedHiBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+        ord(roDatHeatLedMidBitDrv):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdHeatDrv].rLedMidBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+        ord(roDatHeatLedLoBitDrv):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdHeatDrv].rLedLoBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+
+        ord(roDatHeatLedOffBitAss):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdHeatPsg].rLedOffBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+        ord(roDatHeatLedHiBitAss):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdHeatPsg].rLedHiBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+        ord(roDatHeatLedMidBitAss):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdHeatPsg].rLedMidBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+        ord(roDatHeatLedLoBitAss):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdHeatPsg].rLedLoBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+
+        ord(roDatVentLedOffBitDrv):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdVentDrv].rLedOffBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+        ord(roDatVentLedHiBitDrv):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdVentDrv].rLedHiBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+        ord(roDatVentLedMidBitDrv):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdVentDrv].rLedMidBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+        ord(roDatVentLedLoBitDrv):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdVentDrv].rLedLoBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+
+        ord(roDatVentLedOffBitAss):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdVentPsg].rLedOffBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+        ord(roDatVentLedHiBitAss):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdVentPsg].rLedHiBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+        ord(roDatVentLedMidBitAss):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdVentPsg].rLedMidBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+        ord(roDatVentLedLoBitAss):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                for i := 0 to 2 do
+                begin
+                    if (RsBuf.rDatHVs[hvdVentPsg].rLedLoBit shr i and $01) = $01 then
+                    begin
+                        Result := Result + '1';
+                    end
+                    else
+                    begin
+                        Result := Result + '0';
+                    end;
+                end;
+            end;
+
+          ord(roRsElec),
+
+          ord(roRsHeatOnDrv), ord(roRsHeatOffDrv), ord(roRsHeatLedOffDrv), ord(roRsHeatLedHiDrv), ord(roRsHeatLedMidDrv),
+          ord(roRsHeatLedLoDrv), ord(roRsHeatLedDrv), ord(roRsHeatIgnDrv), ord(roRsHeatDrv), ord(roRsHeatOnAss), ord(roRsHeatOffAss),
+          ord(roRsHeatLedOffAss), ord(roRsHeatLedHiAss), ord(roRsHeatLedMidAss), ord(roRsHeatLedLoAss), ord(roRsHeatLedAss),
+          ord(roRsHeatIgnAss), ord(roRsHeatAss), ord(roRsHeat),
+
+          ord(roRsVentOnDrv), ord(roRsVentOffDrv), ord(roRsVentLedOffDrv), ord(roRsVentLedHiDrv), ord(roRsVentLedMidDrv),
+          ord(roRsVentLedLoDrv), ord(roRsVentLedDrv), ord(roRsVentIgnDrv), ord(roRsVentDrv),
+
+          ord(roRsVentOnAss), ord(roRsVentOffAss), ord(roRsVentLedOffAss), ord(roRsVentLedHiAss), ord(roRsVentLedMidAss),
+          ord(roRsVentLedLoAss), ord(roRsVentLedAss), ord(roRsVentIgnAss), ord(roRsVentAss), ord(roRsVent),
+          ord(roRsAccessory), ord(roRsSmart),
+          ord(roRsOnBlow), ord(roRsBuckle):
+            begin
+                if not IsExists(TResultOrd(APos)) and not IsTested(TResultOrd(APos)) then
+                    Exit;
+
+                Result := JUDGE_TXT[GetResult(TResultOrd(APos))];
+
+                if IsResult and IsTested(TResultOrd(APos)) then
+                begin
+                    Result := ARY_TAG[GetResult(TResultOrd(APos))] + Result;
+                end;
+            end;
+        else
+
+        end;
+
+    end;
+
+end;
+
+function TSubDataBox4Elec.GetTag: integer;
+begin
+    Result := mParent.Tag;
+end;
+
+procedure TSubDataBox4Elec.InitData(AReadEnv: boolean);
+begin
+
+    SetDataInit(tsHeatDrv);
+    SetDataInit(tsHeatPsg);
+    SetDataInit(tsVentDrv);
+    SetDataInit(tsVentPsg);
+    SetDataInit(tsBlow);
+    SetDataInit(tsAccessory);
+
+    SetDataInit(tsBuckle);
+    SetDataInit(tsWalkIn);
+
+
+    with mParent do
+    begin
+
+        if RsBuf.rModel.rTypes.IsBlower then
+        begin
+            RsBuf.rTested[tsBlow] := false; // Blow
+        end
+        else
+        begin
+            if RsBuf.rModel.rTypes.IsECU then
+            begin
+                RsBuf.rTested[tsHeatDrv] := false;//RsBuf.rModel.rTypes.CanDrvHeatTest;
+                RsBuf.rTested[tsVentDrv] := false;//RsBuf.rModel.rTypes.CanDrvVentTest;
+
+                RsBuf.rTested[tsHeatPsg] := false;//RsBuf.rModel.rTypes.CanPsgHeatTest;
+                RsBuf.rTested[tsVentPsg] := false;//RsBuf.rModel.rTypes.CanPsgVentTest;
+            end;
+        end;
+
+    end ;
+
+end;
+
+function TSubDataBox4Elec.IsExists(AORD: TResultORD): boolean;
+begin
+    mIsProcessDone := true;
+
+    with mParent do
+    begin
+
+        case AORD of
+            roDatHeatOnCurrDrv, roRsHeatOnDrv, roDatHeatOffCurrDrv, roRsHeatOffDrv, roDatHeatLedOffBitDrv, roDatHeatLedHiBitDrv,
+              roDatHeatLedMidBitDrv, roDatHeatLedLoBitDrv, roRsHeatLedOffDrv, roRsHeatLedHiDrv, roRsHeatLedMidDrv, roRsHeatLedLoDrv,
+              roRsHeatLedDrv,
+            { roRsHeatIgnDrv, } roRsHeatDrv:
+                Result := IsExists(tsHeatDrv);
+
+            roDatHeatOnCurrAss, roRsHeatOnAss, roDatHeatOffCurrAss, roRsHeatOffAss, roDatHeatLedOffBitAss, roDatHeatLedHiBitAss,
+              roDatHeatLedMidBitAss, roDatHeatLedLoBitAss, roRsHeatLedOffAss, roRsHeatLedHiAss, roRsHeatLedMidAss, roRsHeatLedLoAss,
+              roRsHeatLedAss,
+            { roRsHeatIgnAss, } roRsHeatAss:
+                Result := IsExists(tsHeatPsg);
+
+            roRsHeat:
+                Result := IsExists(tsHeatDrv) or IsExists(tsHeatPsg);
+
+
+            roDatVentOnCurrDrv, roRsVentOnDrv, roDatVentOffCurrDrv, roRsVentOffDrv, roDatVentLedOffBitDrv, roDatVentLedHiBitDrv,
+              roDatVentLedMidBitDrv, roDatVentLedLoBitDrv, roRsVentLedOffDrv, roRsVentLedHiDrv, roRsVentLedMidDrv, roRsVentLedLoDrv,
+              roRsVentLedDrv,
+            { roRsVentIgnDrv, } roRsVentDrv:
+                Result := IsExists(tsVentDrv);
+
+            roDatVentOnCurrAss, roRsVentOnAss, roDatVentOffCurrAss, roRsVentOffAss, roDatVentLedOffBitAss, roDatVentLedHiBitAss,
+              roDatVentLedMidBitAss, roDatVentLedLoBitAss, roRsVentLedOffAss, roRsVentLedHiAss, roRsVentLedMidAss, roRsVentLedLoAss,
+              roRsVentLedAss,
+            { roRsVentIgnAss, } roRsVentAss:
+                Result := IsExists(tsVentPsg);
+
+            roRsVent:
+                begin
+                    Result := IsExists(tsVentDrv) or IsExists(tsVentPsg);
+                end;
+
+            roDatOffBlow, roRsOffBlow,
+            roDatOnBlow, roRsOnBlow:
+                Result := IsExists(tsBlow);
+
+            roDatBuckle,
+            roRsBuckle:
+                Result := IsExists(tsBuckle);
+
+            roRsAccessory:
+                Result := IsExists(tsAccessory);
+
+            roRsWalkIn:
+                Result := IsExists(tsWalkIn);
+
+            roRsElec:
+                begin
+                    Result := IsExists(tsHeatDrv) or IsExists(tsHeatPsg) or IsExists(tsVentDrv) or IsExists(tsVentPsg) or IsExists(tsBlow);
+                    Result := Result or IsExists(tsElec);
+                    // if not gSysEnv.rIsTestElec then Result := true
+                    // else
+                end;
+
+
+
+        else
+            mIsProcessDone := false;
+            Result := false;
+        end;
+    end;
+
+end;
+
+function TSubDataBox4Elec.IsTested(AORD: TResultORD): boolean;
+begin
+    mIsProcessDone := true;
+
+    with mParent do
+    begin
+
+        case AORD of
+            roDatBuckle,
+            roRsBuckle:
+                begin
+                    Result := IsTested(tsBuckle);
+                end;
+
+            roRsAccessory:
+                begin
+                    Result := IsTested(tsAccessory);
+                end;
+
+
+            roRsElec:
+                begin
+                    Result := IsTested(tsHeatDrv) or IsTested(tsHeatPsg) or
+                        IsTested(tsVentDrv) or IsTested(tsVentPsg) or IsTested(tsBlow);
+
+                    Result := Result or IsTested(tsElec);
+                end;
+
+
+            roDatHeatOnCurrDrv, roRsHeatOnDrv, roDatHeatOffCurrDrv, roRsHeatOffDrv, roDatHeatLedOffBitDrv, roDatHeatLedHiBitDrv,
+              roDatHeatLedMidBitDrv, roDatHeatLedLoBitDrv, roRsHeatLedOffDrv, roRsHeatLedHiDrv, roRsHeatLedMidDrv, roRsHeatLedLoDrv,
+              roRsHeatLedDrv,
+            { roRsHeatIgnDrv, } roRsHeatDrv:
+                Result := IsTested(tsHeatDrv);
+
+            roDatHeatOnCurrAss, roRsHeatOnAss, roDatHeatOffCurrAss, roRsHeatOffAss, roDatHeatLedOffBitAss, roDatHeatLedHiBitAss,
+              roDatHeatLedMidBitAss, roDatHeatLedLoBitAss, roRsHeatLedOffAss, roRsHeatLedHiAss, roRsHeatLedMidAss, roRsHeatLedLoAss,
+              roRsHeatLedAss,
+            { roRsHeatIgnAss, } roRsHeatAss:
+                Result := IsTested(tsHeatPsg);
+
+            roRsHeat:
+                Result := IsTested(tsHeatDrv) or IsTested(tsHeatPsg);
+
+            roDatOnBlow, roRsOnBlow:
+                begin
+                    Result := IsTested(tsBlow);
+                end;
+
+            roDatVentOnCurrDrv, roRsVentOnDrv, roDatVentOffCurrDrv, roRsVentOffDrv, roDatVentLedOffBitDrv, roDatVentLedHiBitDrv,
+              roDatVentLedMidBitDrv, roDatVentLedLoBitDrv, roRsVentLedOffDrv, roRsVentLedHiDrv, roRsVentLedMidDrv, roRsVentLedLoDrv,
+              roRsVentLedDrv,
+            { roRsVentIgnDrv, } roRsVentDrv:
+                Result := IsTested(tsVentDrv);
+
+            roDatVentOnCurrAss, roRsVentOnAss, roDatVentOffCurrAss, roRsVentOffAss, roDatVentLedOffBitAss, roDatVentLedHiBitAss,
+              roDatVentLedMidBitAss, roDatVentLedLoBitAss, roRsVentLedOffAss, roRsVentLedHiAss, roRsVentLedMidAss, roRsVentLedLoAss,
+              roRsVentLedAss,
+            { roRsVentIgnAss, } roRsVentAss:
+                Result := IsTested(tsVentPsg);
+
+            roRsVent:
+                begin
+                    Result := IsTested(tsVentDrv) or IsTested(tsVentPsg);
+                end;
+
+            roRsWalkIn:
+                Result := IsTested(tsWalkIn);
+
+        else
+            mIsProcessDone := false;
+            Result := false;
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4Elec.SetData(AORD: TResultOrd; const Value: integer);
+var
+    Buf: PResult;
+begin
+    mIsProcessDone := true;
+
+    Buf := mParent.GetPResultBuffer;
+
+    with mParent do
+    begin
+
+
+        case AORD of
+            roHVType:
+                Buf.rModel.rTypes.SetHVType(Buf.rModel.rTypes.GetHVType);
+
+            roDatHeatLedOffBitDrv:
+                Buf.rDatHVs[hvdHeatDrv].rLedOffBit := BYTE(Value);
+            roDatHeatLedHiBitDrv:
+                Buf.rDatHVs[hvdHeatDrv].rLedHiBit := BYTE(Value);
+            roDatHeatLedMidBitDrv:
+                Buf.rDatHVs[hvdHeatDrv].rLedMidBit := BYTE(Value);
+            roDatHeatLedLoBitDrv:
+                Buf.rDatHVs[hvdHeatDrv].rLedLoBit := BYTE(Value);
+
+            roDatHeatLedOffBitAss:
+                Buf.rDatHVs[hvdHeatPsg].rLedOffBit := BYTE(Value);
+            roDatHeatLedHiBitAss:
+                Buf.rDatHVs[hvdHeatPsg].rLedHiBit := BYTE(Value);
+            roDatHeatLedMidBitAss:
+                Buf.rDatHVs[hvdHeatPsg].rLedMidBit := BYTE(Value);
+            roDatHeatLedLoBitAss:
+                Buf.rDatHVs[hvdHeatPsg].rLedLoBit := BYTE(Value);
+
+            roDatVentLedOffBitDrv:
+                Buf.rDatHVs[hvdVentDrv].rLedOffBit := BYTE(Value);
+            roDatVentLedHiBitDrv:
+                Buf.rDatHVs[hvdVentDrv].rLedHiBit := BYTE(Value);
+            roDatVentLedMidBitDrv:
+                Buf.rDatHVs[hvdVentDrv].rLedMidBit := BYTE(Value);
+            roDatVentLedLoBitDrv:
+                Buf.rDatHVs[hvdVentDrv].rLedLoBit := BYTE(Value);
+
+            roDatVentLedOffBitAss:
+                Buf.rDatHVs[hvdVentPsg].rLedOffBit := BYTE(Value);
+            roDatVentLedHiBitAss:
+                Buf.rDatHVs[hvdVentPsg].rLedHiBit := BYTE(Value);
+            roDatVentLedMidBitAss:
+                Buf.rDatHVs[hvdVentPsg].rLedMidBit := BYTE(Value);
+            roDatVentLedLoBitAss:
+                Buf.rDatHVs[hvdVentPsg].rLedLoBit := BYTE(Value);
+
+        else
+            mIsProcessDone := false;
+
+        end;
+    end;
+
+
+
+end;
+
+procedure TSubDataBox4Elec.SetDataInit(ATsMode: TTsORD);
+var
+    Buf: PResult;
+begin
+    mIsProcessDone := true;
+
+    Buf := mParent.GetPResultBuffer;
+
+    with mParent do
+    begin
+        case ATsMode of
+            tsHeatDrv:
+            begin
+                Buf.rValidity[ATsMode] := false;
+                Buf.rExists[ATsMode] := false;
+                Buf.rDatHVs[hvdHeatDrv].rOnCurr := 0;
+                Buf.rDatHVs[hvdHeatDrv].rOffCurr := 0;
+
+            end;
+            tsHeatPsg:
+            begin
+                Buf.rValidity[ATsMode] := false;
+                Buf.rExists[ATsMode] := false;
+                Buf.rDatHVs[hvdHeatPsg].rOnCurr := 0;
+                Buf.rDatHVs[hvdHeatPsg].rOffCurr := 0;
+            end;
+            tsVentDrv:
+            begin
+                Buf.rValidity[ATsMode] := false;
+                Buf.rExists[ATsMode] := false;
+                Buf.rDatHVs[hvdVentDrv].rOnCurr := 0;
+                Buf.rDatHVs[hvdVentDrv].rOffCurr := 0;
+            end;
+            tsVentPsg:
+            begin
+                Buf.rValidity[ATsMode] := false;
+                Buf.rExists[ATsMode] := false;
+                Buf.rDatHVs[hvdVentPsg].rOnCurr := 0;
+                Buf.rDatHVs[hvdVentPsg].rOffCurr := 0;
+            end;
+            tsBlow:
+            begin
+                Buf.rValidity[ATsMode] := false;
+                Buf.rExists[ATsMode] := false;
+                Buf.rDatHVs[hvdVentDrv].rOnCurr := 0;
+                Buf.rDatHVs[hvdVentDrv].rOffCurr := 0;
+            end;
+
+            tsBuckle:
+            begin
+                //Buf.rBuckleCurr := 999;
+                Buf.rValidity[tsBuckle] := false;
+                Buf.rTested[tsBuckle] := false;//(Buf.rModel.rTypes.GetBuckleType <> btNone);
+                Buf.rExists[ATsMode] := false;
+
+            end;
+
+            tsSmart:
+            begin
+                Buf.rValidity[tsSmart] := false;
+                Buf.rTested[tsSmart] := Buf.rModel.rTypes.IsSmart;
+                Buf.rExists[tsSmart] := false;
+            end;
+
+            tsWalkIn:
+            begin
+                Buf.rValidity[ATsMode]:= false ;
+                Buf.rExists[ATsMode]:= false ;
+                Buf.rTested[ATsMode]:= Buf.rModel.rTypes.IsWalkIn;// and (Buf.rModel.rTypes.GetCarType = rtOS);
+            end;
+
+
+        else
+            mIsProcessDone := false;
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4Elec.SetValidity;
+begin
+    with mParent do
+    begin
+        RsBuf.rValidity[tsHeatDrv]:= GetResult(roRsHeatDrv) ;
+        RsBuf.rValidity[tsHeatPsg]:= GetResult(roRsHeatAss) ;
+        RsBuf.rValidity[tsHeatDrv]:= GetResult(roRsVentDrv) ;
+        RsBuf.rValidity[tsVentPsg]:= GetResult(roRsVentAss) ;
+        RsBuf.rValidity[tsBlow]:= GetResult(roRsVentOnDrv) ;
+        RsBuf.rValidity[tsSmart]:= GetResult(tsSmart) ;
+        RsBuf.rValidity[tsAccessory]:= GetResult(tsAccessory) ;
+        RsBuf.rValidity[tsBuckle]:= GetResult(tsBuckle) ;
+    end;
+
+end;
+
+procedure TSubDataBox4Elec.SetData(AORD: TResultORD; const Value: boolean);
+var
+    Buf: PResult;
+begin
+
+    mIsProcessDone := true;
+
+    Buf := mParent.GetPResultBuffer;
+
+    with mParent do
+    begin
+        case AORD of
+            roRsBuckle:
+            begin
+                Buf.rExists[tsBuckle] := true;
+                Buf.rValidity[tsBuckle] := Value;
+                Buf.rTested[tsBuckle] := true;
+            end;
+            
+   			roRsAccessory:
+                RsBuf.rValidity[tsAccessory] := Value;
+
+            roRsSmart:
+            begin
+                Buf.rValidity[tsSmart] := Value;
+                Buf.rExists[tsSmart] := true;
+            end;
+
+            roRsWalkIn:
+            begin
+                Buf.rValidity[tsWalkIn]:= Value ;
+                Buf.rExists[tsWalkIn]:= true ;
+                Buf.rTested[tsWalkIn]:= true;
+            end
+        else
+            mIsProcessDone := false;
+        end;
+
+    end;
+
+end;
+
+procedure TSubDataBox4Elec.SetData(AORD: TResultORD; const Value: double);
+var
+    Buf: PResult;
+begin
+    mIsProcessDone := true;
+
+    Buf := mParent.GetPResultBuffer;
+
+    with mParent do
+    begin
+        case AORD of
+            roDatHeatOnCurrDrv:
+                begin
+                    Buf.rDatHVs[hvdHeatDrv].rOnCurr := Value + Offsets.rVal[ucHeat];
+                    Buf.rExists[tsHeatDrv] := true;
+                end;
+            roDatHeatOffCurrDrv:
+                begin
+                    Buf.rDatHVs[hvdHeatDrv].rOffCurr := Value + Offsets.rVal[ucHeat];
+                    Buf.rExists[tsHeatDrv] := true;
+                end;
+
+            roDatHeatOnCurrAss:
+                begin
+                    Buf.rDatHVs[hvdHeatPsg].rOnCurr := Value + Offsets.rVal[ucHeat];
+                    Buf.rExists[tsHeatPsg] := true;
+                end;
+            roDatHeatOffCurrAss:
+                begin
+                    Buf.rDatHVs[hvdHeatPsg].rOffCurr := Value + Offsets.rVal[ucHeat];
+                    Buf.rExists[tsHeatPsg] := true;
+                end;
+
+            roDatVentOnCurrDrv:
+                begin
+                    Buf.rDatHVs[hvdVentDrv].rOnCurr := Value + Offsets.rVal[ucVent];
+                    if IsTested(tsBlow) then
+                        Buf.rExists[tsBlow] := true
+                    else
+                        Buf.rExists[tsVentDrv] := true;
+                end;
+            roDatVentOffCurrDrv:
+                begin
+                    Buf.rDatHVs[hvdVentDrv].rOffCurr := Value + Offsets.rVal[ucVent];
+                    Buf.rExists[tsVentDrv] := true;
+                end;
+            roDatVentOnCurrAss:
+                begin
+                    Buf.rDatHVs[hvdVentPsg].rOnCurr := Value + Offsets.rVal[ucVent];
+                    Buf.rExists[tsVentPsg] := true;
+                end;
+            roDatVentOffCurrAss:
+                begin
+                    Buf.rDatHVs[hvdVentPsg].rOffCurr := Value + Offsets.rVal[ucVent];
+                    Buf.rExists[tsVentPsg] := true;
+                end;
+            roDatOnBlow:
+                begin
+                    Buf.rDatHVs[hvdVentDrv].rOnCurr := Value ;
+                    Buf.rExists[tsBlow] := true;
+                end;
+            roDatOffBlow:
+                begin
+                    Buf.rDatHVs[hvdVentDrv].rOffCurr := Value;
+                    Buf.rExists[tsBlow] := true;
+                end;
+
+            roDatBuckle:
+                begin
+
+                    //Buf.rBuckleCurr := Value;
+                    Buf.rExists[tsBuckle] := true;
+
+                end;
+            else
+                mIsProcessDone := false;
+
+        end;
+    end;
+
+
+end;
+
+procedure TSubDataBox4Elec.SetData(AORD: TResultORD; const Value: string);
+begin
+    with mParent do
+    begin
+        mIsProcessDone := false;
+    end;
+
+end;
+
+
+
+end.
+                

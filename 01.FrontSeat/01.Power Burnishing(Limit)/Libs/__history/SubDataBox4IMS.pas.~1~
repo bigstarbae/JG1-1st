@@ -1,0 +1,398 @@
+{
+	Ver.240912.00
+}
+unit SubDataBox4IMS;
+
+interface
+uses
+    BaseDataBox, DataBox, DataUnit;
+
+type
+    TSubDataBox4IMS = class(TBaseDataBox)
+    private
+        mParent: TDataBox;
+
+        function GetTag: integer; override;
+        procedure SetValidity; override;
+    public
+        constructor Create(Parent: TDataBox) ;
+
+
+        procedure InitData(AReadEnv: boolean=false); override;
+        procedure SetDataInit(ATsMode: TTsORD) ;override;
+
+        function  IsExists(AORD: TResultORD): boolean ; overload ; override;
+        function  IsTested(AORD: TResultORD): boolean ; overload ; override;
+
+        function  GetData(AORD: TResultORD; ADigit:integer=0): double ; overload ; override;
+        function  GetResult(AORD: TResultORD): boolean ; overload ; override;
+        function  GetResult(ATsMode: TTsORD): boolean ;  overload ; override;
+        function  GetResultToATxt(APos:integer;  IsUnit: boolean; IsResult: boolean = false): string; override ;
+
+        procedure SetData(AORD: TResultORD; const Value: double) ; overload; override;
+        procedure SetData(AORD: TResultORD; const Value: string) ; overload; override;
+        procedure SetData(AORD: TResultORD; const Value: boolean); overload; override;
+        procedure SetData(AORD: TResultOrd; const Value: integer); overload; override;
+    end;
+
+implementation
+uses
+    Log, SeatType, SeatMotorType, ModelUnit, SysEnv, DataUnitHelper;
+
+{ TSubDataBox4IMS }
+
+constructor TSubDataBox4IMS.Create(Parent: TDataBox);
+begin
+    inherited Create;
+    mParent := Parent
+end;
+
+
+
+function TSubDataBox4IMS.GetData(AORD: TResultORD; ADigit: integer): double;
+begin
+    mIsProcessDone := true;
+
+    with mParent do
+    begin
+
+        mIsProcessDone := false;
+        Result := 0.0;
+
+    end;
+end;
+
+function TSubDataBox4IMS.GetResult(ATsMode: TTsORD): boolean;
+begin
+    mIsProcessDone := true;
+
+    with mParent do
+    begin
+
+        case ATsMode of
+
+            tsIMS_MEM1 : Result:= GetResult(roRsMem1) ;
+            tsIMS_MEM2 : Result:= GetResult(roRsMem2) ;
+            tsIMS_EasyAccess  : Result:= GetResult(roRsEasyAccess) ;
+            tsLimit    : Result:= GetResult(roRsLimit)
+        else
+            mIsProcessDone := false;
+            Result := false;
+        end;
+    end;
+end;
+
+function TSubDataBox4IMS.GetResult(AORD: TResultORD): boolean;
+begin
+    mIsProcessDone := true;
+
+    with mParent do
+    begin
+
+        case AOrd of
+            roRsMem1:
+            begin
+                Result:= RsBuf.rDatIMS.rMEM1 ;
+            end;
+            roRsMem2:
+            begin
+                Result:= RsBuf.rDatIMS.rMEM2 ;
+            end;
+            roRsEasyAccess:
+            begin
+                Result:= RsBuf.rDatIMS.rKey ;
+            end;
+            roRsIMS:
+            begin
+                Result:= GetCompoJudge([roRsMem1,roRsMem2,roRsEasyAccess]);
+            end ;
+            roRsLimit_SLIDE   : Result := RsBuf.rDatMtrs[tmSlide].rLimit;
+            roRsLimit_Tilt   : Result := RsBuf.rDatMtrs[tmTilt].rLimit;
+            roRsLimit_Height   : Result := RsBuf.rDatMtrs[tmHeight].rLimit;
+            roRsLimit_CushExt : Result := RsBuf.rDatMtrs[tmCushExt].rLimit;
+            roRsLimit:
+            begin
+                Result:= GetCompoJudge([roRsLimit_SLIDE, roRsLimit_Tilt, roRsLimit_Height, roRsLimit_CushExt]);
+
+            end ;
+        else
+            mIsProcessDone := false;
+            Result := false;
+        end;
+    end;
+
+end;
+
+
+
+function TSubDataBox4IMS.GetResultToATxt(APos: integer; IsUnit, IsResult: boolean): string;
+begin
+    mIsProcessDone := true;
+
+    with mParent do
+    begin
+        case APos of
+            ord(roRsMem1),
+            ord(roRsMem2),
+            ord(roRsEasyAccess),
+
+            ord(roRsIMS),
+            ord(roRsLimit_SLIDE),
+            ord(roRsLimit_Tilt),
+            ord(roRsLimit_Height),
+            ord(roRsLimit_CushExt),
+            ord(roRsLimit):
+            begin
+                if not IsExists(TResultORD(APos))
+                    and not IsTested(TResultORD(APos)) then Exit ;
+
+                Result := JUDGE_TXT[GetResult(TResultORD(APos))] ;
+
+                if IsResult and IsTested(TResultORD(APos)) then
+                begin
+                    Result := ARY_TAG[GetResult(TResultORD(APos))] + Result ;
+                end ;
+            end ;
+
+        else
+            mIsProcessDone := false;
+        end;
+
+    end;
+end;
+
+function TSubDataBox4IMS.GetTag: integer;
+begin
+    Result := mParent.Tag;
+end;
+
+procedure TSubDataBox4IMS.InitData(AReadEnv: boolean);
+begin
+
+
+    SetDataInit(tsLimit);
+
+
+    with mParent do
+    begin
+
+    end ;
+end;
+
+function TSubDataBox4IMS.IsExists(AORD: TResultORD): boolean;
+begin
+    mIsProcessDone := true;
+    with mParent do
+    begin
+
+        case AORD of
+
+            roRsMem1: Result:= IsExists(tsIMS_MEM1) ;
+            roRsMem2: Result:= IsExists(tsIMS_MEM2) ;
+            roRsEasyAccess: Result:= IsExists(tsIMS_EasyAccess) ;
+
+
+            roRsIMS:
+            begin
+                Result:= IsExists(tsIMS_MEM1)
+                            or IsExists(tsIMS_MEM2)
+                            or IsExists(tsIMS_MEM2) ;
+            end ;
+            roRsLimit_SLIDE   : Result:= IsExists(tsLimit_Slide) ;
+            roRsLimit_Tilt   : Result:= IsExists(tsLimit_Tilt) ;
+            roRsLimit_Height   : Result:= IsExists(tsLimit_Height) ;
+            roRsLimit_CushExt : Result := IsExists(tsLimit_CushExt) ;
+            roRsLimit : Result:= IsExists(tsLimit) ;
+        else
+            mIsProcessDone := false;
+            Result := false;
+        end;
+    end;
+
+end;
+
+function TSubDataBox4IMS.IsTested(AORD: TResultORD): boolean;
+begin
+    mIsProcessDone := true;
+
+    with mParent do
+    begin
+
+        case AORD of
+
+            roRsMem1: Result:= IsTested(tsIMS_MEM1) and IsTested(tsLimit);
+            roRsMem2: Result:= IsTested(tsIMS_MEM2) and IsTested(tsLimit);
+            roRsEasyAccess: Result:= IsTested(tsIMS_EasyAccess) and IsTested(tsLimit);
+            roRsIMS:
+            begin
+                Result:= IsTested(tsIMS_MEM1)
+                            or IsTested(tsIMS_MEM2)
+                            or IsTested(tsIMS_EasyAccess)
+                            or IsTested(tsLimit) ;
+            end ;
+            roRsLimit_SLIDE: Result:= IsTested(tsLimit) and IsTested(tsLimit_Slide) ;
+            roRsLimit_Tilt: Result:= IsTested(tsLimit) and IsTested(tsLimit_Tilt) ;
+            roRsLimit_Height: Result:= IsTested(tsLimit) and IsTested(tsLimit_Height) ;
+            roRsLimit_CushExt: Result:= IsTested(tsLimit) and IsTested(tsLimit_CushExt) ;
+
+            roRsLimit : Result:= IsTested(tsLimit) ;
+
+
+        else
+            mIsProcessDone := false;
+            Result := false;
+        end;
+    end;
+end;
+
+procedure TSubDataBox4IMS.SetData(AORD: TResultORD; const Value: boolean);
+begin
+    mIsProcessDone := true;
+
+    with mParent do
+    begin
+        case AORD of
+            roRsMem1:
+            begin
+                RsBuf.rDatIMS.rMEM1:= Value ;
+                RsBuf.rTested[tsIMS_MEM1]:= true ;
+                RsBuf.rExists[tsIMS_MEM1]:= true ;
+            end;
+            roRsMem2:
+            begin
+                RsBuf.rDatIMS.rMEM2:= Value ;
+                //RsBuf.rTested[tsIMS_EasyAccess]:= true ;
+                RsBuf.rExists[tsIMS_MEM2]:= true ;
+            end;
+            roRsEasyAccess:
+            begin
+                RsBuf.rDatIMS.rKey:= Value ;
+                //RsBuf.rTested[tsIMS_EasyAccess]:= true ;
+                RsBuf.rExists[tsIMS_EasyAccess]:= true ;
+            end;
+            roRsLimit_SLIDE:
+            begin
+                RsBuf.rExists[tsLimit]:= true;
+                RsBuf.rExists[tsLimit_Slide]:= true;
+                RsBuf.rDatMtrs[tmSlide].rLimit:= Value ;
+            end ;
+            roRsLimit_Tilt:
+            begin
+                RsBuf.rExists[tsLimit]:= true;
+                RsBuf.rExists[tsLimit_Tilt]:= true;
+                RsBuf.rDatMtrs[tmTilt].rLimit := Value ;
+
+            end ;
+            roRsLimit_Height:
+            begin
+                RsBuf.rExists[tsLimit]:= true;
+                RsBuf.rExists[tsLimit_Height]:= true;
+                RsBuf.rDatMtrs[tmHeight].rLimit := Value ;
+            end;
+            roRsLimit_CushExt:
+            begin
+                RsBuf.rExists[tsLimit]:= true;
+                RsBuf.rExists[tsLimit_CushExt]:= true;
+                RsBuf.rDatMtrs[tmCushExt].rLimit := Value ;
+            end;
+        else
+            mIsProcessDone := false;
+
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4IMS.SetData(AORD: TResultOrd; const Value: integer);
+begin
+
+    with mParent do
+    begin
+
+        case AORD of
+            roNone: ;
+        else
+            mIsProcessDone := false;
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4IMS.SetDataInit(ATsMode: TTsORD);
+var
+    Buf: PResult;
+begin
+    mIsProcessDone := true;
+    Buf := mParent.GetPResultBuffer;
+
+    with mParent do
+    begin
+        case ATsMode of
+
+
+            tsLimit:
+            begin
+                Buf.rDatMtrs[tmSlide].rLimit:= false ;
+                Buf.rDatMtrs[tmTilt].rLimit:= false ;
+                Buf.rDatMtrs[tmHeight].rLimit:= false ;
+                Buf.rDatMtrs[tmCushExt].rLimit:= false ;
+            end;
+
+        else
+            mIsProcessDone := false;
+            gLog.Panel('SubDataBox4IMS.SetDataInit:%s(%d) 처리 누락', [GetTsOrdName(ATsMode), Ord(ATsMode)]);
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4IMS.SetValidity;
+begin
+    with mParent do
+    begin
+        RsBuf.rValidity[tsIMS_MEM1]:= GetResult(tsIMS_MEM1) ;
+        RsBuf.rValidity[tsIMS_MEM2]:= GetResult(tsIMS_MEM2) ;
+        RsBuf.rValidity[tsIMS_EasyAccess]:= GetResult(tsIMS_EasyAccess) ;
+        RsBuf.rValidity[tsLimit]:= GetResult(tsLimit) ;
+    end;
+
+end;
+
+procedure TSubDataBox4IMS.SetData(AORD: TResultORD; const Value: double);
+var
+    Buf: PResult;
+begin
+    mIsProcessDone := true;
+    Buf := mParent.GetPResultBuffer;
+
+    with mParent do
+    begin
+
+        case AORD of
+
+            roNone: ;
+        else
+            mIsProcessDone := false;
+
+        end;
+    end;
+
+end;
+
+procedure TSubDataBox4IMS.SetData(AORD: TResultORD; const Value: string);
+begin
+
+    with mParent do
+    begin
+        case AORD of
+            roNone: ;
+        else
+            mIsProcessDone := false;
+        end;
+    end;
+
+end;
+
+
+end.
+

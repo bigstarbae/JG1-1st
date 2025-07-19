@@ -1,0 +1,211 @@
+unit Global;
+
+interface
+
+uses
+    Windows, Graphics, ExtCtrls, Label3D, Controls;
+
+const
+
+    PROJECT_NAME = 'POWER SEAT Burnishing';
+    MAX_ST_COUNT = 1; // 공정 갯수
+
+
+    //-----------------------------------------------
+    MX5A_2ND_SW_CON_TYPE = 51;
+    MX5A_2ND_WIN_CON_TYPE = 61;
+    //-----------------------------------------------
+
+
+    _FMT_PRN_DATE = 'DD-MM-YY'; // 인쇄용
+    _FMT_SN_DATE = 'YYYYMMDD'; // 시리얼 No
+
+    FORMAT_SPEED = '0.0';
+    FORMAT_ANGLE = '0.0';
+    FORMAT_ANGLE_UNIT = '(°)';
+
+    SYS_COLOR = 100;
+
+    COLOR_TOT_DEC_BK = $003D3D3D;
+    // COLOR_OK = $00FC9B43;
+    COLOR_OK = $CC483F; //$00FF6464;       // $00FF8000
+    COLOR_NG = $005555FF;
+    COLOR_NG_BK     = $00E1E1FF;
+    COLOR_NG_LIGHT  = $00E1E1FF;
+
+    COLOR_TEXT = $00555555;
+
+    COLOR_ACTIVE = $000080FF;
+    COLOR_NO_USE = clSilver;
+
+    COLOR_SPEC = $00E3FFFF;
+
+    COLOR_D_OK = clNavy; // Dark OK
+
+
+
+    SERIAL_DELIMITER = ' '; // 업체에따라 'A'로 사용
+    HKMC_CO_AREA = 'PB30';
+    // 바코드 프린팅 항목명
+
+    BPI_NAME_PAPER = 'Paper';
+    BPI_NAME_CAR_TYPE = 'Car Type';
+    BPI_NAME_PART_NAME = 'Part Name';
+    BPI_NAME_PART_NO = 'Part No';
+    BPI_NAME_LCL_PART_NO = 'Code';
+    BPI_NAME_COLOR = 'Color';
+    BPI_NAME_SERIAL_NO = 'Serial No';
+    BPI_NAME_DATE = '날짜';
+    BPI_NAME_NOISE_DATA = '소음 결과';
+    BPI_NAME_2DBC = '2D 바코드';
+    BPI_NAME_SEAT_NAME = 'Seat Name';
+
+    BPI_CLS_ID_NG = 1;
+    BPI_NAME_NG_MARK = 'NG Mark';
+    BPI_NAME_NG_2DBC = 'NG 2D 바코드';
+    BPI_NAME_NG_PART_NO = 'NG Part No';
+    BPI_NAME_NG_SERIAL_NO = 'NG Serial No';
+
+    // Interval Caller
+    IC_ATL = 'IC_SW_ATL';
+    IC_IGN = 'IC_IGN';
+    IC_IGN_RJ1_PE = 'IC_IGN_RJ1_PE';
+    IC_SPEED = 'IC_SPEED';
+    IC_IBOX_ON = 'IC_IBOX_ON';
+    IC_IBOX_CRK = 'IC_IBOX_CRK';
+
+type
+    TTestState = (tsNoUse, tsNormal, tsActive);
+    TResultJudge = (rjNone, rjOK, rjNG);
+
+var
+    gPrnSerialNo: integer;
+
+
+procedure DrawQRCode(Img: TImage; URL: string);
+function ShowPasswordForm: boolean;
+
+procedure DisplayJudge(ALabel: TLabel3D; Judge: Boolean);
+procedure DisplayCaption(Lbl: TLabel3D; Caption: string; FontColor: TColor = clGray);
+
+function GetDiskFreeSize(Dir: string; var Totalsize: int64): int64;
+
+implementation
+
+uses
+    Forms, Types, DelphiZXingQRCode, URect, SysEnv, LangTran, PasswdForm;
+
+
+
+procedure DisplayJudge(ALabel: TLabel3D; Judge: Boolean);
+begin
+    if Judge then
+    begin
+
+        ALabel.Caption := 'OK';
+        ALabel.Font.Color := clWhite;
+        ALabel.Color := COLOR_OK;
+
+    end
+    else
+    begin
+        ALabel.Caption := 'NG';
+        ALabel.Font.Color := clWhite;
+        ALabel.Color := COLOR_NG;
+    end;
+end;
+
+procedure DisplayCaption(Lbl: TLabel3D; Caption: string; FontColor: TColor = clGray);
+begin
+    Lbl.Font.Color := FontColor;
+    Lbl.Caption := Caption;
+end;
+
+function ShowPasswordForm: boolean;
+begin
+    if gsysEnv.rOP.rUsePw then
+    begin
+        frmPasswd := TfrmPasswd.Create(Application);
+        with frmPasswd do
+        begin
+            if ShowModal = mrNo then
+                Exit(false);
+        end;
+    end;
+
+    Result := true;
+
+end;
+
+
+
+procedure DrawQRCode(Img: TImage; URL: string);
+var
+    Col, Row: integer;
+    QRCode: TDelphiZXingQRCode;
+    TmpBmp: TBitmap;
+begin
+    if URL = '' then
+    begin
+        URL := _TR('해당되는 정보가 없습니다');
+    end;
+    QRCode := TDelphiZXingQRCode.Create;
+    TmpBmp := TBitmap.Create;
+    try
+        QRCode.Data := URL;
+        QRCode.Encoding := qrAuto;
+        QRCode.QuietZone := 0;
+        TmpBmp.SetSize(QRCode.Rows, QRCode.Columns);
+        for Row := 0 to QRCode.Rows - 1 do
+        begin
+            for Col := 0 to QRCode.Columns - 1 do
+            begin
+                if (QRCode.IsBlack[Row, Col]) then
+                begin
+                    TmpBmp.Canvas.Pixels[Col, Row] := clBlack;
+                end
+                else
+                begin
+                    TmpBmp.Canvas.Pixels[Col, Row] := clWhite;
+                end;
+            end;
+
+            Img.Picture.Bitmap.SetSize(Img.Width, Img.Height);
+            Img.Canvas.Brush.Color := clWhite;
+            Img.Canvas.FrameRect(Img.ClientRect);
+            Img.Canvas.StretchDraw(Bounds(0, 0, Img.Width, Img.Height), TmpBmp);
+
+        end;
+    finally
+        QRCode.Free;
+        TmpBmp.Free;
+
+    end;
+end;
+
+function GetKiloByte(aByte: int64): int64;
+begin
+    Result := aByte div 1024;
+end;
+
+function GetMegaByte(aByte: int64): int64;
+begin
+    Result := GetKiloByte(aByte) div 1024;
+end;
+
+function GetGigaByte(aByte: int64): int64;
+begin
+    Result := GetMegaByte(aByte) div 1024;
+end;
+
+function GetDiskFreeSize(Dir: string; var Totalsize: int64): int64;
+var
+    FreeAvailable, TotalFree: int64;
+begin
+    Result := -1;
+    if not GetDiskFreeSpaceEx(PChar(Dir), FreeAvailable, Totalsize, @TotalFree) then
+        Exit;
+    Result := TotalFree;
+end;
+
+end.

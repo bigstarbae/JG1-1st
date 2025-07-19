@@ -1,0 +1,1101 @@
+{
+    Ver 250625.00
+}
+unit ModelType;
+
+interface
+
+uses
+    Windows, Sysutils, Classes, IniFiles, SeatType;
+
+const
+    MDL_COL_COUNT = 5;    // Strings에 설정할때 갯수
+
+    { 모델 비트 Idx }
+
+    MDL_BIT_POS = 2;
+    MDL_BIT_DRV = 0;
+    MDL_BIT_PSG = 1;
+    MDL_BIT_LH = 2;
+    MDL_BIT_RH = 3;
+
+    // 차종
+    MDL_BIT_JG1 = 5;
+    MDL_BIT_RJ1 = 6;
+    MDL_BIT_HI = 7;
+    MDL_BIT_CAR_TYPE = MDL_BIT_JG1;
+    MDL_BIT_CAR_TYPE_END = MDL_BIT_HI;
+
+    // 차량 타입
+    MDL_BIT_STD = 12;       // 스탠다드: 스윙 도어
+    MDL_BIT_LONS_S = 13;    // 스페셜: 코치 도어
+    MDL_BIT_SWIVEL = 14;    // 스페셜: 코치 도어
+
+    // H/V 타입
+    MDL_BIT_HEAT = 16;
+    MDL_BIT_VENT = 17;
+
+    // 버클 타입
+    MDL_BIT_BKL_IO = 20;
+    MDL_BIT_BKL_CURR = 21;
+
+    // OPT
+    MDL_BIT_ECU = 18;
+    MDL_BIT_IMS = 19;
+    MDL_BIT_ANCHOR_PT = 22;
+    MDL_BIT_ODS = 23;
+    MDL_BIT_CUSH_LEG = 24;
+    MDL_BIT_PE = 25;
+    MDL_BIT_17MY = 26;
+
+
+
+    // 미사용
+
+function MakeBits(Count: Integer): WORD;
+
+function MakeModelMask: DWORD;
+
+const
+    MDL_MASK = $00000000;
+
+type
+    TMdlOptType = (motECU, motIMS, motACPT, motODS, motCushLeg, motPE, mot17MY);
+
+    TModelType = packed record
+        mID: Integer;               // 차후 모델만 분리시 확장용
+        mDataBits: DWORD;
+
+        constructor Create(DataBits: DWORD; ID: Integer = 0);
+
+        procedure Clear;
+
+        function IsJG1: Boolean;
+        function IsRJ1: Boolean;
+        function IsHI: Boolean;
+        function Is17MY: Boolean;
+
+        function IsSE: Boolean;
+        function IsSTD: Boolean;
+        function IsLong_S: boolean;
+        function IsSwivel: boolean;
+
+        function IsEqual(ModelType: TModelType; Mask: DWORD = $FFFFFFFF): Boolean;
+        procedure CopyFrom(SrcDataBits: DWORD; SIdx, Len: Integer);
+
+        procedure SetPosType(AType: TPOS_TYPE);
+        procedure SetPosTypeEx(AType: TPOS_TYPE_EX);
+        procedure SetDrvType(AType: TDRV_TYPE); overload;
+        procedure SetDrvType(Val: Boolean); overload;
+        procedure SetCarType(AType: TCAR_TYPE);
+        procedure SetTrimType(AType: TCAR_TRIM_TYPE);
+
+        procedure SetHostHVType(AType: THV_TYPE);
+
+        procedure SetHVType(AType: THV_TYPE);
+        procedure SetHeat(Value: Boolean);
+        procedure SetVent(Value: Boolean);
+        procedure SetIMS(Value: Boolean);
+        procedure SetECU(Value: Boolean);
+        procedure SetBklIO(Value: Boolean);
+        procedure SetBklCurr(Value: Boolean);
+        procedure SetAnchorPT(Value: Boolean);
+        procedure SetOds(Value: Boolean);
+        procedure SetCushLeg(Value: Boolean);
+        procedure SetBuckleType(AType: TBuckleTestType);
+        procedure Set17MY(Value: Boolean);
+
+        function GetPosType(): TPOS_TYPE;
+        function GetPosTypeEx(): TPOS_TYPE_EX;
+        function GetDrvType(): TDRV_TYPE;
+        function GetCarType(): TCAR_TYPE;
+        function GetOds: Boolean;
+
+        function GetHVType: THV_TYPE; overload;
+
+        function GetBuckleType(): TBuckleTestType;
+
+        function IsNoneHV: Boolean;
+        function IsHeat: Boolean;
+        function IsVent: Boolean;
+        function IsHV: Boolean;
+
+        function IsDirectMoveType: Boolean;
+
+        // Opt
+        procedure SetOpt(OptType: TMdlOptType; Val: Boolean);
+        function GetOpt(OptType: TMdlOptType): Boolean;
+        function GetOptStr(OptType: TMdlOptType): string;
+
+        function IsCushLeg: Boolean;
+        function IsIMS: Boolean;
+        function IsECU: Boolean;
+        function IsODS: Boolean;
+        function IsAnchorPT: Boolean;
+        function IsBuckleIO: Boolean;
+        function IsBuckleCurr: Boolean;
+
+        function Is8Relay: Boolean;
+
+        //
+        function IsLHPos: Boolean;
+        function IsRHPos: Boolean;
+        function IsDrvPos: Boolean;
+        function IsPsgPos: Boolean;
+        function IsLHDrvPos: Boolean;
+        function IsRHDrvPos: Boolean;
+
+        function IsBlower: Boolean;
+
+        function IsBuckle: Boolean;
+        function IsWarnBuckle: Boolean;
+        function IsHeatType: Boolean;
+        function IsVentType: Boolean;
+
+        function IsPE: Boolean;
+
+        function CanDrvHeatTest: Boolean;
+        function CanDrvVentTest: Boolean;
+        function CanPsgHeatTest: Boolean;
+        function CanPsgVentTest: Boolean;
+
+        function CanHtrWiringTest: Boolean;
+
+        function GetModelYear: Integer;     // ex 22MY
+
+        // 커넥터 객체 찾기 Key용도
+        function MakeMainConID: string;      // MAIN : 차종 : DRV/PSG :  [8REL]
+        function MakeBackExtConID: string;   // BK.EXT : 차종 : DRV/PSG : [8REL]
+        function MakeHtrMatConID: string;    // HTR.MAT : 차종
+
+        function MakeMainConName: string;
+        function MakeSwConName: string;
+
+        // To Text(Str)
+        function ToStr(): string;
+        function MakePartName(): string;
+
+        function GetCarTypeStr: string;
+        function GetPosStr: string;
+        function GetDrvPosStr: string;
+
+        function GetHVTypeStr: string;
+        function GetBuckleTypeStr: string;
+
+        procedure WriteAsType(Strings: TStrings; StartCol: Integer = 0);      // 모델 사양 표기
+        procedure WriteAsOptName(Strings: TStrings; OptTypes: array of TMdlOptType);
+    private
+    procedure SetPE(Value: Boolean);
+
+
+    public
+        function IsSlideExists: Boolean;
+        function IsHeightExists: Boolean;
+        function IsTiltExists: Boolean;
+        function IsLegSuptExists: Boolean;
+        function isSwivelExists: Boolean;
+
+        function IsDualModeHV: Boolean;
+        function IsLHAsHost: Boolean;       // 듀얼 모드일시 호스트 위치
+
+    end;
+
+const
+    gMdlTypeBitsNames: array[0..31] of string = ('DRV', 'PAS', 'LH', 'RH', '-', 'JG1', 'RJ1', 'HI', '-', '-', '-', '-', 'STD', 'LONG_S', 'Swivel', '-', 'HEAT', 'VENT', 'ECU', 'IMS', 'BUCKLE IO', 'BUCKLE CURR', 'ANCHOR PT', 'ODS', 'EXT', 'PE', '17MY', '-', '-', '-', '-', '-');
+
+implementation
+
+uses
+    Math, MyUtils, LangTran;
+
+
+// ------------------------------------------------------------------------------
+function MakeModelMask: DWORD;
+var
+    i: Integer;
+begin
+    Result := 0;
+
+    SetBit(Result, MDL_BIT_DRV, True);
+    SetBit(Result, MDL_BIT_PSG, True);
+
+    SetBit(Result, MDL_BIT_LH, True);
+    SetBit(Result, MDL_BIT_RH, True);
+
+    for i := MDL_BIT_CAR_TYPE to MDL_BIT_CAR_TYPE_END do
+    begin
+        SetBit(Result, i, True);
+    end;
+end;
+
+// ------------------------------------------------------------------------------
+function MakeBits(Count: Integer): WORD;
+var
+    i: Integer;
+begin
+    Result := 0;
+    for i := 0 to Count - 1 do
+    begin
+        Result := Result + (1 shl i);
+    end;
+end;
+// ------------------------------------------------------------------------------
+
+{ TModelType }
+
+procedure TModelType.SetPosType(AType: TPOS_TYPE);
+begin
+    BitOnByIdx(mDataBits, MDL_BIT_POS, Ord(AType), 2);
+end;
+
+procedure TModelType.SetHeat(Value: Boolean);
+begin
+    SetBit(mDataBits, MDL_BIT_HEAT, Value);
+end;
+
+procedure TModelType.SetVent(Value: Boolean);
+begin
+    SetBit(mDataBits, MDL_BIT_VENT, Value);
+end;
+
+procedure TModelType.SetECU(Value: Boolean);
+begin
+    SetBit(mDataBits, MDL_BIT_ECU, Value);
+end;
+
+procedure TModelType.SetIMS(Value: Boolean);
+begin
+    SetBit(mDataBits, MDL_BIT_IMS, Value);
+end;
+
+procedure TModelType.SetBklIO(Value: Boolean);
+begin
+    SetBit(mDataBits, MDL_BIT_BKL_IO, Value);
+end;
+
+procedure TModelType.SetBklCurr(Value: Boolean);
+begin
+    SetBit(mDataBits, MDL_BIT_BKL_CURR, Value);
+end;
+
+procedure TModelType.Set17MY(Value: Boolean);
+begin
+    SetBit(mDataBits, MDL_BIT_17MY, Value);
+end;
+
+procedure TModelType.SetPE(Value: Boolean);
+begin
+    SetBit(mDataBits, MDL_BIT_PE, Value);
+end;
+
+procedure TModelType.SetAnchorPT(Value: Boolean);
+begin
+    SetBit(mDataBits, MDL_BIT_ANCHOR_PT, Value);
+end;
+
+procedure TModelType.SetOds(Value: Boolean);
+begin
+    SetBit(mDataBits, MDL_BIT_ODS, Value);
+end;
+
+procedure TModelType.SetHostHVType(AType: THV_TYPE);
+begin
+    case AType of
+        htNoneHV:
+            begin
+                SetBit(mDataBits, MDL_BIT_HEAT, False);
+                SetBit(mDataBits, MDL_BIT_VENT, False);
+            end;
+        htHeat:
+            begin
+                SetBit(mDataBits, MDL_BIT_HEAT, True);
+            end;
+        htHV:
+            begin
+                SetBit(mDataBits, MDL_BIT_HEAT, True);
+                SetBit(mDataBits, MDL_BIT_VENT, True);
+            end;
+    end;
+end;
+
+procedure TModelType.SetOpt(OptType: TMdlOptType; Val: Boolean);
+begin
+    case OptType of
+        motIMS:
+            SetIMS(Val);
+        motECU:
+            SetECU(Val);
+        motACPT:
+            SetAnchorPT(Val);
+        motODS:
+            SetODS(Val);
+        motCushLeg:
+            SetCushLeg(Val);
+        motPE:
+            SetPe(Val);
+        mot17MY:
+            Set17MY(Val);
+    end;
+end;
+
+procedure TModelType.SetBuckleType(AType: TBuckleTestType);
+begin
+
+    case AType of
+        btNone:
+            begin
+                SetBit(mDataBits, MDL_BIT_BKL_IO + 0, False);
+                SetBit(mDataBits, MDL_BIT_BKL_IO + 1, False);
+            end;
+        btIO:
+            begin
+                SetBit(mDataBits, MDL_BIT_BKL_IO + 0, True);
+                SetBit(mDataBits, MDL_BIT_BKL_IO + 1, False);
+            end;
+        btCurr:
+            begin
+                SetBit(mDataBits, MDL_BIT_BKL_IO + 0, False);
+                SetBit(mDataBits, MDL_BIT_BKL_IO + 1, True);
+            end;
+
+        btIOCurr:
+            begin
+                SetBit(mDataBits, MDL_BIT_BKL_IO + 0, True);
+                SetBit(mDataBits, MDL_BIT_BKL_IO + 1, True);
+            end;
+    end;
+end;
+
+procedure TModelType.SetTrimType(AType: TCAR_TRIM_TYPE);
+begin
+    SetBits(mDataBits, MDL_BIT_STD, false, 3);
+
+    case AType of
+        cttSTD:
+            SetBit(mDataBits, MDL_BIT_STD, true);
+        cttLONG_S:
+            SetBit(mDataBits, MDL_BIT_LONS_S, true);
+        cttSwivel:
+            SetBit(mDataBits, MDL_BIT_SWIVEL, True);
+    end;
+
+end;
+
+procedure TModelType.SetPosTypeEx(AType: TPOS_TYPE_EX);
+begin
+    case AType of
+        pteLHP:
+            begin
+                SetDrvType(False);
+                SetPosType(ptLH);
+            end;
+        pteRHP:
+            begin
+                SetDrvType(False);
+                SetPosType(ptRH);
+            end;
+        pteLHD:
+            begin
+                SetDrvType(True);
+                SetPosType(ptLH);
+            end;
+        pteRHD:
+            begin
+                SetDrvType(True);
+                SetPosType(ptRH);
+            end;
+    end;
+end;
+
+procedure TModelType.SetDrvType(AType: TDRV_TYPE);
+begin
+    if GetPosType = ptLH then
+    begin
+        SetDrvType(AType = dtLHD);
+    end
+    else
+    begin
+        SetDrvType(AType = dtRHD);
+    end;
+end;
+
+function TModelType.ToStr(): string;
+begin
+    Result := Format('%s, %s, :0x%X', [GetCarTypeStr, GetPosStr, mDataBits]);
+end;
+
+procedure TModelType.WriteAsType(Strings: TStrings; StartCol: Integer);
+var
+    AddLen, i: Integer;
+begin
+
+    AddLen := MDL_COL_COUNT - Strings.Count;
+    if Strings.Count < MDL_COL_COUNT then
+    begin
+        for i := 0 to AddLen - 1 do
+        begin
+            Strings.Add('');
+        end;
+    end;
+
+    Strings.Strings[StartCol + 0] := GetCarTypeStr;
+    Strings.Strings[StartCol + 1] := GetPosStr;
+    Strings.Strings[StartCol + 2] := GetHVTypeStr;
+    Strings.Strings[StartCol + 3] := GetBuckleTypeStr;
+
+end;
+
+procedure TModelType.WriteAsOptName(Strings: TStrings; OptTypes: array of TMdlOptType);
+var
+    AddLen, i: Integer;
+begin
+
+    AddLen := Length(OptTypes) - Strings.Count;
+    if Strings.Count < Length(OptTypes) then
+    begin
+        for i := 0 to AddLen - 1 do
+        begin
+            Strings.Add('');
+        end;
+    end;
+
+    for i := 0 to Length(OptTypes) - 1 do
+    begin
+        Strings.Strings[i] := GetOptStr(OptTypes[i]);
+        Strings.Objects[i] := TObject(OptTypes[i]);
+    end;
+end;
+
+procedure TModelType.SetCarType(AType: TCAR_TYPE);
+var
+    I: Integer;
+begin
+    for I := MDL_BIT_CAR_TYPE to MDL_BIT_CAR_TYPE_END do
+    begin
+        SetBit(mDataBits, I, False);
+    end;
+    SetBit(mDataBits, MDL_BIT_CAR_TYPE + ord(AType), True);
+
+end;
+
+procedure TModelType.SetCushLeg(Value: Boolean);
+begin
+    SetBit(mDataBits, MDL_BIT_CUSH_LEG, Value);
+end;
+
+procedure TModelType.SetDrvType(Val: Boolean);
+begin
+    SetBit(mDataBits, MDL_BIT_DRV, Val);
+    SetBit(mDataBits, MDL_BIT_PSG, not Val);
+end;
+
+function TModelType.GetPosType: TPOS_TYPE;
+begin
+    Result := TPOS_TYPE(Max(0, GetOnBitIdx(mDataBits, MDL_BIT_POS, 2)));
+
+    if Ord(Result) < 0 then
+        Exit(ptLH);
+end;
+
+function TModelType.GetPosTypeEx: TPOS_TYPE_EX;
+begin
+    if IsDrvPos then
+    begin
+        if GetPosType = ptLH then
+            Result := pteLHD
+        else
+            Result := pteRHD;
+    end
+    else
+    begin
+
+        if GetPosType = ptLH then
+            Result := pteLHP
+        else
+            Result := pteRHP;
+    end;
+end;
+
+function TModelType.CanDrvHeatTest: Boolean;
+begin
+    if IsDrvPos then
+    begin
+        Result := IsHeat and IsECU;
+    end
+    else if IsPsgPos then
+    begin
+        Result := IsHeat and IsECU and IsDualModeHV;
+    end;
+end;
+
+function TModelType.CanDrvVentTest: Boolean;
+begin
+    if IsDrvPos then
+    begin
+        Result := IsHV and IsECU;
+    end
+    else if IsPsgPos then
+    begin
+        Result := IsHV and IsECU and IsDualModeHV;
+    end;
+end;
+
+function TModelType.CanHtrWiringTest: Boolean;
+begin
+    Result := IsHeat and (not IsECU);
+end;
+
+function TModelType.CanPsgHeatTest: Boolean;
+begin
+    if IsDrvPos then
+    begin
+        Result := IsHeat and IsECU and IsDualModeHV;
+    end
+    else if IsPsgPos then
+    begin
+        Result := IsHeat and IsECU;
+    end;
+end;
+
+function TModelType.CanPsgVentTest: Boolean;
+begin
+    if IsDrvPos then
+    begin
+        Result := IsHV and IsECU and IsDualModeHV;
+    end
+    else if IsPsgPos then
+    begin
+        Result := IsHV and IsECU;
+    end;
+end;
+
+procedure TModelType.Clear;
+begin
+    mDataBits := 0;
+end;
+
+procedure TModelType.CopyFrom(SrcDataBits: DWORD; SIdx, Len: Integer);
+var
+    i: Integer;
+begin
+    for i := 0 to Len - 1 do
+    begin
+        SetBit(mDataBits, SIdx + i, IsBitOn(SrcDataBits, SIdx + i));
+    end;
+end;
+
+constructor TModelType.Create(DataBits: DWORD; ID: Integer);
+begin
+    mDataBits := DataBits;
+    mID := ID;
+end;
+
+function TModelType.IsBlower: Boolean;
+begin
+    Result := not IsECU and IsVentType;
+end;
+
+function TModelType.IsBuckle: Boolean;
+begin
+    Result := GetBuckleType <> btNone;
+end;
+
+function TModelType.IsBuckleCurr: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_BKL_CURR);
+end;
+
+function TModelType.IsBuckleIO: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_BKL_IO);
+end;
+
+function TModelType.IsDirectMoveType: Boolean;
+begin
+    Result := False;
+end;
+
+function TModelType.IsDrvPos: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_DRV);
+end;
+
+function TModelType.IsPsgPos: Boolean;
+begin
+    Result := not IsDrvPos; //IsBitOn(mDataBits, MDL_BIT_PSG);
+end;
+
+function TModelType.IsDualModeHV: Boolean;
+begin
+    Result := false; // 처리 TO DO
+end;
+
+function TModelType.IsECU: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_ECU);
+end;
+
+function TModelType.IsEqual(ModelType: TModelType; Mask: DWORD): Boolean;
+begin
+    Result := ((mDataBits and Mask) = (ModelType.mDataBits and Mask))
+end;
+
+function TModelType.IsIMS: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_IMS);
+end;
+
+function TModelType.IsLegSuptExists: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_CUSH_LEG);
+end;
+
+function TModelType.IsLHAsHost: Boolean;
+begin
+    Result := False; // 듀얼 모드 구현 필수
+end;
+
+function TModelType.IsLHDrvPos: Boolean;
+begin
+    Result := (GetPosType = ptLH) and IsDrvPos;
+end;
+
+function TModelType.IsLHPos: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_LH);
+end;
+
+function TModelType.IsNoneHV: Boolean;
+begin
+    Result := GetHVType = htNoneHV;
+end;
+
+function TModelType.IsJG1: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_JG1);
+end;
+
+function TModelType.IsODS: Boolean;
+begin
+    Result := GetOds;
+end;
+
+function TModelType.Is17MY: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_17MY);
+end;
+
+function TModelType.Is8Relay: Boolean;
+begin
+    Result := not IsIMS;
+end;
+
+function TModelType.IsAnchorPT: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_ANCHOR_PT);
+end;
+
+function TModelType.IsRHDrvPos: Boolean;
+begin
+    Result := (GetPosType = ptRH) and IsDrvPos;
+end;
+
+function TModelType.IsRHPos: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_RH);
+end;
+
+function TModelType.IsRJ1: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_RJ1);
+end;
+
+function TModelType.IsHI: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_HI);
+end;
+
+function TModelType.IsVentType: Boolean;
+begin
+    Result := (GetHVType = htHV);
+end;
+
+function TModelType.IsVent: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_VENT);
+end;
+
+function TModelType.IsHeat: Boolean;
+begin
+    Result := GetHVType in [htHeat, htHV];
+end;
+
+function TModelType.IsHeatType: Boolean;
+begin
+    Result := (GetHVType = htHeat);
+end;
+
+function TModelType.IsHV: Boolean;
+begin
+    Result := GetHVType = htHV;
+end;
+
+function TModelType.IsSE: Boolean;
+begin
+    //Result := IsBitOn(mDataBits, MDL_BIT_SE);
+end;
+
+function TModelType.IsSTD: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_STD);
+end;
+
+function TModelType.IsLong_S: boolean;
+begin
+    Result := IsBitOn(mDataBIts, MDL_BIT_LONS_S);
+end;
+
+function TModelType.IsSwivel: boolean;
+begin
+    Result := IsBitOn(mDataBIts, MDL_BIT_SWIVEL);
+end;
+
+function TModelType.IsSlideExists: Boolean;
+begin
+    Result := true;
+
+    // JG1 SE 타입인 경우 운전석/조수석 모두 슬라이드 없음
+    if (GetCarType = ctJG1) and IsSE then
+    begin
+        Result := False;
+        Exit;
+    end;
+end;
+
+function TModelType.IsTiltExists: Boolean;
+begin
+    // 모든 사양 존재.
+    Result := true;
+end;
+
+function TModelType.IsHeightExists: Boolean;
+begin
+    // 모든 사양 존재.
+    Result := True;
+end;
+
+function TModelType.isSwivelExists: Boolean;
+begin
+    Result := IsSE;
+end;
+
+function TModelType.IsCushLeg: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_CUSH_LEG);
+end;
+
+function TModelType.IsPE: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_PE);
+end;
+
+
+function TModelType.IsWarnBuckle: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_BKL_IO);
+    ;
+end;
+
+function TModelType.MakeBackExtConID: string;
+var
+    Car, SeatPos: string;
+begin
+    Result := 'BK.EXT:';
+
+    Car := TCAR_TYPE_STR[Ord(GetCarType)];
+    SeatPos := TFRT_POS_ROLE_STR[Integer(IsPsgPos)];
+
+    Result := Result + Format('%s:%s', [Car, SeatPos]);
+
+    // 차종별 옵션 처리
+    case GetCarType of
+        ctJG1:
+            begin
+            end;
+
+        ctRJ1:
+            begin
+                if Is8Relay then
+                    Result := Result + ':8REL';
+            end;
+
+        ctHI:
+            begin
+
+            end;
+    end;
+end;
+
+function TModelType.MakeHtrMatConID: string;
+var
+    Car: string;
+begin
+    Result := 'HTR.MAT:';
+
+    Car := TCAR_TYPE_STR[Ord(GetCarType)];
+
+    Result := Result + Car;
+
+end;
+
+function TModelType.MakeMainConID: string;
+var
+    Car, SeatPos: string;
+begin
+    Result := 'MAIN:';
+
+    Car := TCAR_TYPE_STR[Ord(GetCarType)];
+    SeatPos := TFRT_POS_ROLE_STR[Integer(IsPsgPos)];
+
+    Result := Result + Format('%s:%s', [Car, SeatPos]);
+
+    // 차종별 옵션 처리
+    case GetCarType of
+        ctJG1:
+            begin
+            end;
+
+        ctRJ1:
+            begin
+                if Is8Relay then
+                    Result := Result + ':8REL';
+            end;
+
+        ctHI:
+            begin
+
+            end;
+    end;
+end;
+
+function TModelType.MakeMainConName: string;
+begin
+    Result := '';
+//    case GetCarType of
+//        rtSP3:
+//            begin
+//                if IsDrvPos then
+//                begin
+//                    if IsIMS then
+//                        Result := 'SP3 IMS 2C'
+//                    else if IsPwr then
+//                        Result := 'SP3 PWR 2C';
+//                end
+//                else
+//                begin
+//                    if IsRelax then
+//                        Result := 'SP3 RELAX 2C'
+//                    else if IsPwr then
+//                        Result := 'SP3 PWR 2C';
+//                end;
+//            end;
+//
+//        rtOV1K:
+//            begin
+//                if IsErgo then
+//                    Result := 'OV1K ERGO 7C'
+//                else if IsIMS then
+//                    Result := 'OV1K IMS 2C'
+//                else if IsRelax and IsPsgPos then
+//                    Result := 'OV1K RELAX 2C'
+//                else if IsPwr then
+//                    Result := 'OV1K PWR 2C';
+//            end;
+//    end;
+end;
+
+function TModelType.MakePartName: string;
+begin
+    Result := '';
+    if IsIMS then
+        Result := Result + 'IMS+';
+    if GetHVType = htHeat then
+        Result := Result + 'WM+'
+    else if GetHVType = htHV then
+        Result := Result + 'WM+VT+';
+    if IsODS then
+        Result := Result + 'ODS+';
+    if GetBuckleType = btNone then
+        Result := Result + 'B_NO_W/S+'
+    else if GetBuckleType = btIO then
+        Result := Result + 'B_W/S+'
+    else if GetBuckleType = btCurr then
+        Result := Result + 'B_W/O+';
+    Delete(Result, Length(Result), 1);
+end;
+
+function TModelType.MakeSwConName: string;
+begin
+    Result := '';
+end;
+
+procedure TModelType.SetHVType(AType: THV_TYPE);
+begin
+    case AType of
+        htNoneHV:
+            begin
+                SetBit(mDataBits, MDL_BIT_HEAT, False);
+                SetBit(mDataBits, MDL_BIT_VENT, False);
+            end;
+        htHeat:
+            begin
+                SetBit(mDataBits, MDL_BIT_HEAT, True);
+                SetBit(mDataBits, MDL_BIT_VENT, False);
+            end;
+        htHV:
+            begin
+                SetBit(mDataBits, MDL_BIT_HEAT, True);   // True로 수정!
+                SetBit(mDataBits, MDL_BIT_VENT, True);
+            end;
+    end;
+end;
+
+function TModelType.GetHVType: THV_TYPE;
+var
+    HeatBit, VentBit: Boolean;
+begin
+    HeatBit := IsBitOn(mDataBits, MDL_BIT_HEAT);
+    VentBit := IsBitOn(mDataBits, MDL_BIT_VENT);
+
+    if HeatBit and VentBit then
+        Result := htHV        // 둘 다 ON
+    else if HeatBit then
+        Result := htHeat      // HEAT만 ON
+    else
+        Result := htNoneHV;   // 둘 다 OFF
+end;
+
+function TModelType.GetDrvType: TDRV_TYPE;
+begin
+    if IsDrvPos then
+    begin
+        if GetPosType = ptLH then
+            Result := dtLHD
+        else
+            Result := dtRHD;
+    end
+    else
+    begin
+        if GetPosType = ptLH then
+            Result := dtRHD
+        else
+            Result := dtLHD;
+    end;
+end;
+
+function TModelType.GetBuckleType: TBuckleTestType;
+var
+    Idx: Integer;
+begin
+    Idx := GetOnBitIdx(mDataBits, MDL_BIT_BKL_IO, 2);
+
+    case Idx of
+        -1:
+            Result := btNone;
+        0, 1, 2:
+            Result := TBuckleTestType(Idx + 1);
+    else
+        Result := btNone;
+    end;
+end;
+
+function TModelType.GetCarType: TCAR_TYPE;
+begin
+    Result := TCAR_TYPE(Max(0, GetOnBitIdx(mDataBits, MDL_BIT_CAR_TYPE, Integer(High(TCAR_TYPE)) + 1)));
+end;
+
+function TModelType.GetCarTypeStr: string;
+begin
+
+//    if mID <= 0 then   Exit('');   mID 사용 안 함
+
+    Result := TCAR_TYPE_STR[Integer(GetCarType)];
+
+end;
+
+function TModelType.GetOds: Boolean;
+begin
+    Result := IsBitOn(mDataBits, MDL_BIT_ODS);
+end;
+
+function TModelType.GetPosStr: string;
+begin
+    Result := TPOS_TYPE_STR[Integer(GetPosType)];
+
+    if IsDrvPos then
+        Result := Result + '(DRV)'
+    else
+        Result := Result + '(PAS)';
+
+end;
+
+function TModelType.GetBuckleTypeStr: string;
+begin
+    Result := TBUCKLE_TYPE_STR[Integer(GetBuckleType)];
+end;
+
+function TModelType.GetHVTypeStr: string;
+begin
+    Result := THV_TYPE_STR[Integer(GetHVType)];
+end;
+
+function TModelType.GetModelYear: Integer;
+begin
+
+end;
+
+function TModelType.GetDrvPosStr: string;
+begin
+    if IsDrvPos then
+        Result := 'DRV'
+    else
+        Result := 'PSG';
+end;
+
+function TModelType.GetOpt(OptType: TMdlOptType): Boolean;
+begin
+    case OptType of
+        motIMS:
+            Result := IsIMS;
+        motECU:
+            Result := IsECU;
+        motODS:
+            Result := IsODS;
+        motACPT:
+            Result := IsAnchorPT;
+        motCushLeg:
+            Result := IsCushLeg;
+    end;
+end;
+
+function TModelType.GetOptStr(OptType: TMdlOptType): string;
+begin
+    case OptType of
+        motIMS:
+            Result := 'IMS';
+        motECU:
+            Result := 'ECU';
+        motODS:
+            Result := 'ODS';
+        motACPT:
+            Result := 'ANCHOR PT';
+        motCushLeg:
+            Result := 'CUSH/LEG';
+
+    else
+        Result := '';
+    end;
+end;
+
+end.
+

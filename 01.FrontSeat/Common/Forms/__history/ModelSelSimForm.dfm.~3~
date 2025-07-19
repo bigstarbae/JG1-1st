@@ -1,0 +1,337 @@
+object frmModelSelSim: TfrmModelSelSim
+  Left = 0
+  Top = 0
+  BorderStyle = bsDialog
+  ClientHeight = 484
+  ClientWidth = 647
+  Color = clWhite
+  Font.Charset = ANSI_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -15
+  Font.Name = #47569#51008' '#44256#46357
+  Font.Style = [fsBold]
+  OldCreateOrder = False
+  Position = poScreenCenter
+  OnClose = FormClose
+  OnShow = FormShow
+  PixelsPerInch = 96
+  TextHeight = 20
+  object Label3: TLabel
+    Left = 445
+    Top = 8
+    Width = 48
+    Height = 17
+    Caption = 'OPTION'
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    ParentFont = False
+  end
+  object lblTypeBits: TLabel
+    Left = 375
+    Top = 422
+    Width = 106
+    Height = 17
+    AutoSize = False
+    Caption = '0x000000'
+    Font.Charset = HANGEUL_CHARSET
+    Font.Color = clGray
+    Font.Height = -13
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    ParentFont = False
+    OnDblClick = lblTypeBitsDblClick
+  end
+  object ledTypeBits: TLedArray
+    Left = 17
+    Top = 426
+    Width = 360
+    Height = 9
+    NoOfLEDs = 32
+    LedWidth = 10
+    LedHeight = 3
+    Space = 1
+    OnOff = 0
+    Value = 0
+    Orientation = lrHorizontal
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = #44404#47548
+    Font.Style = []
+    ShowCaption = False
+    OnColor = 8454016
+    OffColor = clGray
+    Inverse = True
+    Toggle = False
+    Copyright = '1999 Mats Asplund/MAs Prod./2013 KII'
+  end
+  object rdgHVType: TRadioGroup
+    Left = 14
+    Top = 217
+    Width = 101
+    Height = 169
+    Caption = 'H/V(DRV)'
+    Ctl3D = False
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    ItemIndex = 0
+    Items.Strings = (
+      'NONE'
+      'HEAT'
+      'HTR/VNT'
+      'VENT ONLY')
+    ParentCtl3D = False
+    ParentFont = False
+    TabOrder = 6
+    OnClick = rdgHVTypeClick
+  end
+  object rdgPwrType: TRadioGroup
+    Left = 225
+    Top = 18
+    Width = 98
+    Height = 169
+    Caption = 'MNL/PWR'
+    Ctl3D = False
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    ItemIndex = 0
+    Items.Strings = (
+      'MNL'
+      'PWR')
+    ParentCtl3D = False
+    ParentFont = False
+    TabOrder = 2
+    OnClick = rdgCarTypeClick
+  end
+  object rdgBuckType: TRadioGroup
+    Left = 329
+    Top = 217
+    Width = 98
+    Height = 169
+    Caption = 'BUCKLE'
+    Ctl3D = False
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    ItemIndex = 0
+    Items.Strings = (
+      'NONE'
+      'IO'
+      'CURR')
+    ParentCtl3D = False
+    ParentFont = False
+    TabOrder = 9
+    OnClick = rdgCarTypeClick
+  end
+  object clbOpt: TCheckListBox
+    Left = 451
+    Top = 31
+    Width = 188
+    Height = 362
+    OnClickCheck = clbOptClickCheck
+    BevelInner = bvNone
+    BevelOuter = bvNone
+    Color = clWhite
+    Columns = 2
+    Ctl3D = False
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    HeaderBackgroundColor = clWhite
+    IntegralHeight = True
+    ItemHeight = 20
+    ParentCtl3D = False
+    ParentFont = False
+    Style = lbOwnerDrawFixed
+    TabOrder = 4
+    OnClick = clbOptClick
+    OnDrawItem = clbOptDrawItem
+  end
+  object Panel1: TPanel
+    Left = 0
+    Top = 447
+    Width = 647
+    Height = 37
+    Align = alBottom
+    BevelOuter = bvLowered
+    Ctl3D = False
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -15
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    ParentBackground = False
+    ParentCtl3D = False
+    ParentFont = False
+    TabOrder = 10
+    object bbtnApply: TBitBtn
+      Left = 535
+      Top = 1
+      Width = 111
+      Height = 35
+      Align = alRight
+      Caption = #51201#50857
+      Font.Charset = ANSI_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -15
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = []
+      Kind = bkOK
+      ParentFont = False
+      TabOrder = 1
+      OnClick = bbtnApplyClick
+    end
+    object cbxStation: TComboBox
+      Left = 1
+      Top = 1
+      Width = 153
+      Height = 28
+      Align = alLeft
+      Style = csDropDownList
+      ImeName = 'Microsoft Office IME 2007'
+      TabOrder = 0
+      OnChange = cbxStationChange
+    end
+  end
+  object rdgCarType: TRadioGroup
+    Left = 17
+    Top = 18
+    Width = 98
+    Height = 169
+    Caption = 'CAR'
+    Ctl3D = False
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    Items.Strings = (
+      'CAR1'
+      'CAR2'
+      'CAR3')
+    ParentCtl3D = False
+    ParentFont = False
+    TabOrder = 0
+    OnClick = rdgCarTypeClick
+  end
+  object rdgPosType: TRadioGroup
+    Left = 121
+    Top = 18
+    Width = 98
+    Height = 169
+    Caption = 'POS'
+    Ctl3D = False
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    ItemIndex = 0
+    Items.Strings = (
+      'LH'
+      'RH'
+      'LHD'
+      'RHD')
+    ParentCtl3D = False
+    ParentFont = False
+    TabOrder = 1
+    OnClick = rdgCarTypeClick
+  end
+  object rgSeatType: TRadioGroup
+    Left = 329
+    Top = 18
+    Width = 98
+    Height = 169
+    Caption = 'Seat Type'
+    Ctl3D = False
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    ItemIndex = 0
+    Items.Strings = (
+      'TYPE1'
+      'TYPE2'
+      'TYPE3')
+    ParentCtl3D = False
+    ParentFont = False
+    TabOrder = 3
+    OnClick = rdgCarTypeClick
+  end
+  object rdgPsgHVType: TRadioGroup
+    Left = 118
+    Top = 217
+    Width = 101
+    Height = 169
+    Caption = 'H/V(PSG)'
+    Ctl3D = False
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    ItemIndex = 0
+    Items.Strings = (
+      'NONE'
+      'HEAT'
+      'HTR/VNT'
+      'VENT ONLY')
+    ParentCtl3D = False
+    ParentFont = False
+    TabOrder = 7
+    OnClick = rdgPsgHVTypeClick
+  end
+  object cbxLinkHV: TCheckBox
+    Left = 17
+    Top = 200
+    Width = 117
+    Height = 17
+    Caption = 'DRV/PSG DUAL'
+    Checked = True
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    ParentFont = False
+    State = cbChecked
+    TabOrder = 5
+    OnClick = cbxLinkHVClick
+  end
+  object rdgLSuptType: TRadioGroup
+    Left = 225
+    Top = 217
+    Width = 98
+    Height = 169
+    Caption = 'L/SUPT TYPE'
+    Ctl3D = False
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = #47569#51008' '#44256#46357
+    Font.Style = []
+    ItemIndex = 0
+    Items.Strings = (
+      'NONE'
+      '2CELL'
+      '7CELL')
+    ParentCtl3D = False
+    ParentFont = False
+    TabOrder = 8
+    OnClick = rdgCarTypeClick
+  end
+end

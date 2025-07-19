@@ -1,0 +1,121 @@
+unit StateDefineUnit;
+
+interface
+uses
+  TypInfo;
+
+type
+    TWorkState = (  _WS_IDLE,
+                    _WS_START,
+                    _WS_READ_ECU_VER,
+                    _WS_WAIT_SPEC_CHK,
+                    _WS_WAIT_TEST_CURR,
+                    _WS_CHK_LIMIT_STATUS_BEFORE,
+                    _WS_CHK_LIMIT_STATUS_END,
+                    _WS_DELETE_LIMIT,
+                    _WS_MOVE_BY_TIME,
+                    _WS_HALL_SENSOR_TEST,
+                    _WS_MOVE_TO_LOADING_POS,
+                    _WS_WEIGHT_LOADING,
+                    _WS_SET_LIMIT,
+                    _WS_BURNISHING,
+                    _WS_MOVE_TO_UNLOADING_POS,
+                    _WS_WEIGHT_UNLOADING,
+                    _WS_WAIT_UNLOADING_DONE,
+                    _WS_MOTOR_TEST,
+                    _WS_MOVE_TO_INIT_POS,
+                    _WS_MOVE_TO_D_POS,
+                    _WS_MEMORY_TEST,
+                    _WS_WAIT_ALL_TEST_END,
+                    _WS_DTC_CLEAR,
+                    _WS_REQ_D_POS_SENSOR,
+                    _WS_HV_TEST,
+                    _WS_NE_SLIDE_POS,
+                    _WS_SAVE_DATA,
+                    _WS_WAIT_POP_SEND,
+                    _WS_POP_SEND_WAIT,
+                    _WS_END_OF_TEST,
+                    _WS_ERROR,
+                    _WS_OUTPOS_ER,
+                    _WS_ERROR_IDLE);
+
+    TElecState = (  _WS_ELEC_IDLE,
+                    _WS_ELEC_START,
+                    _WS_ELEC_WAIT_CONNECT,
+                    _WS_ELEC_TEST_HV,
+                    _WS_ELEC_BUCKLE_START,
+                    _WS_ELEC_APT_TEST,
+                    _WS_ELEC_BUCKLE_TEST,
+
+                    _WS_ELEC_RUN_VENT,
+                    _WS_ELEC_END,
+                    _WS_ELEC_ERROR,
+                    _WS_ELEC_ERROR_IDLE);
+
+    
+
+    TMemTestState = ( _MEM_INIT, _MEM_MOVE_FOR_MEM1,      // MEM1 위치로 2초간 전진
+        _MEM_SAVE_MEM1,          // MEM1 저장
+        _MEM_MOVE_FOR_MEM2,      // MEM2 위치로 2초간 전진
+        _MEM_SAVE_MEM2,          // MEM2 저장
+        _MEM_PLAY_MEM1,          // MEM1 재생
+        _MEM_CHECK_MEM1_CURR,    // MEM1 전류 체크
+        _MEM_JUDGE_MEM1,         // MEM1 판정
+        _MEM_PLAY_MEM2,          // MEM2 재생
+        _MEM_CHECK_MEM2_CURR,    // MEM2 전류 체크
+        _MEM_JUDGE_MEM2,         // MEM2 판정
+        _MEM_TEST_END, _MEM_ERROR);
+
+    TDTCState = (   _DTC_IDLE,                  // 0: 대기 상태
+                    _DTC_INIT,                  // 1: 초기화
+                    _DTC_CLEAR_START,           // 2: DTC 삭제 시작
+                    _DTC_CLEAR_WAIT,            // 3: DTC 삭제 후 대기
+                    _DTC_READ_START,            // 4: DTC 읽기 시작
+                    _DTC_RETRY_WAIT,            // 5: 재시도 대기
+                    _DTC_COMPLETE               // 6: 완료
+                    );
+
+function EnumToString(TypeInfo: PTypeInfo; EnumValue: Integer): string;
+
+function WorkStateToString(State: TWorkState): string;
+function ElecStateToString(State: TElecState): string;
+function MemTestStateToString(State: TMemTestState): string;
+function DTCStateToString(State: TDTCState): string;
+
+implementation
+uses
+    SysUtils;
+
+function EnumToString(TypeInfo: PTypeInfo; EnumValue: Integer): string;
+begin
+    try
+        Result := GetEnumName(TypeInfo, EnumValue);
+        if Result = '' then
+            Result := 'Unknown(' + IntToStr(EnumValue) + ')';
+    except
+        Result := 'Error(' + IntToStr(EnumValue) + ')';
+    end;
+end;
+
+function WorkStateToString(State: TWorkState): string;
+begin
+    Result := EnumToString(TypeInfo(TWorkState), Ord(State));
+end;
+
+function ElecStateToString(State: TElecState): string;
+begin
+    Result := EnumToString(TypeInfo(TElecState), Ord(State));
+end;
+
+function MemTestStateToString(State: TMemTestState): string;
+begin
+    Result := EnumToString(TypeInfo(TMemTestState), Ord(State));
+end;
+
+function DTCStateToString(State: TDTCState): string;
+begin
+    Result := EnumToString(TypeInfo(TDTCState), Ord(State));
+end;
+
+end.
+

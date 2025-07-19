@@ -1,0 +1,4563 @@
+{
+  Ver. 250626.00
+
+  History
+  - Ver. 1.8122600 : TXXXCtrler로 기능 분리
+  - Ver. 200201.00 : FSMSetLimit 함수 보완
+
+  :SeatMotor 해제 -> 주요 기능별 클래스로 재조립
+
+  1. 주요 조합 클래스
+  . TBaseMoveCtrler : 모터 이동 기능 구현(DIO, CAN..)
+  . TBaseIMSCtrler : IMS 측정 관련 구현(DIO, CAN..)
+
+  - ISeatMtrGraph : 그래프 Add, Finder 조합, SeatMotor 기능과 기존 데이터 처리 분리
+
+  2. Param
+  . 최소 기동 전류, 구속 전류 : mMoveCurrRange
+  . 최대 전류 제한 : mMoveLimitCurr
+  . 최대 기동 시간 제한  : mMoveLimitTime
+  . 전역 Param 관련 : TSMParam ; gSysEnv 대체용
+
+  3. 이벤트
+  . 동작(전/후진) 시작, 정지
+  . 이벤트 핸들러에서 UI 및 TBaseSmGraph 측정값 Data 저장 처리
+
+}
+
+unit SeatMotor;
+{$I mydefine.inc}
+{$IFDEF _SIMUL_MTR}
+{$DEFINE _SIMUL_MTR_CURR}           // 모터 전류만 사용해서 시뮬하기 위해 별도로 만듬.
+{$ENDIF}
+
+interface
+
+uses
+    Windows, Sysutils, Graphics, Classes, Range, BaseFSM, Generics.Collections,
+    FaGraphEx, TimeCount, KiiMessages, TimeChecker, myUtils, SeatMotorType,
+    BaseDIO, BaseAD, IniFiles, PowerSupplyUnit;
+
+const
+    MAX_MTR_RUN_COUNT = 10;
+    _LIMIT_MOVING_TIME_OUT = 70;
+    TF_TXT: array[False..True] of string = ('False', 'True');
+    // 리미트 작동 응답대기
+
+type
+    // ===================================================================================================================
+    TStopReasion = (srByEnd, srByExternCond);
+
+    TSimulCurr = record
+        mState: Integer;
+        mTC: TTimeChecker;
+        mRunSec: Double;
+
+        mIsIMS: Boolean;
+        mIsEndPos: Boolean; // 끝단에 상응하는 거리와 전류 설정, 1회성
+
+        procedure Start(RunSec: Double; IsIMS: Boolean);
+        procedure Stop;
+
+        function FSMIGetVal: Double;
+    end;
+
+    TSimulNoise = record
+        mState: Integer;
+        mTC: TTimeChecker;
+        mInitSec, mRunSec: Double;
+
+        procedure Start(InitSec, RunSec: Double);
+        function FSMIGetVal: Double;
+    end;
+
+    TSeatMotor = class;
+
+    // ===================================================================================================================
+    // ISeatMtrGraph:
+    // ===================================================================================================================
+
+    ISeatMtrGraph = interface
+        ['{84BA5259-D7EF-4FDE-A216-192CC2C8389D}']
+        procedure Clear;
+        procedure Add(Dir: TMotorDir; TimeAsSec, Curr, Noise: Double);
+        procedure AddToGrp;
+        function IsDataProcessing: Boolean;
+    end;
+
+    // ===================================================================================================================
+    // TBaseMoveCtrler / TBaseIMSCtrler
+    // ===================================================================================================================
+
+    TBaseMoveCtrler = class(TBaseFSM)
+    protected
+        mID: TMotorOrd;
+        mDir: TMotorDir;
+        mIsMove: Boolean;
+        mEnabled: Boolean;
+        mUseCtrlerCurr: Boolean;
+        mIgnoreStop: Boolean; // Stop 명령 무시, Ex> L/Supt경우 모터 테스트중 후진(Def배출)시 Stop하지 않고 계속 배출 유지
+
+        function GetIsMove: Boolean; virtual;
+        procedure SetEnabled(const Value: Boolean); virtual; // ex> 멀티캐스트 이벤트 매니저에서 자신을 제거나 등록으로 재구현
+        procedure SetIgnoreStop(const Value: Boolean);
+    public
+        function FSMMove(MtrID: TMotorOrd; Dir: TMotorDir): Integer; virtual;
+        function FSMStop(MtrID: TMotorOrd; Dir: TMotorDir): Integer; virtual;
+
+        function MoveToForw(MtrID: TMotorOrd): Boolean; virtual; abstract;
+        function MoveToBack(MtrID: TMotorOrd): Boolean; virtual; abstract;
+        function Move(MtrID: TMotorOrd; Dir: TMotorDir): Boolean;
+
+        function StopForForw(MtrID: TMotorOrd): Boolean; virtual; abstract;
+        function StopForBack(MtrID: TMotorOrd): Boolean; virtual; abstract;
+        function Stop(MtrID: TMotorOrd): Boolean; overload; virtual;
+        function Stop(MtrID: TMotorOrd; Dir: TMotorDir): Boolean; overload;
+
+        procedure SetIMS(Value: Boolean); virtual;
+
+        function IsFwMove: Boolean; virtual;
+        function IsBwMove: Boolean; virtual;
+
+        function GetCurr: Double; virtual;
+
+        property Enabled: Boolean read mEnabled write SetEnabled;
+        property IsMove: Boolean read GetIsMove;
+        property ID: TMotorOrd read mID;
+        property Dir: TMotorDir read mDir;
+        property UseCtrlerCurr: Boolean read mUseCtrlerCurr write mUseCtrlerCurr;
+
+        property IgnoreStop: Boolean read mIgnoreStop write SetIgnoreStop;
+    end;
+
+    TMoveCtrlerList = TList<TBaseMoveCtrler>;
+
+    TOnOffFunc = function(OnOff: Boolean): Boolean of object;
+
+    TSMLimitStatus = (lsNone, lsDone, lsIng, lsInvalid, lsUnKnown);
+
+    // 공정별로 단일 객체...
+    TBaseIMSCtrler = class(TBaseFSM)
+    protected
+        mPos: array[TMotorOrd] of Integer;
+        mLimit: array[TMotorOrd] of Boolean;
+        mLimitStatus: array[TMotorOrd] of Integer;
+
+        mDOIgnCh: Integer; // IGN DO 채널.
+        mDIO: TBaseDIO; //
+
+        mEndOfMotorID: TMotorOrd; // 마지막 CushExt IMS 유무?
+
+        mTC: TTimeChecker;
+
+        mEnabled: Boolean;
+        procedure SetEnabled(const Value: Boolean); virtual; // ex> 멀티캐스트 이벤트 매니저에서 자신을 제거나 등록으로 재구현
+    public
+        constructor Create(EndOfMotorID: TMotorOrd); overload;
+        constructor Create(DIO: TBaseDIO; DOIgnCh: Integer); overload;
+
+        procedure Reset; virtual;
+        function IsPending: Boolean; virtual;
+
+        // Req 요청
+        function ReqPos(): Boolean; virtual;
+        function ReqEasyAccess(): Boolean; virtual;
+
+        function EnableRCReq(): Boolean; virtual; // Limit상태 읽기전 R.Ctrl Enable후 Delay가 필요(차종 마다 다름)
+        function ReqLimit(): Boolean; virtual; // CAN UDS 차종별 변경
+        function DeleteLimit(): Boolean; overload; virtual; // 차종별 변경 :
+        function DeleteLimit(MotorID: TMotorOrd): Boolean; overload; virtual;
+
+        function SetLimit(MotorID: TMotorOrd): Boolean; virtual;
+        function SetLimitAll(): Boolean; virtual;
+
+        // Req 응답 대기
+        function IsLimitRespDone: Boolean; virtual;
+        procedure ProcessLimitDone; virtual;
+        function IsPosRespDone: Boolean; virtual;
+        procedure ProcessPosDone; virtual;
+
+        // 상태 읽기
+        function GetLimit(MtrID: TMotorOrd): Boolean;
+        function GetLimitStatus(MtrID: TMotorOrd): TSMLimitStatus; virtual;
+        function GetLimitStatusStr(MtrID: TMotorOrd): string;
+
+        function GetPos(MtrID: TMotorOrd): Integer;
+        function IsAllLimited: Boolean;
+
+        procedure ClearLimitStatus;
+
+        function ToLimitStr: string;
+        function ToPosStr: string;
+
+        // --- 차종마다 달리 구현 ------------------------------
+        // IMS 하위 조건
+        // - Key On, Off 승하자
+
+        function SetIgn(Value: Boolean): Boolean; // SW, HW 통합 Ign
+        function SetIgnSw(Value: Boolean): Boolean; virtual;
+        function SetDioIgn(Value: Boolean): Boolean; virtual;
+
+        function SetPPosSw(Value: Boolean): Boolean; virtual;
+        function SetDrvDoorOpenSw(Value: Boolean): Boolean; virtual;
+        function SetAuthState: Boolean; virtual;
+        function SetVehicleSpeed(Speed: byte = 0): Boolean; virtual;
+        function SetSpeedMeter: Boolean; virtual;
+
+        // - 메모리 위치
+        function StartMemSet(Value: Boolean): Boolean; virtual; abstract; // 메모리 위치 설정 시작시
+        function SetMemP1(Value: Boolean): Boolean; virtual; abstract; // 위치 설정 및 PLAY시
+        function SetMemP2(Value: Boolean): Boolean; virtual; abstract; // 위치 설정 및 PLAY시
+        function SetMemP3(Value: Boolean): Boolean; virtual; abstract;
+        function SetMemOrd(MemOrd: TMemoryOrd; IsOn: Boolean): Boolean; // 레거시
+
+        // IMS 상위 조건 TSeatMotor.FSMIMSMove에 인자로 사용
+        function KeyOn: Integer; virtual;
+        function KeyOff: Integer; virtual;
+
+        function FSMPushOnOff(OnOffFunc: TOnOffFunc; Timeout: Double = 0.5): Integer; // On/Off 스타일 함수 처리
+
+        function FSMSaveMemP1: Integer; virtual;
+        function FSMSaveMemP2: Integer; virtual;
+
+        function FSMPlayMemP1: Integer; virtual;
+        function FSMPlayMemP2: Integer; virtual;
+
+        // 주기적 쓰기 신호
+        function PeriodicSend: Boolean; virtual;
+
+        procedure SelfTest;
+
+        property Enabled: Boolean read mEnabled write SetEnabled;
+        property EndOfMotorID: TMotorOrd read mEndOfMotorID write mEndOfMotorID;
+        property DIO: TBaseDIO read mDIO write mDIO;
+        property DOIgnCh: Integer read mDOIgnCh write mDOIgnCh;
+    end;
+
+    TIMSCtrlerList = TList<TBaseIMSCtrler>;
+
+    // ===================================================================================================================
+    // TSeatMotor
+    // ===================================================================================================================
+
+    TNotifySeatMotorTestStatus = procedure(Motor: TSeatMotor; TestStatus: TSeatMotorTestStatus) of object;
+
+    TNotifySeatMotorStopCond = function(Motor: TSeatMotor): Boolean of object;
+    // 모터 작동 정지 조건
+
+
+    // SeatMotor Time Param(gsysEnv배제)
+
+    TSMParam = packed record
+        class var
+            mMoveMinCurr: Double; // 기동 최소 전류 =>   TSeatMotor.mMoveCurrRange.mMin
+
+        class var
+            mMoveCheckTime: Double; // 기동 전류 확인, 즉 이동 감지 시간
+        class var
+            mReadDelayTime: Double; // 기동 후 구속 확인 시간(초반 기동 전류를 구속으로 혼동 무시 효과)
+        class var
+            mMoveGapTime: Double; // 모터와 다음 모터 이동 사이 대기 시간
+
+        class var
+            mMoveLimitCurr: Double; // 모터 구동 전류 제한
+        class var
+            mSetTimeToLimit: array[TMotorOrd] of Double; // 하드리미트 설정 시간 => gSysEnv.rSetTimeStudy[] 대체 할 것
+
+        class var
+            mTotNGRetryCount: Integer; // gSysEnv.rRptCnt 대체할 것
+
+        class procedure Init; static;
+
+        class procedure Read(IniFile: TIniFile); static; // SysEnv의 Ini에서 읽을시
+        class procedure Write(IniFile: TIniFile); static;
+
+    end;
+
+    TSeatMotor = class(TBaseFSM)
+    private
+        // 실제 모터 제어기(Aggregation) : 차종 따라 변경
+        mMoveCtrler: TBaseMoveCtrler;
+        mIMSCtrler: TBaseIMSCtrler; // IMS제어는 공용이므로 정적변수로 하려했으나, 2공정이상 사용시 대비 멤버변수로 변경.
+
+    protected
+        mID: TMotorOrd;
+        mUse: Boolean;
+
+        // FSM용 상태
+        mTestState, // 모터 테스트 용
+        mMoveState: Integer; // 단순 이동시
+        mIMSState: Integer; // IMS 명령 전용
+        mLmtState: Integer;
+        //
+
+        mTestStatus: TSeatMotorTestStatus;
+        mMotorMoveBasicTimeForSetLimit: Double;
+        mDir: TMotorDir;
+        mIdx: Integer;
+
+        mIsHLimitSet: Boolean; // Hard Limit 설정 유무
+        mIsSLimitSet: Boolean;
+
+        mIsEndPosChk: Boolean; // 끝단 체크 여부
+        mIsIMS: Boolean; // 모터 Type
+        mPrvMtrIt, mMtrIt: TMotorOrd; // 모터 Loop Iterator
+
+        // 그래프 데이터 추가 및 결과 추출, Spec영역 OwnerDraw(Composition)
+        mIGraph: ISeatMtrGraph;
+
+        mAD: TBaseAD;
+        mAIChPwrCurr, mAIChIMSCurr, mAIChNoise: Integer;
+
+        // Test Param.
+        mMoveCurrRange: TRange; // 모터 구동 최소 ~ 구속(최대) 전류
+        mMoveLimitTime: Double; // 모터 구동 시간 제한
+
+        mMoveTime: Double; // 시간으로 이동
+
+        //
+        mIsRetest: Boolean; // 재검사 유무
+        mIsOneWayTest: Boolean; // 한방향만 검사후 정지
+        mdstResult: Integer;
+
+        mCurrOffset: array[TMotorDir] of Double;
+        mNoiseOffset: array[TMotorDir] of Double;
+        mSeatEventType4SetLimit: TSeatMotorTestStatus;
+
+        mOnTestStatus: TNotifySeatMotorTestStatus;
+        mOnStopCond: TNotifySeatMotorStopCond;
+
+        // ===============================================
+
+        mStopCnt, mNGRetry, mRetry: Integer; // Retry:오류시 재시도 vs Repeat : 동작 반복 개념
+
+        mTestTC, // FSMTest등 상위 운전에서 사용
+        mTC, mLmtTC, mLmtTC2, mSubTC, mTC2, mTC3, mTCLimit, mTcErrorTime: TTimeChecker; // FSMMove내에서 사용 함
+
+        // 정지시 사용
+        mStopState: Integer;
+        mStopTC: TTimeChecker;
+
+        mStopReason: TStopReasion;
+
+        mIsMove, mIsTestStart, mIsTesting, mdstStudyDoing: Boolean;
+
+        mTestStep: Integer; // 전진, 후진 구분 0: 전진, 1: 후진
+        mErrCount: Integer;
+
+        mCurrOnRun: Double; // 기동 시작시 전류, 정지 조건 판단용도
+
+        function GetName: string; override;
+
+        procedure SetIsIMS(Value: Boolean);
+        procedure SetOnStopCond(Value: TNotifySeatMotorStopCond);
+        procedure SetDir(Dir: TMotorDir);
+        procedure InternalInit;
+        procedure SetIGraph(Graph: ISeatMtrGraph);
+
+        procedure SetTotRepeatCount(const Value: Integer); // IMS제어는 공용이므로 정적변수로 하려했으나, 2공정이상 사용시 대비 멤버변수로 변경.
+
+        procedure InternalTestStatusEvent(Motor: TSeatMotor; Status: TSeatMotorTestStatus);
+
+        // 모터 정지 조건
+        function MtrStopCondFunc(Motor: TSeatMotor): Boolean;
+
+        function GetPos: Integer;
+        function GetLimit: Boolean;
+        function GetLimitStatus: TSMLimitStatus; virtual;
+
+    public
+        mSucces, mErr: Boolean;
+        mLstError, mLstToDo: string;
+
+        mLmtCurrOffset: Double; // 구속 전류 인정 Offset
+
+        // 버니싱 및 Limit 반복시
+        mCurRepeatCount, mTotRepeatCount: Integer;
+
+        constructor Create(ID: TMotorOrd; MoveCtrler: TBaseMoveCtrler; AD: TBaseAD; ADChs: array of Integer);
+        destructor Destroy; override;
+
+        procedure ClearFSM; override;
+        procedure ClearErr;
+
+        procedure ReverseDir;
+
+        class procedure SetSMParam(TimeParam: TSMParam);
+
+        procedure SetMoveParam(MoveMaxCurr, MoveLimitTime: Double); overload;
+
+        procedure SetIMSParam(AIsIMS, AIsHLimitSet: Boolean);
+        procedure SetOffset(OffsetFw, OffsetBw: Double);
+
+        function SetLimit: Boolean;
+
+        procedure FSMStart; override;
+        procedure FSMStop; overload; override;
+        function FSMStop(Dir: TMotorDir): Boolean; overload;
+
+        procedure SetZero;
+        function GetCurr: Double;
+        function IsMove: Boolean;
+        function IsRealMove: Boolean; // 전류값으로 실제 움직임 체크
+
+        function MoveFw: Boolean;
+        function MoveBw: Boolean;
+        function Stop: Boolean; overload;
+        function Stop(ADir: TMotorDir): Boolean; overload;
+
+        // 일반 이동 : 전류조건으로 출발 및 정지 감지
+        function FSMMove: Integer; overload;
+        function FSMMove(MoveTime: Double): Integer; overload;
+        function FSMMove(ADir: TMotorDir; MoveTime: Double = 0): Integer; overload;
+
+        function FSMMove(AMtrStopCond: TNotifySeatMotorStopCond; MoveTime: Double = 0): Integer; overload;
+        function FSMMove(ADir: TMotorDir; AMtrStopCond: TNotifySeatMotorStopCond; aUsrTime: Double = 0): Integer; overload; virtual;
+
+        procedure AsyncMove(ADir: TMotorDir);
+        procedure AsyncStop(ADir: TMotorDir);
+
+        // IMS 이동 명령형  : IMS 명령 수행 이동( ex: PlayMem, KeyOn/Off), 이동 후 현재 위치도 읽음
+        function FSMMoveNReadPos(IMSFunc: TFSMFunc; MoveTimeoutSec: Double = 4; AfterMoveDelaySec: Double = 1.0): Integer;
+        function FSMMoveNReadPos2(IMSFunc: TFSMFunc; MoveTimeoutSec: Double = 10; AfterMoveDelaySec: Double = 2): Integer;
+
+        // IMS 관련 명령
+        function FSMReadPos: Integer;
+        function FSMReadPosAfter(IMSCmd: TFSMFunc): Integer; // IMSCmd 수행후 현 위치 읽기 ex> Mem저장후 위치 획득
+        function FSMReadLimitStatus(Delay4Enable: Double = 0.2): Integer;
+        function FSMDeleteLimit(RetryCount: Integer = 3): Integer;
+
+        // 실제 테스트 함수군. TO DO 정리 필요
+        function FSMITest: Integer;
+
+        // 개별 모터 LIMIT 설정 및 상태 읽기(IsStatusRead)
+        function FSMSetLimit(IsStatusRead: Boolean = True; Timeout: Integer = _LIMIT_MOVING_TIME_OUT * 1000): Integer; overload;
+        //
+        function FSMSetLimitEx(IsFirstRead: Boolean; IsLimitAll: Boolean = True): Integer; overload;
+        // 인자: 처음 Limit읽고 시작 ,
+        function FSMSetLimitEx(IsFirstRead: Boolean; LmtMotors: array of TMotorOrd): Integer; overload;
+        // 인자: 처음 Limit읽고 시작 ,
+        function FSMSetLimitEx(IsFirstRead: Boolean; AMotor: array of Boolean): Integer; overload;
+
+        function FSMSetLimitALL(IsStatusRead: Boolean = True; TimeoutMS: Integer = _LIMIT_MOVING_TIME_OUT * 1000; LimitReadIntevalSec: Double = 3): Integer;
+
+        function FSMBurnishing(TotBurnishCount: Integer = -1): Integer;
+        function CanBurnishing: Boolean;
+        //
+        procedure ShowState();
+        function GetStateStr(IsSimple: Boolean = False): string; override;
+
+        function IsExternStopCondUsed: Boolean;
+        // ----------------------------------------------------------
+
+        property MoveCtrler: TBaseMoveCtrler read mMoveCtrler write mMoveCtrler;
+        property IMSCtrler: TBaseIMSCtrler read mIMSCtrler write mIMSCtrler;
+
+        property IGraph: ISeatMtrGraph read mIGraph write SetIGraph;
+
+        property ID: TMotorOrd read mID;
+
+        property Use: Boolean read mUse write mUse;
+
+        property IsHLimitSet: Boolean read mIsHLimitSet write mIsHLimitSet; // 리미트 설정 유무
+        property IsSLimitSet: Boolean read mIsSLimitSet write mIsSLimitSet;
+
+        property IsIMS: Boolean read mIsIMS write SetIsIMS; // IMS 전류 구분용
+
+        // 이벤트
+        property OnTestStatus: TNotifySeatMotorTestStatus read mOnTestStatus write mOnTestStatus;
+
+        property OnStopCond: TNotifySeatMotorStopCond read mOnStopCond write SetOnStopCond;
+
+        // 이동 관련
+        property Dir: TMotorDir read mDir write SetDir;
+        property MoveTime: Double read mMoveTime write mMoveTime;
+        property IsEndPosChk: Boolean read mIsEndPosChk write mIsEndPosChk;
+
+        // 상태
+        property TestStep: Integer read mTestStep;
+        property Pos: Integer read GetPos;
+        property Limit: Boolean read GetLimit;
+        property LimitStatus: TSMLimitStatus read GetLimitStatus;
+        property IsRetest: Boolean read mIsRetest write mIsRetest;
+        property IsOneWayTest: Boolean read mIsOneWayTest write mIsOneWayTest;
+
+        // 사양 및 조건 범위
+        property MoveCurrRange: TRange read mMoveCurrRange; // 이동시 전류 범위
+        property LockCurr: Double read mMoveCurrRange.mMax;
+
+        property DefStopCond: TNotifySeatMotorStopCond read mOnStopCond;
+
+        property AIChPwrCurr: Integer read mAIChPwrCurr write mAIChPwrCurr; //
+        property AIChIMSCurr: Integer read mAIChIMSCurr write mAIChIMSCurr; //
+
+        property CurRepeatCount: Integer read mCurRepeatCount;
+        property TotRepeatCount: Integer read mTotRepeatCount write SetTotRepeatCount;
+
+        property StopReason: TStopReasion read mStopReason;
+
+    end;
+
+    // ===================================================================================================================
+    // TSeatMotorOper
+    // ===================================================================================================================
+
+    // 모터 운영용
+    TSeatMotorOper = class(TBaseFSM)
+        mCurMotor: TSeatMotor;
+        mMotors: array[0..MAX_MTR_RUN_COUNT] of TSeatMotor;
+        mPwrMotors: array[0..MAX_MTR_RUN_COUNT] of TSeatMotor;
+        mImsMotors: array[0..MAX_MTR_RUN_COUNT] of TSeatMotor;
+
+        mFSMRet: array[0..MAX_MTR_RUN_COUNT] of Integer;
+        mFSMRetEx: array[0..MAX_MTR_RUN_COUNT] of Integer;
+
+        mPwrCount, mImsCount, mCount: Integer;
+        mSubCount: Integer;
+
+        mLstError, mLstToDo: pstring;
+
+        mIt: TMotorOrd;
+        mIdx: Integer;
+
+        mPwrResult, mImsResult: Boolean;
+
+        mTC: TTimeChecker;
+
+    private
+        procedure StopAll;
+        function GetIsErr: Boolean;
+        procedure ReorderForLastMove(MtrID: TMotorOrd);
+
+    public
+        constructor Create(LstErr, LstToDo: pstring);
+        procedure Clear;
+        procedure ReverseMotorsDir;
+
+        procedure Init(Motors: array of TSeatMotor; Count: Integer = 0); overload;
+        procedure Init(Motors: array of TSeatMotor; Dirs: array of TMotorDir; Count: Integer = 0); overload;
+        procedure Init(Motors: array of TSeatMotor; Dirs: array of TMotorDir; MoveTime: array of Double; Count: Integer = 0); overload;
+        procedure Init(Motors: array of TSeatMotor; Dirs: array of TMotorDir; UseStopCond: array of Boolean; MtrStopCond: TNotifySeatMotorStopCond = nil; Count: Integer = 0); overload;
+        procedure Init(Motors: array of TSeatMotor; Dirs: array of TMotorDir; UseStopCond: array of Boolean; MtrStopCond: array of TNotifySeatMotorStopCond; Count: Integer = 0); overload;
+        procedure Init(Motors: array of TSeatMotor; UseStopCond: array of Boolean; MtrStopCond: TNotifySeatMotorStopCond; Count: Integer = 0); overload;
+        procedure Init(Motors: array of TSeatMotor; UseStopCond: array of Boolean; MtrStopCond: array of TNotifySeatMotorStopCond; Count: Integer = 0); overload;
+
+        procedure Init4DiffDir(Motors: array of TSeatMotor; Dirs: array of TMotorDir; Count: Integer); overload; // 이전과 동일 방향 이동 모터는 제외
+        procedure Init4DiffDir(Motors: array of TSeatMotor; Dirs: array of TMotorDir; MoveTime: array of Double; Count: Integer); overload;
+        // 이전과 동일 방향 이동 모터는 제외
+
+        procedure InitLimit(Motors: array of TSeatMotor; RepeatCounts: array of Integer); // Limit를 버니싱처럼 반복 사용할 경우 명시적으로
+        procedure InitBurnishing(Motors: array of TSeatMotor; RepeatCounts: array of Integer);
+
+        procedure EnableEPosChk(Enable: Boolean);
+        procedure DisableStopCond;
+
+        function FSMMove(IsEach: Boolean): Integer; overload;
+        function FSMMove(NextMtrIntervalAsSec: Double = 0.3): Integer; overload;
+        function FSMMove(Motors1, Motors2: array of TSeatMotor; NextMtrIntervalAsSec: Double = 0.3): Integer; overload;
+        // Motors1 먼저 작동 후 Motors2 작동
+
+        function FSMMoveEx(): Integer; // Pwr, IMS 동시 작동, 물론 IMS는 순차적(ex: IMS 모터들 + CushExt)
+
+        function FSMTest(IsEach: Boolean; LastMoveMtr: TMotorOrd; NextMtrIntervalAsSec: Double = 0.2): Integer;
+
+        function FSMBurnishing(IsEach: Boolean; NextMtrIntervalAsSec: Double = 0.4): Integer;
+        function FSMSetLimit(IsEach: Boolean; NextMtrIntervalAsSec: Double = 2000): Integer;
+
+        function GetFSMRet(Idx: Integer): Integer;
+        function GetFirstErrMtr: TSeatMotor;
+
+        property CurMotor: TSeatMotor read mCurMotor;
+        property IsErr: Boolean read GetIsErr;
+
+    end;
+
+    /// ////////////////////////////////////////////////////////////////////////////////////////
+function GetOppositeDir(Dir: TMotorDir): TMotorDir;
+
+function GetMotorDirStr(Mtr: TSeatMotor): string;
+
+// SimulMotor:
+/// 초기 정렬시 사용, 끝단에 상응하는 거리와 전류 설정, 1회성
+procedure SetSimMtrToEndPos(Value: Boolean);
+
+procedure SetSimLimitState(State: Integer; LimitClear: Boolean = True); // ReadLimitStatus함수의 Simul:
+
+procedure StartSimMotor(MtrID: TMotorOrd; Curr, InitNoise, RunNoise: Double; IsIMS: Boolean);
+
+procedure StopSimMotor(MtrID: TMotorOrd);
+
+implementation
+
+uses
+    Math, Log, BaseCan, SeatType, AsyncCalls, UDSDef, LangTran;
+
+const
+    _CAN_TIME_OUT = 1.0; // 일반적인 응답대기
+    _MEM_DELAY = 0.5;
+    _LIMIT_TIME_OUT = 1.2; // 3.0; // 위치, 리미트 상태요구 응답대기
+    _LIMIT_TOT_REPEAT_COUNT = 5;
+
+    // ===================================================================
+function GetMotorDirStr(Mtr: TSeatMotor): string;
+begin
+    Result := SeatMotorType.GetMotorDirStr(Mtr.ID, Mtr.Dir);
+end;
+
+function GetOppositeDir(Dir: TMotorDir): TMotorDir;
+begin
+    if Dir = twForw then
+        Result := twBack
+    else
+        Result := twForw;
+
+end;
+
+// ===================================================================
+{ TSeatMotor }
+constructor TSeatMotor.Create(ID: TMotorOrd; MoveCtrler: TBaseMoveCtrler; AD: TBaseAD; ADChs: array of Integer);
+begin
+    inherited Create;
+
+    mID := ID;
+    mMoveCtrler := MoveCtrler;
+
+    mDir := twBack;
+    mRetry := 0;
+
+    mTotRepeatCount := 1;
+    mAD := AD;
+    mAIChPwrCurr := ADChs[0];
+    mAIChIMSCurr := ADChs[1];
+    mAIChNoise := ADChs[2];
+
+    mUse := True;
+
+    InternalInit;
+end;
+
+destructor TSeatMotor.Destroy;
+begin
+
+    inherited;
+end;
+
+procedure TSeatMotor.InternalInit;
+begin
+    mName := GetMotorName(mID);
+
+    mOnStopCond := nil;
+
+    mTestStep := 0;
+
+    mOnTestStatus := nil;
+
+    mIsEndPosChk := True;
+
+    mLmtCurrOffset := 0.0;
+end;
+
+procedure TSeatMotor.InternalTestStatusEvent(Motor: TSeatMotor; Status: TSeatMotorTestStatus);
+begin
+    mTestStatus := Status;
+
+    if Assigned(mOnTestStatus) then
+    begin
+        mOnTestStatus(Motor, Status);
+    end;
+
+end;
+
+function TSeatMotor.IsExternStopCondUsed: Boolean;
+begin
+    Result := Assigned(mOnStopCond);
+end;
+
+function TSeatMotor.IsMove: Boolean;
+begin
+    Result := mMoveCtrler.IsMove;
+end;
+
+function TSeatMotor.IsRealMove: Boolean;
+begin
+    Result := mMoveCurrRange.IsIn(GetCurr);
+end;
+
+var
+    gSimCurr: array[TMotorOrd] of TSimulCurr;
+    gSimNoise: array[TMotorOrd] of TSimulNoise;
+    gSimLimitState: Integer;
+    gSimLimitClear: Boolean;
+
+function TSeatMotor.GetCurr: Double;
+begin
+{$IFDEF _USE_PWS_CURR}
+    Result := gDCPower.Items[0].MeasCurr;
+    Exit;
+{$ENDIF}
+
+{$IFDEF _SIMUL_MTR_CURR}
+    Result := gSimCurr[mID].FSMIGetVal;
+{$ELSE}
+
+    if mIsIMS then
+    begin
+
+        Result := Max(0, mAD.GetValue(mAIChIMSCurr));
+    end
+    else
+    begin
+        if mMoveCtrler.UseCtrlerCurr then
+            Result := mMoveCtrler.GetCurr
+        else
+            Result := Max(0, mAD.GetValue(mAIChPwrCurr));
+    end;
+
+{$ENDIF}
+end;
+
+function TSeatMotor.GetLimit: Boolean;
+begin
+    Result := mIMSCtrler.GetLimit(mID);
+end;
+
+function TSeatMotor.GetLimitStatus: TSMLimitStatus;
+begin
+    Result := mIMSCtrler.GetLimitStatus(mID);
+end;
+
+function TSeatMotor.GetName: string;
+begin
+    if mIsIMS then
+        Result := mName + '(IMS)'
+    else
+        Result := mName;
+end;
+
+function TSeatMotor.SetLimit: Boolean;
+begin
+    Result := mIMSCtrler.SetLimit(mID);
+end;
+
+function TSeatMotor.GetPos: Integer;
+begin
+    Result := mIMSCtrler.GetPos(mID);
+end;
+
+procedure TSeatMotor.SetMoveParam(MoveMaxCurr, MoveLimitTime: Double);
+begin
+    mMoveCurrRange.mMin := TSMParam.mMoveMinCurr;
+    mMoveCurrRange.mMax := MoveMaxCurr;
+    mMoveLimitTime := MoveLimitTime;
+end;
+
+procedure TSeatMotor.SetIMSParam(AIsIMS, AIsHLimitSet: Boolean);
+begin
+    IsIMS := AIsIMS;
+    mIsHLimitSet := AIsHLimitSet;
+end;
+
+procedure TSeatMotor.SetIsIMS(Value: Boolean);
+begin
+    if mIsIMS <> Value then
+    begin
+        mIsIMS := Value;
+
+        if Assigned(mMoveCtrler) then
+            mMoveCtrler.SetIMS(Value);
+
+    end;
+end;
+
+procedure TSeatMotor.SetOffset(OffsetFw, OffsetBw: Double);
+begin
+    mCurrOffset[twForw] := OffsetFw;
+    mCurrOffset[twBack] := OffsetBw;
+end;
+
+procedure TSeatMotor.SetOnStopCond(Value: TNotifySeatMotorStopCond);
+begin
+    mOnStopCond := Value;
+end;
+
+class procedure TSeatMotor.SetSMParam(TimeParam: TSMParam);
+begin
+    TSMParam.mMoveCheckTime := TimeParam.mMoveCheckTime;
+    TSMParam.mReadDelayTime := TimeParam.mReadDelayTime;
+    TSMParam.mMoveGapTime := TimeParam.mMoveGapTime;
+
+end;
+
+procedure TSeatMotor.SetTotRepeatCount(const Value: Integer);
+begin
+    mCurRepeatCount := 0;
+    mTotRepeatCount := Value;
+end;
+
+procedure TSeatMotor.SetZero;
+begin
+    mAD.SetZero(mAIChPwrCurr);
+end;
+
+procedure TSeatMotor.SetDir(Dir: TMotorDir);
+begin
+    mDir := Dir;
+end;
+
+procedure TSeatMotor.SetIGraph(Graph: ISeatMtrGraph);
+begin
+    mIGraph := Graph;
+end;
+
+function TSeatMotor.GetStateStr(IsSimple: Boolean): string;
+begin
+    Result := inherited GetStateStr(IsSimple) + Format(' mMoveState = %d, mTestState = %d', [mMoveState, mTestState]);
+end;
+
+procedure TSeatMotor.ShowState;
+begin
+    if mUse then
+        gLog.Panel('%s : mMoveState = %d, mTestState = %d', [Name, mMoveState, mTestState]);
+end;
+
+function TSeatMotor.FSMMove(): Integer;
+begin
+    Result := FSMMove(mDir, MtrStopCondFunc, mMoveTime);
+end;
+
+function TSeatMotor.FSMMove(MoveTime: Double): Integer;
+begin
+    Result := FSMMove(mDir, MtrStopCondFunc, MoveTime);
+end;
+
+function TSeatMotor.FSMMove(ADir: TMotorDir; MoveTime: Double): Integer;
+begin
+    Result := FSMMove(ADir, MtrStopCondFunc, MoveTime);
+end;
+
+function TSeatMotor.FSMMove(AMtrStopCond: TNotifySeatMotorStopCond; MoveTime: Double): Integer;
+begin
+    Result := FSMMove(mDir, AMtrStopCond, MoveTime);
+end;
+
+const
+    MV_STATE_IDLE = 0;
+    MV_STATE_START_MOVE = 1;
+    MV_STATE_CHK_START = 2;
+    MV_STATE_CHK_STOP = 3;
+    MV_STATE_STOP_MOVE = 4;
+    MV_STATE_CHK_STOP_DONE = 5;
+
+function TSeatMotor.FSMMove(ADir: TMotorDir; AMtrStopCond: TNotifySeatMotorStopCond; aUsrTime: Double): Integer;
+begin
+    Result := 0;
+
+    case mMoveState of
+        MV_STATE_IDLE:
+            begin
+                if not mUse then
+                    Exit(1);
+                mErrCount := 0;
+                mdstResult := 1;
+                Inc(mMoveState);
+                mRetry := 0;
+                mTC.Start;
+                mTC2.Stop; // 정지 전류  필터용
+                mMoveCtrler.ClearFSM;
+
+                mDir := ADir;
+
+                mLstError := ')';
+                mLstToDo := '전극 및 커넥터 케이블 상태를 확인하세요.';
+{$IFDEF _SIMUL_MTR_CURR}
+                if Dir = twForw then
+                begin
+                    gSimCurr[mID].Start(3.0, mIsIMS);
+                    gSimNoise[mID].Start(1.5, 3.0);
+                end
+                else
+                begin
+                    gSimCurr[mID].Start(3.5, mIsIMS);
+                    gSimNoise[mID].Start(2.5, 3.0);
+                end;
+{$ENDIF}
+            end;
+        MV_STATE_START_MOVE:
+            begin
+
+                case mMoveCtrler.FSMMove(mID, ADir) of
+                    -1:
+                        begin
+                            mLstError := GetMotorName(mID) + '(' + GetMotorDirStr(Self) + ') 모터 기동 시작 실패';
+                            gLog.Panel('%s %s', [Name, mLstError]);
+                            mMoveState := 0;
+                            Exit(-1);
+                        end;
+                    1:
+                        begin
+                            mIsMove := True;
+                            mStopCnt := 0;
+                            mMoveCtrler.ClearFSM;
+                            Inc(mRetry);
+                            Inc(mMoveState);
+                            mTC.Start();
+                            gLog.Panel('%s Motor.FSMMove %s Start (Time:%.1f)', [Name, GetMotorDirStr(Self), aUsrTime]);
+                        end
+                end;
+            end;
+        MV_STATE_CHK_START:
+            begin
+                // 출발여부 확인, 최소 전류로 판정.
+                if GetCurr() > TSMParam.mMoveLimitCurr then // 최대 전류가 흘러서 이상이 없는지 확인.
+                begin
+                    mLstError := GetMotorName(mID) + '(' + GetMotorDirStr(Self) + ') 전류 Limit over.';
+                    mLstToDo := '모터 및 상태를 확인하세요.';
+
+                    mdstResult := -1;
+                    mMoveCtrler.Stop(mID, ADir);
+                    mMoveCtrler.ClearFSM;
+
+                    mIsMove := False;
+                    mMoveState := MV_STATE_IDLE;
+
+                    gLog.Panel('%s %s', [Name, mLstError]);
+                    Exit(-1);
+                end
+                else if GetCurr() > mMoveCurrRange.mMin then
+                begin
+                    mCurrOnRun := GetCurr();
+
+                    Inc(mMoveState);
+                    mTC.Start;
+                    gLog.Panel('%s 기동전류 확인 %f(A)', [Name, GetCurr()]);
+                end
+                else if mTC.GetPassTimeAsSec > TSMParam.mMoveCheckTime then
+                // TO DO : IMS일 경우
+                begin
+
+                    if mIsIMS and mIsEndPosChk then // LMT 설정된 곳에서 후진 시
+                    begin
+                        mMoveCtrler.ClearFSM;
+                        mMoveState := MV_STATE_STOP_MOVE;
+                        gLog.Panel('%s Motor.FSMMove 끝단 정지 상태 %f(A)', [Name, GetCurr]);
+                        Exit;
+                    end;
+
+                    gLog.Panel('%s 이동 감지 타임아웃(%f(sec), %f(A))', [Name, TSMParam.mMoveCheckTime, GetCurr]);
+                    gLog.Panel('%s %s', [Name, mMoveCtrler.GetStateStr()]);
+
+                    if mRetry <= 3 then
+                    begin
+                        gLog.Panel('%s 이동 재시도  %d/3', [Name, mRetry]);
+                        mMoveCtrler.ClearFSM;
+                        mMoveState := 100; // MV_STATE_START_MOVE;
+                        Exit;
+                    end;
+
+                    mMoveState := MV_STATE_STOP_MOVE;
+                    mMoveCtrler.ClearFSM;
+                    mLstError := GetMotorName(mID) + '(' + GetMotorDirStr(Self) + ') 모터가 기동하지 않습니다.' + Format(' Curr: %f(A)', [GetCurr]);
+                    mLstToDo := '전극 및 커넥터 케이블 상태를 확인하세요.';
+
+                    mdstResult := -1; // -2;
+
+                    gLog.Panel('%s %s', [Name, mLstError]);
+                end;
+            end;
+        MV_STATE_CHK_STOP:
+            begin
+                if GetCurr() > TSMParam.mMoveLimitCurr then
+                begin
+                    mLstError := GetMotorName(mID) + '(' + GetMotorDirStr(Self) + ') 전류 Limit over.';
+                    mLstToDo := '모터 및 상태를 확인하세요.';
+
+                    mdstResult := -1;
+
+                    mMoveCtrler.Stop(mID, ADir);
+                    mMoveCtrler.ClearFSM;
+
+                    mIsMove := False;
+                    mMoveState := MV_STATE_IDLE;
+
+                    gLog.Panel('%s %s', [Name, mLstError]);
+
+                    Exit(-1);
+                end
+                else if AMtrStopCond(Self) and (mTC.GetPassTimeAsSec >= TSMParam.mReadDelayTime) then
+                // 구속전류 감지 또는 외부 센서 조건 감지시 정지
+                begin
+                    // gLog.Debug('Pass Time: %f, Delay Time: %f', [mTC.GetPassTimeAsSec, TSMParam.mReadDelayTime]);
+                    if mIsIMS then
+                        gLog.Panel('%s Stop: IMS Limit 전류(%s - %s)(%f / %f(A))', [Name, GetMotorName(mID), GetMotorDirStr(Self), GetCurr(), mMoveCurrRange.mMax])
+                    else
+                        gLog.Panel('%s Stop: 구속 전류(%s - %s)(%f / %f(A))', [Name, GetMotorName(mID), GetMotorDirStr(Self), GetCurr(), mMoveCurrRange.mMax]);
+
+                    // 정상정지.
+                    mdstResult := 1;
+                    mMoveState := MV_STATE_STOP_MOVE;
+                    mMoveCtrler.ClearFSM;
+                end
+                else if (GetCurr() < mMoveCurrRange.mMin) and (mTC.GetPassTimeAsSec >= TSMParam.mReadDelayTime) then // 작동중 전류 하강
+                begin
+                    if not mTC2.IsStart then
+                    begin
+                        gLog.ToFiles('%s 비정상 정지 조건 감지(%f(A))', [Name, GetCurr()]);
+                        mTC2.Start(1000);
+                    end
+                    else
+                    begin
+                        if mTC2.IsTimeOut then
+                        begin
+                            mTC2.Stop;
+                            mLstError := GetMotorName(mID) + '(' + GetMotorDirStr(Self) + ') 모터가 작동 중 비정상 정지 하였습니다.';
+                            mLstToDo := '전극 및 커넥터 케이블 상태를 확인하세요.';
+                            mdstResult := -1;
+                            mMoveState := MV_STATE_STOP_MOVE;
+                            gLog.Error('%s Error  %s - %s : (%f < %f(A), %f(sec))', [Name, GetMotorName(mID), GetMotorDirStr(Self), GetCurr(), mMoveCurrRange.mMin, TSMParam.mReadDelayTime]);
+                            gLog.ToFiles('%s ERROR: %s (Motor.FSMMove)', [Name, mLstError]);
+                        end;
+                    end;
+                end
+                else if (aUsrTime > 0) and (mTC.GetPassTimeAsSec > aUsrTime) then // 지정시간에 정지
+                begin
+                    mdstResult := 1;
+                    mMoveState := MV_STATE_STOP_MOVE;
+                    mMoveCtrler.ClearFSM;
+                    gLog.Panel('%s stop: UsrTime(%f)(%s - %s)', [Name, aUsrTime, GetMotorName(mID), GetMotorDirStr(Self)]);
+                end
+                else if mTC.GetPassTimeAsSec > mMoveLimitTime then // 작동시간 오버
+                begin
+                    // 구속 전류  OFFSET 범위 내에 전류 발생시 정상 처리
+                    if GetCurr() >= mMoveCurrRange.mMax - mLmtCurrOffset then
+                    begin
+                        mdstResult := 1;
+                        mMoveState := MV_STATE_STOP_MOVE;
+                        mMoveCtrler.ClearFSM;
+
+                        gLog.Panel('%s stop: 구속전류 (%s - %s)(%f / %f(A)).', [Name, GetMotorName(mID), GetMotorDirStr(Self), GetCurr(), mMoveCurrRange.mMax]);
+
+                    end
+                    else
+                    begin
+                        mLstError := GetMotorName(mID) + '(' + GetMotorDirStr(Self) + ') 작동시간 이상입니다';
+                        if mMoveCurrRange.IsIn(GetCurr) then
+                        begin
+                            mLstToDo := Format('실제 구속 추정 전류: %.1f(A)가  설정 구속 전류: %.1f(A)보다 낮게 나옵니다', [GetCurr, mMoveCurrRange.mMax]);
+                        end
+                        else
+                        begin
+                            mLstToDo := '구속 전류/시간 설정 및 모터연결 상태를 확인하세요. ';
+                        end;
+
+                        mdstResult := -1;
+                        mMoveState := MV_STATE_STOP_MOVE;
+                        mMoveCtrler.ClearFSM;
+
+                        gLog.Error('%s %s %f/%f(A), %f(sec)', [Name, mLstError, GetCurr, mMoveCurrRange.mMax, mMoveLimitTime]);
+                    end;
+
+                end;
+
+            end;
+
+        MV_STATE_STOP_MOVE:
+            begin
+                case mMoveCtrler.FSMStop(mID, ADir) of
+                    -1:
+                        begin
+                            mLstError := GetMotorName(mID) + '(' + GetMotorDirStr(Self) + ') 모터 정지 실패';
+                            gLog.Panel('%s %s', [Name, mLstError]);
+                            mMoveState := 0;
+                            Exit(-1);
+                        end;
+                    1:
+                        begin
+
+                            Inc(mMoveState);
+                            mTC.Start;
+                            gLog.Panel('%s Motor.FSMMove %s Stop', [Name, GetMotorDirStr(Self)]);
+                        end;
+                end;
+
+            end;
+        MV_STATE_CHK_STOP_DONE:
+            begin
+                // 정지 전류까지 하강 확인
+                if GetCurr() <= mMoveCurrRange.mMin then
+                begin
+                    mIsMove := False;
+                    Result := mdstResult;
+                    gLog.Panel('%s Motor.FSMMove %s Stop Checked(%d)', [Name, GetMotorDirStr(Self), Result]);
+                end
+                else
+                begin
+                    if mTC.GetPassTimeAsSec > 1.0 then
+                    begin
+                        gLog.Panel('%s Stop(%f/%f A) 확인 재시도 %d/3', [Name, GetCurr, mMoveCurrRange.mMin, mRetry]);
+                        Inc(mRetry);
+                        if mRetry > 3 then
+                        begin
+                            mLstError := GetMotorName(mID) + '(' + GetMotorDirStr(Self) + ') 정지 전류 차단 실패.(stop0)';
+                            mLstToDo := '커넥터 연결 확인후 재검사 하세요. ';
+                            gLog.Panel('%s %s', [Name, mLstError]);
+                            Result := -1;
+                            Exit;
+                        end;
+                        mTC.Start;
+                        mMoveCtrler.ClearFSM;
+                        mMoveState := MV_STATE_STOP_MOVE;
+                    end;
+                end;
+
+            end;
+
+        100: // 모터 구동 SW 재작동
+            begin
+                case mMoveCtrler.FSMStop(mID, ADir) of
+                    -1:
+                        begin
+                            mLstError := GetMotorName(mID) + '(' + GetMotorDirStr(Self) + ') 모터 정지 실패!';
+                            gLog.Panel('%s %s', [Name, mLstError]);
+                            mMoveState := 0;
+                            Exit(-1);
+                        end;
+
+                    1:
+                        begin
+                            mTC.Start(600);
+                            Inc(mErrCount);
+                            Inc(mMoveState);
+                        end;
+                end;
+            end;
+
+        101:
+            begin
+                if mTC.IsTimeOut then
+                begin
+
+                    gLog.Panel('%s Motor Run 재시도', [Name]);
+                    mMoveState := MV_STATE_START_MOVE;
+                    mMoveCtrler.ClearFSM;
+                    mTC.Start;
+                end;
+
+            end;
+    end; // case
+end;
+
+function TSeatMotorOper.FSMBurnishing(IsEach: Boolean; NextMtrIntervalAsSec: Double): Integer;
+var
+    i: Integer;
+begin
+    Result := 0;
+    case mState of
+        0:
+            begin
+                if mCount <= 0 then
+                    Exit(-1);
+
+                mSubCount := 1;
+                for i := 0 to mCount - 1 do
+                begin
+                    if not mMotors[i].Use then
+                        mFSMRet[i] := 1
+                    else
+                        mFSMRet[i] := 0;
+
+                    mMotors[i].ClearFSM;
+                end;
+
+                if IsEach then
+                begin
+                    mState := 2;
+                    mIdx := 0;
+                end
+                else
+                begin
+                    mTC.Start(NextMtrIntervalAsSec * 1000);
+                    Inc(mState);
+                end;
+            end;
+
+        1: // 동시 작동
+            begin
+                for i := 0 to mSubCount - 1 do
+                begin
+                    if mFSMRet[i] = 0 then
+                    begin
+                        mCurMotor := mMotors[i];
+                        mFSMRet[i] := mMotors[i].FSMBurnishing;
+                        case mFSMRet[i] of
+                            -1, -2:
+                                begin
+                                    StopAll();
+                                    mLstError^ := mMotors[i].mLstError;
+                                    mLstToDo^ := mMotors[i].mLstToDo;
+                                    mMotors[i].mErr := True;
+                                    mState := 0;
+                                    Exit(-1);
+                                end;
+
+                        end;
+
+                    end;
+                end;
+
+                if mTC.IsTimeOut then
+                begin
+                    if mSubCount < mCount then
+                    begin
+                        mTC.Start(NextMtrIntervalAsSec * 1000);
+                        Inc(mSubCount);
+                    end;
+                end;
+
+                for i := 0 to mCount - 1 do
+                begin
+                    if (mFSMRet[i] <= 0) then
+                    begin
+                        Exit;
+                    end;
+                end;
+
+                mState := 0;
+                Exit(1);
+            end;
+
+        2: // 개별 작동
+            begin
+                mCurMotor := mMotors[mIdx];
+                mFSMRet[mIdx] := mMotors[mIdx].FSMBurnishing;
+                case mFSMRet[mIdx] of
+                    -2, -1:
+                        begin
+                            mMotors[mIdx].FSMStop;
+                            mLstError^ := mMotors[mIdx].mLstError;
+                            mLstToDo^ := mMotors[mIdx].mLstToDo;
+                            Exit(-1);
+                        end;
+                    1:
+                        begin
+                            Inc(mIdx);
+                            if mIdx >= mCount then
+                            begin
+                                Exit(1);
+                            end;
+
+                            if mMotors[mIdx].CanBurnishing then
+                            begin
+                                mTC.Start(TSMParam.mMoveGapTime * 1000);
+                                Inc(mState);
+                            end;
+                        end;
+                end;
+            end;
+        3:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    mState := 2;
+                end;
+
+            end;
+    else
+        mLstError^ := '모터 검사 프로세스 에러';
+        mLstToDo^ := '프로그램을 다시 시작하세요';
+        gLog.Panel('%s %d', [mLstError, mState]);
+        Result := -1;
+    end;
+
+end;
+
+function TSeatMotorOper.FSMSetLimit(IsEach: Boolean; NextMtrIntervalAsSec: Double): Integer;
+var
+    NoLimitCnt, i: Integer;
+begin
+    Result := 0;
+    case mState of
+        0:
+            begin
+                if mCount <= 0 then
+                    Exit(-1);
+
+                mSubCount := 1;
+                NoLimitCnt := 0;
+                for i := 0 to mCount - 1 do
+                begin
+                    mMotors[i].ClearFSM;
+                    mMotors[i].mCurRepeatCount := 0;
+
+                    if not mMotors[i].Use { or (mMotors[i].mTotRepeatCount = 0) }
+                        or not mMotors[i].mIsSLimitSet or not mMotors[i].mIsIMS then
+                    begin
+                        mFSMRet[i] := 1;
+                        Inc(NoLimitCnt);
+                    end
+                    else
+                        mFSMRet[i] := 0;
+                end;
+
+                if NoLimitCnt >= mCount then
+                    Exit(1);
+
+                if IsEach then
+                begin
+                    mTC.Start(TSMParam.mMoveGapTime * 1000);
+                    mState := 3;
+                    // mState := 2;
+                    mIdx := 0;
+
+                end
+                else
+                begin
+                    begin
+                        mTC.Start(NextMtrIntervalAsSec * 1000);
+                        Inc(mState);
+                    end;
+
+                end;
+            end;
+
+        1: // 동시(시차) 작동  : 검증 필요
+            begin
+                for i := 0 to mSubCount - 1 do
+                begin
+                    if (mFSMRet[i] = 0) then
+                    begin
+                        mCurMotor := mMotors[i];
+                        mFSMRet[i] := mMotors[i].FSMSetLimit(true);
+                        case mFSMRet[i] of
+                            -2, -1:
+                                begin
+                                    StopAll;
+                                    mLstError^ := mMotors[i].mLstError;
+                                    mLstToDo^ := mMotors[i].mLstToDo;
+                                    mMotors[i].mErr := True;
+                                    mState := 0;
+                                    Exit(-1);
+                                end;
+                        end;
+                    end
+                    else
+                    begin
+                        if mSubCount < mCount then
+                            Inc(mSubCount);
+                    end;
+                end;
+
+                if mTC.IsTimeOut { and mMotors[mIdx].IsRealMove } then
+                begin
+                    if mSubCount < mCount then
+                    begin
+                        mTC.Start(NextMtrIntervalAsSec * 1000);
+                        Inc(mSubCount);
+                    end;
+                end;
+
+                for i := 0 to mCount - 1 do
+                begin
+                    if (mFSMRet[i] <= 0) then
+                    begin
+                        Exit;
+                    end;
+                end;
+
+                if mMotors[0].FSMReadLimitStatus < 0 then
+                begin
+                    StopAll;
+                    mLstError^ := 'LIMIT 상태 읽기 실패';
+                    mLstToDo^ := 'CAN통신 관련 전극이나 케이블을 점검하세요';
+                    mState := 0;
+                    Exit(-1);
+                end;
+
+                mState := 0;
+
+                Exit(1);
+            end;
+
+        2: // 개별 작동 , 버니싱 카운트로 반복 횟수 구현함 (임시)
+            begin
+                mCurMotor := mMotors[mIdx];
+                mFSMRet[mIdx] := mMotors[mIdx].FSMSetLimit(True);
+                case mFSMRet[mIdx] of
+                    -2, -1:
+                        begin
+                            mMotors[mIdx].FSMStop;
+                            mLstError^ := mMotors[mIdx].mLstError;
+                            mLstToDo^ := mMotors[mIdx].mLstToDo;
+                            Exit(-1);
+                        end;
+                    1:
+                        begin
+
+                            Inc(mIdx);
+                            if mIdx >= mCount then
+                            begin
+                                mState := 0;
+                                Exit(1);
+                            end;
+
+                            mTC.Start(TSMParam.mMoveGapTime * 1000);
+                            Inc(mState);
+                        end;
+                end;
+            end;
+        3:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    mState := 2;
+                end;
+
+            end;
+    else
+        mLstError^ := '모터 검사 프로세스 에러';
+        mLstToDo^ := '프로그램을 다시 시작하세요';
+        gLog.Panel('%s %d', [mLstError, mState]);
+        Result := -1;
+    end;
+
+end;
+
+function TSeatMotor.MoveBw: Boolean;
+begin
+    Dir := twBack;
+    Result := mMoveCtrler.MoveToBack(mID);
+end;
+
+function TSeatMotor.MoveFw: Boolean;
+begin
+    Dir := twForw;
+    Result := mMoveCtrler.MoveToForw(mID);
+end;
+
+function TSeatMotor.Stop(ADir: TMotorDir): Boolean;
+begin
+    Result := mMoveCtrler.Stop(mID, ADir);
+{$IFDEF _SIMUL_MTR_CURR}
+    gSimCurr[mID].Stop;
+{$ENDIF}
+end;
+
+function TSeatMotor.Stop: Boolean;
+begin
+    mMoveCtrler.Stop(mID);
+{$IFDEF _SIMUL_MTR_CURR}
+    gSimCurr[mID].Stop;
+{$ENDIF}
+end;
+
+function TSeatMotor.MtrStopCondFunc(Motor: TSeatMotor): Boolean;
+var
+    Curr: Double;
+begin
+    Curr := GetCurr;
+
+    if mIsIMS then
+    begin
+
+        if mIMSCtrler.mLimit[mID] then // TO DO : TsWork에서 리미트 잡힌 상태에서만 적용되어야 할 코드
+        begin
+            Result := (Curr < mMoveCurrRange.mMin);
+        end
+        else
+            Result := (Curr > mMoveCurrRange.mMax) or (Curr < mMoveCurrRange.mMin); // 영욱 주석함. 모터 구동전 움직여서.
+
+    end
+    else
+    begin
+{$IFDEF _SIMUL_MTR_CURR}
+        Result := (Curr > mMoveCurrRange.mMax) or (Curr <= mMoveCurrRange.mMin);
+{$ELSE}
+        Result := (Curr > mMoveCurrRange.mMax) or (Curr <= mMoveCurrRange.mMin); // SW1 후진단 0걸림
+{$ENDIF}
+    end;
+    // if Result then gLog.Panel('%s 모터 정지 : 현재전류 %f, 구속전류 %f, 리미트상태 %s', [Name, Curr, mLmtCurr, BoolToStr(mLimitStatus[mID], True)]);
+    mStopReason := srByEnd;
+
+    if Result then
+        Exit;
+
+    if Assigned(mOnStopCond) then
+    begin
+        Result := mOnStopCond(Self);
+        mStopReason := srByExternCond;
+    end;
+
+end;
+
+procedure TSeatMotor.ReverseDir;
+begin
+    mDir := GetOppositeDir(mDir);
+end;
+
+procedure TSeatMotor.AsyncMove(ADir: TMotorDir);
+begin
+    gLog.Panel('%s Jog %s 이동', [Name, GetMotorDirStr(Self)]);
+
+    if ADir = twForw then
+        TAsyncCalls.Invoke(
+            procedure
+            begin
+                MoveFw;
+            end).Forget
+    else
+        TAsyncCalls.Invoke(
+            procedure
+            begin
+                MoveBw;
+            end).Forget;
+
+end;
+
+procedure TSeatMotor.AsyncStop(ADir: TMotorDir);
+begin
+    gLog.Panel('%s Jog %s 정지', [Name, GetMotorDirStr(Self)]);
+
+    TAsyncCalls.Invoke(
+        procedure
+        begin
+            Stop;
+        end).Forget;
+    {
+      TAsyncCalls.Invoke(
+      procedure
+      begin
+      ClearFSM;
+      mDir := ADir;
+      while mMoveCtrler.FSMStop(mID, ADir) = 0 do
+      begin
+      end;
+      end
+      ).Forget;
+      }
+end;
+
+function TSeatMotor.CanBurnishing: Boolean;
+begin
+    Result := mUse and (mTotRepeatCount > 0);
+end;
+
+procedure TSeatMotor.ClearErr;
+begin
+    mErr := False;
+    mLstError := '';
+    mLstToDo := '';
+end;
+
+procedure TSeatMotor.ClearFSM;
+begin
+    mTestState := 0;
+    mMoveState := 0;
+    mSubState := 0;
+    mStopState := 0;
+    mIMSState := 0;
+    mLmtState := 0;
+    mErr := False;
+    if Assigned(mMoveCtrler) then
+        mMoveCtrler.ClearFSM;
+    if Assigned(mIMSCtrler) then
+        mIMSCtrler.ClearFSM;
+{$IFDEF _SIMUL_MTR_CURR}
+    gSimCurr[mID].Stop;
+{$ENDIF}
+end;
+
+procedure TSeatMotor.FSMStart;
+begin
+    mTestState := 1;
+
+    if not mIsOneWayTest then
+        mTestStep := 0;
+
+    mNGRetry := 0;
+    mIsTestStart := False;
+
+    ClearErr;
+end;
+
+function TSeatMotor.FSMStop(Dir: TMotorDir): Boolean;
+begin
+    Result := mMoveCtrler.Stop(mID, Dir);
+end;
+
+procedure TSeatMotor.FSMStop;
+begin
+    Stop;
+
+    ShowState;
+
+    ClearFSM;
+end;
+
+function TSeatMotor.FSMDeleteLimit(RetryCount: Integer = 3): Integer;
+begin
+    Result := 0;
+    case mSubState of
+        0:
+            begin
+                mRetry := 0;
+                Inc(mSubState);
+            end;
+
+        1:
+            begin
+                mIMSCtrler.DeleteLimit;
+                mTC.Start(0.3 * 1000.0);
+                Inc(mSubState);
+            end;
+        2:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    mIMSCtrler.DeleteLimit; // 삭제 안되는 경우 있어 확인 사살..
+                    mTC.Start(0.3 * 1000.0);
+                    Inc(mSubState);
+                end;
+
+            end;
+        3:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    // mIMSCtrler.DeleteLimit; // 확인 사살2..
+                    mTC.Start(0.6 * 1000.0); // 삭제 할 것
+                    Result := 1;
+                    mSubState := 0;
+                end;
+
+            end;
+
+    end;
+end;
+
+{ Limit는 3개 모터를 모두 수행하는 컨트롤러 영역 인데, 개별 모터 함수에 기능 부여함 }
+function TSeatMotor.FSMSetLimitEx(IsFirstRead: Boolean; IsLimitAll: Boolean): Integer;
+begin
+    Result := 0;
+
+    case mLmtState of
+        0:
+            begin
+                mMtrIt := Low(TMotorOrd);
+                ClearErr;
+                mLstToDo := '커넥터 연결 및 CAN통신을 확인하세요.';
+
+                mLmtTC.Start(_LIMIT_MOVING_TIME_OUT * 1000);
+                mSubState := 0;
+
+                if IsFirstRead then
+                begin
+                    Inc(mLmtState);
+                end
+                else
+                begin
+                    Inc(mLmtState, 2);
+                end;
+            end;
+        1:
+            begin
+                case FSMReadLimitStatus of
+                    -1:
+                        begin
+                            mLstError := 'LIMIT 상태 읽기 실패';
+                            mLmtState := 0;
+                            Exit(-1);
+                        end;
+                    1:
+                        Inc(mLmtState);
+                end;
+            end;
+        2: // 모두 설정 또는 Limit 설정 안된 모터 추출
+            begin
+                mTC.Start(3000);
+                if IsLimitAll then
+                begin
+                    mIMSCtrler.SetLimitAll;
+                    Inc(mLmtState);
+                    mSubState := 0;
+                    gLog.Panel('All Limit 설정');
+
+                    Exit;
+                end;
+
+                while mIMSCtrler.GetLimit(mMtrIt) do
+                begin
+                    mMtrIt := Succ(mMtrIt);
+
+                    if mMtrIt > mIMSCtrler.EndOfMotorID then
+                    begin
+                        mLstError := '';
+                        mLmtState := 0;
+                        Exit(1);
+                    end;
+                end;
+
+                mIMSCtrler.SetLimit(mMtrIt);
+                gLog.Panel('%s Limit 설정', [GetMotorName(mMtrIt)]);
+                Inc(mLmtState);
+                mSubState := 0;
+            end;
+        // -----------------------------------------------------------------------------
+        // 모터가 기동하는지, 즉 TSMParam.mMoveGapTime 시간 후 전류체크하는 상태 필요함!!
+        {
+          if  mTC.IsTimeOut then
+          if mMoveCurrRange.IsIn(GetCurr) then Inc(mLmtState)
+          else
+          begin
+          mLstError := 'LIMIT 명령에 따른 모터 구동 이상';
+          mLmtStaet := 0;
+          Exit(-1);
+          end;
+          }
+
+        3:
+            begin
+                if not mTC.IsTimeOut then
+                    Exit;
+
+                case FSMReadLimitStatus of
+                    -1:
+                        begin
+                            mLstError := 'LIMIT 상태 읽기 실패!';
+                            mLmtState := 0;
+                            Exit(-1);
+                        end;
+                    1:
+                        begin
+                            if mIMSCtrler.GetLimitStatus(mMtrIt) = lsDone then
+                            begin
+                                gLog.Panel('%s Limit 상태: %s, %f(A)', [GetMotorName(mMtrIt), mIMSCtrler.GetLimitStatusStr(mMtrIt), GetCurr]);
+
+                                mMtrIt := Succ(mMtrIt);
+                                if (mMtrIt > mIMSCtrler.EndOfMotorID) or mIMSCtrler.IsAllLimited then
+                                begin
+
+                                    mLstError := '';
+                                    mLmtState := 0;
+                                    Exit(1);
+                                end;
+
+                                if IsLimitAll then
+                                    mTC.Start(500)
+                                else
+                                    Dec(mLmtState);
+                            end;
+
+                            // 끝단 방향 전환 조건 고려
+                            if (mIMSCtrler.GetLimitStatus(mMtrIt) = lsNone) and (GetCurr < mMoveCurrRange.mMin) then
+                            begin
+                                gLog.Panel('%s Limit 설정시 전류1 : %f(A)', [GetMotorName(mMtrIt), GetCurr]);
+                                mTC.Start(1500);
+                                Inc(mLmtState);
+                            end;
+
+                        end;
+                end;
+
+                if mLmtTC.IsTimeOut then
+                begin
+                    mLstError := 'LIMIT 작업 TIME OUT.';
+
+                    mLmtState := 0;
+                    Exit(-1);
+                end;
+            end;
+        4: // 2중 체크
+            begin
+                if not mTC.IsTimeOut then
+                    Exit;
+
+                if (GetCurr < mMoveCurrRange.mMin) or (mMoveCurrRange.IsIn(GetCurr)) then
+                begin
+                    gLog.Panel('%s Limit 설정시 전류2 : %f(A)', [GetMotorName(mMtrIt), GetCurr]);
+                    mTC.Start(100);
+                    mSubState := 0;
+                    Dec(mLmtState);
+                end;
+
+            end;
+    end;
+end;
+
+function TSeatMotor.FSMSetLimitEx(IsFirstRead: Boolean; LmtMotors: array of TMotorOrd): Integer;
+begin
+    Result := 0;
+
+    case mLmtState of
+        0:
+            begin
+                if Length(LmtMotors) = 0 then
+                    Exit(1);
+
+                mIdx := 0;
+                mMtrIt := LmtMotors[mIdx];
+
+                ClearErr;
+                mLstToDo := '커넥터 연결 및 CAN통신을 확인하세요.';
+
+                mLmtTC.Start(_LIMIT_MOVING_TIME_OUT * 1000);
+                mSubState := 0;
+
+                if IsFirstRead then
+                begin
+                    Inc(mLmtState);
+                end
+                else
+                begin
+                    Inc(mLmtState, 2);
+                end;
+
+            end;
+        1:
+            begin
+                case FSMReadLimitStatus of
+                    -1:
+                        begin
+                            mLstError := 'LIMIT 상태 읽기 실패';
+                            mLmtState := 0;
+                            Exit(-1);
+                        end;
+                    1:
+                        Inc(mLmtState);
+                end;
+            end;
+        2: //
+            begin
+                mTC.Start(300);
+
+                mMtrIt := LmtMotors[mIdx];
+                mIMSCtrler.SetLimit(mMtrIt);
+                Inc(mLmtState);
+                mSubState := 0;
+            end;
+        3:
+            begin
+                if not mTC.IsTimeOut then
+                    Exit;
+
+                case FSMReadLimitStatus of
+                    -1:
+                        begin
+                            mLstError := 'LIMIT 상태 읽기 실패!';
+                            mLmtState := 0;
+                            Exit(-1);
+                        end;
+                    1:
+                        begin
+                            if mIMSCtrler.GetLimit(mMtrIt) then
+                            begin
+                                Inc(mIdx);
+
+                                if mIdx >= Length(LmtMotors) then
+                                begin
+                                    mLstError := '';
+                                    mLmtState := 0;
+                                    Exit(1);
+                                end;
+
+                                mTC.Start(500);
+                                Inc(mLmtState);
+                            end;
+                        end;
+                end;
+
+                if mLmtTC.IsTimeOut then
+                begin
+                    mLstError := 'LIMIT 작업 TIME OUT.';
+                    mLmtState := 0;
+                    Exit(-1);
+                end;
+
+            end;
+        4:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    mLmtState := 2;
+                end;
+            end;
+    end;
+
+end;
+
+const
+    _STATUS_STR: array[False..True] of string = ('실패', '성공');
+    _LIMIT_STATUS_STR: array[False..True] of string = ('해제', '성공');
+    _SUCCESS = 998;
+    _ERROR = 999;
+
+function TSeatMotor.FSMSetLimit(IsStatusRead: Boolean; Timeout: Integer): Integer;
+begin
+{$IFDEF _SIMUL_MTR_CURR}
+    gSimCurr[mID].FSMIGetVal;
+{$ENDIF}
+    Result := 0;
+
+    case mLmtState of
+        0:
+            begin
+                if not mUse or not mIsSLimitSet or not mIsIMS then
+                    Exit(1);
+
+                mLstToDo := '커넥터 연결 및 CAN통신을 확인하세요.';
+                mRetry := 0;
+                Inc(mLmtState);
+            end;
+
+        1:
+            begin
+{$IFDEF _SIMUL_MTR_CURR}
+                gSimCurr[mID].Start(3, mIsIMS);
+{$ENDIF}
+                mLmtTC.Start(Timeout);
+                mTC.Start(TSMParam.mMoveCheckTime * 1000);
+                mIMSCtrler.SetLimit(mID);
+
+                gLog.Panel('%s Limit 명령 설정', [Name]);
+                Inc(mLmtState);
+                mSubState := 0; // for FSMReadLimitStatus
+
+                InternalTestStatusEvent(Self, msLimitSetStart);
+
+            end;
+        2:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    if mMoveCurrRange.mMin < GetCurr then
+                    begin
+                        gLog.Panel('%s 작동 감지 %f(A)', [Name, GetCurr]);
+                        Inc(mLmtState)
+                    end
+                    else
+                    begin
+                        Inc(mRetry);
+
+                        if mRetry <= 3 then
+                        begin
+                            gLog.Panel('%s: Limit 명령 재시도(%d/3)', [Name, mRetry]);
+                            mLmtState := 1;
+                            Exit;
+                        end;
+
+                        mLstError := 'LIMIT 명령시 모터 구동 안 됨';
+                        mLmtState := 0;
+
+                        gLog.Error(mLstError, []);
+
+                        Exit(-1);
+                    end;
+                end;
+            end;
+        3:
+            begin
+
+                if IsStatusRead then
+                    mFSMRet := FSMReadLimitStatus
+                else
+                    mFSMRet := 1;
+
+                case mFSMRet of
+                    -1:
+                        begin
+                            mLstError := 'LIMIT 상태 읽기 실패!';
+                            mLmtState := 0;
+                            Exit(-1);
+                        end;
+                    1:
+                        begin
+                            if LimitStatus = lsDone then
+                            begin
+                                gLog.Panel('%s Limit 상태: %s, %f(A)', [Name, mIMSCtrler.GetLimitStatusStr(mID), GetCurr]);
+                                mLstError := '';
+                                mLmtState := 0;
+{$IFDEF _SIMUL_MTR_CURR}
+                                gSimCurr[mID].Stop;
+{$ENDIF}
+                                Exit(1);
+                            end
+                            else if LimitStatus = lsNone then
+                            begin
+                                mIMSCtrler.SetLimit(mID);
+
+                            end
+                            else if (GetCurr < mMoveCurrRange.mMin) then // 끝단 방향 전환 조건 고려
+                            begin
+                                {
+                                  gLog.Panel('%s Limit 설정 중 전류 정지 감지 : %f(A)', [Name, GetCurr]);
+                                  mTC.Start(1500);
+                                  Inc(mLmtState);
+                                  }
+                            end
+                            else
+                            begin // Limit Polling interval  1000 -> 200 msec으로 변경
+                                mTC.Start(200);
+                                mLmtState := 5;
+                            end;
+                        end;
+                end;
+
+                if mLmtTC.IsTimeOut then
+                begin
+                    mLstError := 'LIMIT 작업 TIME OUT.';
+
+                    mLmtState := 0;
+                    Exit(-1);
+                end;
+            end;
+        4: // 2중 체크
+            begin
+                if not mTC.IsTimeOut then
+                    Exit;
+
+                // 전류 정지가 방향 전환 경우
+                if (GetCurr < mMoveCurrRange.mMin) or (mMoveCurrRange.IsIn(GetCurr)) then
+                begin
+                    gLog.Panel('%s Limit 설정 중 전류 변경 감지 : %f(A)', [Name, GetCurr]);
+                    mTC.Start(100);
+                    mSubState := 0;
+                    Dec(mLmtState);
+                end;
+            end;
+        5: // 단순 인터벌
+            begin
+                if mTC.IsTimeOut then
+                    mLmtState := 3;
+            end;
+    end;
+end;
+
+function TSeatMotor.FSMSetLimitALL(IsStatusRead: Boolean; TimeoutMS: Integer; LimitReadIntevalSec: Double): Integer;
+begin
+{$IFDEF _SIMUL_MTR_CURR}
+    gSimCurr[mID].FSMIGetVal;
+{$ENDIF}
+    Result := 0;
+
+    case mLmtState of
+        0:
+            begin
+                mRetry := 0;
+                Inc(mLmtState);
+            end;
+
+        1:
+            begin
+                mLmtTC.Start(TimeoutMS);
+                mTC.Start(TSMParam.mMoveCheckTime * 1000);
+                mIMSCtrler.SetLimitAll;
+
+                gLog.Panel('%s Limit 명령 설정', [Name]);
+                Inc(mLmtState);
+                mSubState := 0; // for FSMReadLimitStatus
+
+                InternalTestStatusEvent(Self, msLimitSetStart);
+
+            end;
+        2:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    if mMoveCurrRange.mMin < GetCurr then
+                    begin
+                        gLog.Panel('%s 작동 감지 %f(A)', [Name, GetCurr]);
+                        Inc(mLmtState)
+                    end
+                    else
+                    begin
+                        Inc(mRetry);
+
+                        if mRetry <= 10 then
+                        begin
+                            gLog.Panel('%s: Limit 명령 재시도(%d/10) %f(A)  %f ~ %f', [Name, mRetry, GetCurr, mMoveCurrRange.mMin, mMoveCurrRange.mMax]);
+                            mLmtState := 1;
+                            Exit(0);
+                        end;
+
+                        mLstError := Format('%s LIMIT 명령시 모터 구동 안 됨 %f(A)', [name, GetCurr]);
+                        mLmtState := 0;
+
+                        gLog.Error(mLstError, []);
+
+                        Exit(-1);
+                    end;
+                end;
+            end;
+        3:
+            begin
+                if IsStatusRead = False then
+                    Exit(1);
+
+                if mLmtTC.IsTimeOut() then
+                begin
+                    mLstError := Format('%d초 동안 LIMIT 검사가 끝나지 않습니다 %f(A)', [TimeoutMS, GetCurr]);
+                    mLmtState := 0;
+
+                    gLog.Error(mLstError, []);
+                    Exit(-1);
+                end;
+                case FSMReadLimitStatus(LimitReadIntevalSec) of
+                    1:
+                        begin
+                            mSubState := 0;
+                            Exit(1);
+                        end;
+                end;
+            end;
+    end;
+end;
+
+function TSeatMotor.FSMSetLimitEx(IsFirstRead: Boolean; AMotor: array of Boolean): Integer;
+var
+    i: Integer;
+begin
+    Result := 0;
+    case mLmtState of
+        0:
+            begin
+                if Length(AMotor) = 0 then
+                    Exit(1);
+
+                mIdx := 0;
+                // SLIDE 와 중복되지 않게 고정으로 설정
+                // 하단에서는 알아서 바뀜...
+                mPrvMtrIt := TMotorORD(Ord(Low(TMotorORD)) + 1);
+                mSucces := False;
+
+                mLstError := 'IMS 검사 ERROR';
+                mLstToDo := '커넥터 연결 및 CAN통신을 확인하세요.';
+
+                // IMS 총 검사 시간..
+                mLmtTC.Start(_LIMIT_MOVING_TIME_OUT * 1000);
+                mSubState := 0;
+
+                if IsFirstRead then
+                    Inc(mLmtState)
+                else
+                    Inc(mLmtState, 2);
+
+                mTC.Start(150);
+                mRetry := 0;
+                for i := 0 to Length(AMotor) - 1 do
+                begin
+                    gLog.Panel('작업유무 %s %d', [intToStr(i), ord(AMotor[i])]);
+                end;
+            end;
+        1:
+            begin
+                case FSMReadLimitStatus of
+                    -1:
+                        begin
+                            mLstError := 'LIMIT 상태 읽기 실패';
+                            mLmtState := 0;
+                            Exit(-1);
+                        end;
+                    1:
+                        Inc(mLmtState);
+                end;
+            end;
+        2: //
+            begin
+                if not mTC.IsTimeOut then
+                    Exit;
+
+                /// /MOTOR 인자 식별하여 검사 인자로 넘기기
+                for i := mIdx to Length(AMotor) - 1 do
+                begin
+                    mMtrIt := TMotorOrd(i);
+                    if not AMotor[i] then
+                        Continue;
+                    gLog.Panel('%s Limit 작업확인...', [GetMotorName(mMtrIt)]);
+                    break;
+                end;
+                mIdx := ord(mMtrIt);
+
+                /// /MOTOR EXT 구동후 빠져나가기
+                if mIdx >= Length(AMotor) - 1 then
+                begin
+                    if (not AMotor[mIdx]) { or (mPrvMtrIt = tmCushExt) } then
+                    begin
+                        gLog.Panel('Limit 종료 확인 %s', [GetMotorName(TMotorOrd(mIdx))]);
+                        mLstError := '';
+                        mLmtState := 6;
+                        Exit(1);
+                    end;
+                end;
+
+                // 이전 모터 리미트가 같지 않다면 리미트검사 시작
+                if (mPrvMtrIt <> mMtrIt) or not mSucces then
+                begin
+                    mPrvMtrIt := mMtrIt;
+                    mSucces := mIMSCtrler.SetLimit(mMtrIt);
+                    gLog.Panel('%s Limit Start', [GetMotorName(mMtrIt)]);
+                end;
+                Inc(mLmtState);
+                mTC.Start(500);
+                mLmtTC2.Start(5000);
+            end;
+        3:
+            begin
+                if not mTC.IsTimeOut then
+                    Exit;
+
+                if not mSucces then
+                begin
+                    mTC.Start(500);
+                    Dec(mLmtState);
+                    gLog.Panel('%s Limit 전송실패 재시도 %d 회', [GetMotorName(mMtrIt), GetCurr, mRetry]);
+                end;
+                if GetCurr >= mMoveCurrRange.mMin then
+                begin
+                    Inc(mLmtState);
+                    mRetry := 0;
+                    mTC.Start(3000);
+                    gLog.Panel('%s Limit Start 전류 : %f', [GetMotorName(mMtrIt), GetCurr]);
+                end
+                else if mLmtTC2.IsTimeOut then
+                begin
+                    if mRetry > 3 then // 차후 재시도는 환경설정으로 이동...
+                    begin
+                        mLstError := Format('%s LIMIT 작업 실패', [GetMotorName(mMtrIt)]);
+                        mLmtState := 0;
+                        Exit(-1);
+                    end;
+                    mTC.Start(500);
+                    Inc(mRetry);
+                    Dec(mLmtState);
+                    gLog.Panel('%s Limit 구동확인 실패 재시도 횟수 %d 회', [GetMotorName(mMtrIt), mRetry]);
+                end;
+            end;
+        4:
+            begin
+                if not mTC.IsTimeOut then
+                    Exit;
+                Inc(mLmtState);
+                mTC.Start(1500);
+                mSubState := 0;
+            end;
+        5:
+            begin
+                if not mTC.IsTimeOut or (GetCurr >= mMoveCurrRange.mMin) then
+                    Exit;
+
+                case FSMReadLimitStatus of
+                    -1:
+                        begin
+                            mLstError := 'LIMIT 상태 읽기 실패!';
+                            mLmtState := 0;
+                            Exit(-1);
+                        end;
+                    1:
+                        begin
+                            if GetCurr >= mMoveCurrRange.mMin then
+                            begin
+                                mTC.Start(1500);
+                                mLmtState := 4;
+                                Exit;
+                            end
+                            else
+                            // 동작상태 확인
+                                if mIMSCtrler.GetLimit(mMtrIt) and (GetCurr <= mMoveCurrRange.mMin) then
+                            begin
+                                mLmtState := 2;
+                                Inc(mIdx);
+                                mSucces := False;
+                                gLog.Panel('%s Limit 상태확인[%s]', [GetMotorName(mMtrIt), _LIMIT_STATUS_STR[mIMSCtrler.GetLimit(mMtrIt)]]);
+                            end
+                            else
+                            begin
+                                if mRetry > 3 then // 차후 재시도는 환경설정으로 이동...
+                                begin
+                                    mLstError := Format('%s LIMIT 작업 실패', [GetMotorName(mMtrIt)]);
+                                    mLmtState := 0;
+                                    Exit(-1);
+                                end;
+                                // 진입로그 및 상태 확인
+                                mTC.Start(300);
+                                Inc(mRetry);
+                                Dec(mLmtState);
+                                gLog.Panel('%s Limit 상태확인[%s]  재시도 횟수 %d', [GetMotorName(mMtrIt), _LIMIT_STATUS_STR[mIMSCtrler.GetLimit(mMtrIt)], mRetry]);
+                            end;
+                        end;
+                end;
+
+                if mLmtTC.IsTimeOut then
+                begin
+                    mLstError := 'LIMIT 작업 TIME OUT.';
+
+                    mLmtState := 0;
+                    Exit(-1);
+                end;
+            end;
+        6:
+            begin
+                ClearErr;
+                Exit(1);
+            end;
+    end;
+end;
+
+function TSeatMotor.FSMReadLimitStatus(Delay4Enable: Double): Integer;
+begin
+
+    Result := 0;
+    case mSubState of
+        0:
+            begin
+                mIMSCtrler.Debug := False;
+                mRetry := 0;
+                Inc(mSubState);
+                mIMSCtrler.EnableRCReq; // 루틴 컨트롤 READ시 활성화 필요  Routine Request Enable
+                mSubTC.Start(Delay4Enable * 1000);
+                ClearErr;
+
+            end;
+        1:
+            begin
+                if mSubTC.IsTimeOut then
+                begin
+                    if not mIMSCtrler.ReqLimit then
+                    begin
+                        mSubState := 0;
+                        mLstError := GetMotorName(mID) + ' LIMIT 요청 CAN 통신 실패';
+                        mLstToDo := '커넥터 연결을 확인하세요.';
+                        gLog.Error('%s %s', [Name, mLstError]);
+                        gLog.Debug('%s %s', [Name, mIMSCtrler.GetStateStr]);
+                        Exit(-1);
+                    end;
+
+                    Inc(mSubState);
+                    mSubTC.Start(_LIMIT_TIME_OUT * 1000.0);
+                    gLog.Panel('%s Limit 상태요청(%d)', [Name, mRetry]);
+
+                end;
+            end;
+        2:
+            begin
+                if mIMSCtrler.IsLimitRespDone then
+                begin
+                    mIMSCtrler.ProcessLimitDone;
+                    Inc(mSubState);
+                    Exit;
+                end;
+
+                if mSubTC.IsTimeOut then
+                begin
+                    Inc(mRetry);
+                    if mRetry = Round(_LIMIT_TOT_REPEAT_COUNT * 0.5) then
+                    begin
+                        mIMSCtrler.Debug := True;
+                    end
+                    else if mRetry = _LIMIT_TOT_REPEAT_COUNT - 1 then
+                    begin
+                        // mIMSCtrler.Reset; // CAN Reopen으로 구현
+                        TBaseCAN.mRDebugLevel := CAN_R_DEBUG_LEVEL0;
+                    end
+                    else if mRetry > _LIMIT_TOT_REPEAT_COUNT then
+                    begin
+                        TBaseCAN.mRDebugLevel := CAN_R_DEBUG_LEVEL2;
+                        mIMSCtrler.Debug := False;
+                        mSubState := 0;
+                        mLstError := GetMotorName(mID) + ' LIMIT 상태 응답이 없습니다.';
+                        mLstToDo := '커넥터 연결을 확인하세요.';
+                        gLog.Error('%s %s', [Name, mLstError]);
+                        gLog.Debug('%s %s', [Name, mIMSCtrler.GetStateStr]);
+                        Exit(-1);
+                    end;
+                    Dec(mSubState);
+                    mIMSCtrler.EnableRCReq; // 루틴 컨트롤 READ시 활성화 필요 Routine Request Enable
+                    mSubTC.Start(Delay4Enable * 1000);
+                end;
+            end;
+        3:
+            begin
+                InternalTestStatusEvent(Self, msLimitReaded);
+                Inc(mSubState);
+                gLog.Panel('%s Limit 상태: %s', [Name, mIMSCtrler.ToLimitStr]);
+            end;
+        4:
+            begin
+                mSubState := 0;
+                Result := 1;
+            end;
+    end;
+end;
+
+const
+    _POS_TIME_OUT = 2.0;
+
+function TSeatMotor.FSMReadPos: Integer;
+begin
+
+    Result := 0;
+
+    case mSubState of
+        0:
+            begin
+                ClearErr;
+                mRetry := 0;
+                Inc(mSubState);
+                gLog.Panel('%s Pos 읽기 요청', [Name]);
+            end;
+        1:
+            begin
+                // 현재 위치요구 및 비교, 판정.
+                if not mIMSCtrler.ReqPos then
+                begin
+                    mSubState := 0;
+                    Result := -1;
+                    mLstError := '위치 요구 명령전송 실패';
+                    mLstToDo := 'CAN 통신설정 및 커넥터 연결을 확인하세요.';
+                    gLog.Panel('%s %s', [Name, mLstError]);
+                    Exit;
+                end;
+                mTC3.Start;
+                Inc(mRetry);
+                Inc(mSubState);
+            end;
+        2:
+            begin
+                if mIMSCtrler.IsPosRespDone then
+                begin
+                    mIMSCtrler.ProcessPosDone;
+                    gLog.Panel('%s Pos 읽기 완료: %s', [Name, mIMSCtrler.ToPosStr]);
+                    mSubState := 0;
+                    Result := 1;
+                    Exit;
+                end;
+
+                if mTC3.GetPassTimeAsSec > _POS_TIME_OUT then
+                begin
+                    if (mRetry > 3) then
+                    begin
+                        mSubState := 0;
+                        mLstError := '위치 요구 통신(CAN) 응답이 없습니다.';
+                        mLstToDo := '커넥터 연결을 확인하세요.';
+                        Result := -1;
+                        gLog.Panel('%s %s', [Name, mLstError]);
+                        Exit;
+                    end;
+
+                    Dec(mSubState);
+
+                end;
+            end;
+    end;
+
+end;
+
+function TSeatMotor.FSMReadPosAfter(IMSCmd: TFSMFunc): Integer;
+begin
+
+    Result := 0;
+    case mIMSState of
+        0:
+            begin
+                case IMSCmd() of
+                    -2, -1:
+                        Exit(-1);
+                    0:
+                        Exit(0);
+                else
+                    Inc(mIMSState);
+                end;
+            end;
+        1:
+            begin
+                Result := FSMReadPos;
+
+                if Result < 0 then
+                begin
+                    mIMSState := 0;
+                    Exit(-1);
+                end
+                else if Result > 0 then
+                begin
+                    mIMSState := 0;
+                    Exit(1);
+                end;
+
+            end;
+
+    end;
+end;
+
+function TSeatMotor.FSMBurnishing(TotBurnishCount: Integer): Integer;
+var
+    bTm: Boolean;
+begin
+    Result := 0;
+    case mTestState of
+        0:
+            begin
+                if not mUse or (TotBurnishCount = 0) then
+                    Exit(1);
+
+                mCurRepeatCount := 0;
+                if TotBurnishCount > 0 then
+                    mTotRepeatCount := TotBurnishCount;
+
+                if mTotRepeatCount = 0 then
+                    Exit(1);
+
+                mMoveState := 0;
+                mLstError := '';
+                mDir := GetOppositeDir(mDir);
+                Inc(mTestState);
+                gLog.Panel('%s 버니싱 시작', [Name]);
+            end;
+
+        1: // 전진
+            begin
+                case FSMMove(mDir) of
+                    -2, -1:
+                        begin
+                            mTestState := 0;
+                            Result := -1;
+                        end;
+                    0:
+                        ;
+                else
+                    mDir := GetOppositeDir(mDir);
+
+                    mMoveState := 0;
+                    Inc(mTestState);
+                end;
+            end;
+        2: // 후진
+            begin
+                case FSMMove(mDir) of
+                    -2, -1:
+                        begin
+                            mTestState := 0;
+                            Result := -1;
+                        end;
+                    0:
+                        ;
+                else
+                    mMoveState := 0;
+                    Inc(mCurRepeatCount);
+                    gLog.Panel('%s 버니싱 %d/%d', [Name, mCurRepeatCount, mTotRepeatCount]);
+
+                    InternalTestStatusEvent(Self, msBurnishCycle);
+
+                    if mCurRepeatCount >= mTotRepeatCount then
+                    begin
+                        mTestState := 0;
+                        Exit(1);
+                    end
+                    else
+                    begin
+                        mDir := GetOppositeDir(mDir);
+                        mTestState := 1;
+                    end;
+                end;
+
+            end;
+    end;
+
+end;
+
+function TSeatMotor.FSMMoveNReadPos2(IMSFunc: TFSMFunc; MoveTimeoutSec: Double; AfterMoveDelaySec: Double): Integer;
+begin
+    Result := 0;
+    case mIMSState of
+        0:
+            begin
+                case IMSFunc() of
+                    -2, -1:
+                        Exit(-1);
+                    0:
+                        Exit(0);
+                else
+                    // Repeat 고려
+                    ClearErr;
+                    mTC.Start(3 * 1000);
+                    Inc(mIMSState);
+{$IFDEF _SIMUL_MTR_CURR}
+                    gSimCurr[mID].Start(2.0, mIsIMS);
+                    // gSimNoise[mID].Start(1.5, 2.0);
+{$ENDIF}
+                end;
+            end;
+        1: // 가동 시작
+            begin
+                // gLog.Debug('%f(A)', [GetCurr]);
+                if mMoveCurrRange.IsIn(GetCurr) then
+                begin
+                    mTC.Start(MoveTimeoutSec * 1000);
+                    mIMSState := 4;
+                end;
+
+                if mTC.IsTimeOut then
+                begin
+                    mIMSState := 2;
+                end;
+            end;
+
+        2:
+            begin
+                case IMSFunc() of
+                    -2, -1:
+                        Exit(-1);
+                    0:
+                        Exit(0);
+                else
+                    // Repeat 고려
+                    ClearErr;
+                    mTC.Start(MoveTimeoutSec * 1000);
+                    Inc(mIMSState);
+{$IFDEF _SIMUL_MTR_CURR}
+                    gSimCurr[mID].Start(2.0, mIsIMS);
+                    // gSimNoise[mID].Start(1.5, 2.0);
+{$ENDIF}
+                end;
+            end;
+        3: // 가동 시작
+            begin
+                // gLog.Debug('%f(A)', [GetCurr]);
+                if mMoveCurrRange.IsIn(GetCurr) then
+                begin
+                    Inc(mIMSState);
+                end;
+
+                if mTC.IsTimeOut then
+                begin
+
+                    mLstError := '모터 기동 실패';
+                    mLstToDo := 'CAN 통신설정 및 커넥터 연결을 확인하세요.';
+
+                    mIMSState := 0;
+                    Exit(-1);
+                end;
+            end;
+
+        4: // 정지 체크
+            begin
+
+                if GetCurr < mMoveCurrRange.mMin then
+                begin
+                    gLog.Panel('%s: MEM 정지 전류: %f/%f(A)', [Name, GetCurr, mMoveCurrRange.mMin]);
+                    mTC.Start(AfterMoveDelaySec * 1000);
+                    Inc(mIMSState);
+                    mSubState := 0; // For FSMReadPos
+                end;
+                if mTC.IsTimeOut then
+                begin
+                    mLstError := '모터 정지 실패';
+                    mLstToDo := 'CAN 통신설정 및 커넥터 연결을 확인하세요.';
+
+                    mIMSState := 0;
+                    Exit(-1);
+                end;
+            end;
+        5:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    Inc(mIMSState);
+                end;
+            end;
+        6: // 현 위치 읽기
+            begin
+                Result := FSMReadPos;
+
+                if Result < 0 then
+                begin
+                    mIMSState := 0;
+                    Exit(-1);
+                end;
+
+                if mTC.IsTimeOut and (Result > 0) then
+                begin
+                    mIMSState := 0;
+                    Exit(1);
+                end;
+            end;
+
+    end;
+end;
+
+function TSeatMotor.FSMMoveNReadPos(IMSFunc: TFSMFunc; MoveTimeoutSec: Double; AfterMoveDelaySec: Double): Integer;
+begin
+    Result := 0;
+    case mIMSState of
+        0:
+            begin
+                case IMSFunc() of
+                    -2, -1:
+                        Exit(-1);
+                    0:
+                        Exit(0);
+                else
+                    // Repeat 고려
+                    mRetry := 0;
+                    ClearErr;
+                    mTC.Start(MoveTimeoutSec * 1000);
+                    Inc(mIMSState);
+{$IFDEF _SIMUL_MTR_CURR}
+                    gSimCurr[mID].Start(2.0, mIsIMS);
+                    // gSimNoise[mID].Start(1.5, 2.0);
+{$ENDIF}
+                end;
+            end;
+        1: // 가동 시작
+            begin
+                // gLog.Debug('%f(A)', [GetCurr]);
+                if mMoveCurrRange.IsIn(GetCurr) then
+                begin
+                    Inc(mIMSState);
+                end;
+
+                if mTC.IsTimeOut then
+                begin
+                    mIMSState := 0;
+                    Inc(mRetry);
+
+                    if mRetry > 3 then
+                    begin
+                        mLstError := '모터 기동 실패';
+                        mLstToDo := 'CAN 통신설정 및 커넥터 연결을 확인하세요.';
+
+                        Exit(-1);
+                    end
+                    else
+                    begin
+                        mIMSCtrler.ClearFSM;
+                        gLog.Panel('%s: IMS 이동 명령 재시도(%d/3): %f(A)', [Name, mRetry, GetCurr]);
+                    end
+                end;
+            end;
+        2: // 정지 체크
+            begin
+
+                if GetCurr < mMoveCurrRange.mMin then
+                begin
+                    gLog.Panel('%s: MEM 정지 전류: %f/%f(A)', [Name, GetCurr, mMoveCurrRange.mMin]);
+                    mTC.Start(AfterMoveDelaySec * 1000);
+                    Inc(mIMSState);
+                    mSubState := 0; // For FSMReadPos
+                end;
+                if mTC.IsTimeOut then
+                begin
+                    mLstError := '모터 정지 실패';
+                    mLstToDo := 'CAN 통신설정 및 커넥터 연결을 확인하세요.';
+
+                    mIMSState := 0;
+                    Exit(-1);
+                end;
+            end;
+        3:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    Inc(mIMSState);
+                end;
+            end;
+        4: // 현 위치 읽기
+            begin
+                Result := FSMReadPos;
+
+                if Result < 0 then
+                begin
+                    mIMSState := 0;
+                    Exit(-1);
+                end;
+
+                if mTC.IsTimeOut and (Result > 0) then
+                begin
+                    mIMSState := 0;
+                    Exit(1);
+                end;
+            end;
+
+    end;
+end;
+
+function TSeatMotor.FSMITest: Integer;
+var
+    bTm: Boolean;
+
+    function GetNoise: Double;
+    begin
+{$IFDEF _SIMUL_MTR}
+        Result := gSimNoise[mID].FSMIGetVal + mNoiseOffset[mDir];
+{$ELSE}
+        Result := mAD.GetValue(mAIChNoise) + mNoiseOffset[mDir];
+{$ENDIF}
+    end;
+
+begin
+    Result := 0;
+    case mTestState of
+        0:
+            begin
+                // IDLE
+            end;
+        1:
+            begin
+                if not mUse or not Assigned(mIGraph) then
+                    Exit(1);
+
+                mIsRetest := False;
+                mMoveState := 0;
+                mLstError := '';
+                mTestTC.Start;
+                Inc(mTestState);
+
+                if mTestStep = 0 then
+                    TThread.Synchronize(nil,
+                        procedure
+                        begin
+                            mIGraph.Clear;
+                        end);
+
+                // 주의 : mDir(방향)은 SeatMotorOper에서 미리 정해짐, 초기화 하지 말것
+
+                InternalTestStatusEvent(Self, msStart);
+            end;
+        2: // 작동 시작
+            begin
+                if mTestTC.GetPassTimeAsSec < TSMParam.mMoveGapTime then
+                    Exit;
+
+                mTestTC.Start;
+                Inc(mTestState);
+                mIsTesting := True;
+                mdstStudyDoing := False;
+            end;
+        3: // 이동 및 DAQ
+            begin
+                // gLog.ToFiles('Curr:%f', [GetCurr]);
+
+                mIGraph.Add(mDir, mTestTC.GetPassTimeAsSec, GetCurr + mCurrOffset[mDir], GetNoise);
+
+                case FSMMove(mDir, mMoveTime) of
+                    -2, -1:
+                        begin
+                            mIsTesting := False;
+                            Result := -1;
+                        end;
+                    -100: // 구동 재시도
+                        begin
+                            TThread.Synchronize(nil,
+                                procedure
+                                begin
+                                    mIGraph.Clear;
+                                end);
+                            mTestTC.Start;
+
+                        end;
+                    0:
+                        ;
+                else
+                    TThread.Synchronize(nil,
+                        procedure
+                        begin
+                            mIGraph.AddToGrp;
+                        end);
+                    gLog.ToFiles('%s FindData %s - %s', [Name, GetMotorName(mID), GetMotorDirStr(Self)]);
+                    InternalTestStatusEvent(Self, msStop);
+                    Inc(mTestState);
+                end;
+            end;
+        4: // 실적 검출 대기 ..
+            begin
+                if mIGraph.IsDataProcessing then
+                    Exit;
+
+                mRetry := 0;
+                mIsTesting := False;
+
+                if mIsHLimitSet and mIsIMS then
+                begin
+                    mTC.Start(1700);
+                    mTC2.Start(TSMParam.mSetTimeToLimit[mID] * 1000);
+                    mMoveCtrler.Move(mID, mDir);
+                    Inc(mTestState, 3);
+                    gLog.Panel('%s %s Hard Limit 설정', [Name, GetMotorDirStr(Self)])
+                end
+                else
+                    Inc(mTestState);
+
+            end;
+
+        5: // 방향 전환 or 정지
+            begin
+                if mTestStep = 0 then
+                begin
+                    Inc(mTestStep);
+                    mDir := GetOppositeDir(mDir);
+
+                    if mIsOneWayTest then
+                    begin
+                        mTestState := 0;
+                        Exit(1);
+                    end
+                    else
+                        mTestState := 1;
+
+                    gLog.Panel('%s 방향 전환 %s', [Name, GetMotorDirStr(Self)]);
+                end
+                else
+                begin
+                    Inc(mTestState);
+                end;
+            end;
+        6: // 검사 완료 or 재검사
+            begin
+                InternalTestStatusEvent(Self, msTestEnd); // 이벤트 핸들러에서 NG시 옵션 유무에 따라 IsRetest설정해야 함.
+
+                if mIsRetest then
+                begin
+                    if mNGRetry < TSMParam.mTotNGRetryCount then
+                    begin
+                        TThread.Synchronize(nil,
+                            procedure
+                            begin
+                                mIGraph.Clear;
+                            end);
+
+                        Inc(mNGRetry);
+                        mDir := GetOppositeDir(mDir);
+                        mTestState := 1;
+                        mTestStep := 0;
+                        gLog.Panel('%s 재검사 %s', [Name, GetMotorName(mID)]);
+                        Exit;
+                    end;
+                end;
+
+                gLog.Panel('%s %s 검사 완료', [Name, GetMotorDirStr(Self)]);
+                Result := 1;
+            end;
+        7: // 리미트 설정위해 동일 방향으로 n초간 동작
+            begin
+                // if mTC2.IsTimeOut and (mTC.IsTimeOut or (GetCurr <= mMoveCurrRange.mMin)) then
+                if (mTC2.IsTimeOut or (GetCurr <= mMoveCurrRange.mMin)) then
+                begin
+                    Stop(mDir);
+                    mSubState := 0;
+                    if mTestStep = 0 then
+                        mTestState := 5
+                    else
+                    begin
+                        Inc(mTestState);
+                        mTC2.Start(1 * 1000);
+                    end;
+                    gLog.Panel('%s %s Limit 설정 정지 전류 감지: %f(A)', [Name, GetMotorDirStr(Self), GetCurr])
+                end;
+
+            end;
+
+        8: // ECU Limit Save Time Delay
+            begin
+                if mTC2.IsTimeOut then
+                begin
+                    Inc(mTestState);
+                end;
+
+            end;
+        9: // IMS 리미트 검사
+            begin
+                case FSMReadLimitStatus of
+                    -2, -1:
+                        begin
+                            Result := -1;
+                            Exit;
+                        end;
+                    0:
+                        Exit;
+                else
+                    mTestState := 6;
+                end;
+
+            end;
+
+    else
+        mLstError := '검사 프로세스 에러';
+        mLstToDo := '프로그램을 다시 시작하세요';
+        gLog.Panel('%s %s %d', [Name, mLstError, mTestState]);
+        Result := -1;
+    end;
+end;
+
+{ TSeatMotorOper }
+
+constructor TSeatMotorOper.Create(LstErr, LstToDo: pstring);
+begin
+    inherited Create;
+
+    mLstToDo := LstToDo;
+    mLstError := LstErr;
+end;
+
+procedure TSeatMotorOper.DisableStopCond;
+var
+    i: Integer;
+begin
+    for i := 0 to mCount - 1 do
+    begin
+        mMotors[i].OnStopCond := nil;
+    end;
+
+end;
+
+procedure TSeatMotorOper.EnableEPosChk(Enable: Boolean);
+var
+    i: Integer;
+begin
+    for i := 0 to mCount - 1 do
+    begin
+        mMotors[i].IsEndPosChk := Enable;
+    end;
+
+end;
+
+function TSeatMotorOper.GetFirstErrMtr: TSeatMotor;
+var
+    i: Integer;
+begin
+    Result := nil;
+
+    for i := 0 to mCount - 1 do
+    begin
+        if mMotors[i].mLstError <> '' then
+            Exit(mMotors[i]);
+    end;
+end;
+
+function TSeatMotorOper.GetFSMRet(Idx: Integer): Integer;
+begin
+    if Idx < MAX_MTR_RUN_COUNT then
+    begin
+        Exit(mFSMRet[Idx]);
+    end;
+
+    Exit(-1);
+end;
+
+function TSeatMotorOper.GetIsErr: Boolean;
+var
+    i: Integer;
+begin
+    for i := 0 to mCount - 1 do
+    begin
+        if mFSMRet[i] < 0 then
+            Exit(True);
+        if mFSMRetEx[i] < 0 then
+            Exit(True);
+
+    end;
+
+    Result := False;
+end;
+
+procedure TSeatMotorOper.Init(Motors: array of TSeatMotor; Count: Integer);
+var
+    i: Integer;
+begin
+    mState := 0;
+
+    if Count <= 0 then
+        mCount := Length(Motors)
+    else
+        mCount := Count;
+
+    mIdx := 0;
+    mPwrCount := 0;
+    mImsCount := 0;
+    for i := 0 to mCount - 1 do
+    begin
+        mMotors[i] := Motors[i];
+        mMotors[i].ClearFSM;
+        mMotors[i].mLstError := '';
+        mMotors[i].mLstToDo := '';
+        mFSMRet[i] := 0;
+        mFSMRetEx[i] := 0;
+
+        if mMotors[i].Use then
+        begin
+            if mMotors[i].IsIMS then
+            begin
+                mImsMotors[mImsCount] := mMotors[i];
+                Inc(mImsCount);
+            end
+            else
+            begin
+                mPwrMotors[mPwrCount] := mMotors[i];
+                Inc(mPwrCount);
+            end;
+        end;
+    end;
+end;
+
+procedure TSeatMotorOper.Init(Motors: array of TSeatMotor; Dirs: array of TMotorDir; Count: Integer);
+var
+    i: Integer;
+begin
+
+    Init(Motors, Count);
+
+    for i := 0 to mCount - 1 do
+    begin
+        mMotors[i].Dir := Dirs[i];
+        mMotors[i].MoveTime := 0;
+    end;
+end;
+
+procedure TSeatMotorOper.Init4DiffDir(Motors: array of TSeatMotor; Dirs: array of TMotorDir; Count: Integer);
+var
+    i, j, n: Integer;
+begin
+    n := 0;
+    for j := 0 to 2 do
+    begin
+        for i := 0 to Count - 1 do
+        begin
+            if (Motors[i].Dir = Dirs[i]) and (j = 0) then // 기존 모터들의 초기값이 이 조건이 만족될때를 대비해서 j Loop를 2회 시도
+                Continue;
+            mMotors[n] := Motors[i];
+            mMotors[n].Dir := Dirs[i];
+            mMotors[n].MoveTime := 0;
+            Inc(n);
+        end;
+
+        if n > 0 then
+        begin
+            Init(mMotors, n);
+            break;
+        end;
+    end;
+
+    if n = 0 then
+    begin
+        gLog.Error('TSeatMotorOper.Init4DiffDir 조건 불일치', []);
+    end;
+
+end;
+
+procedure TSeatMotorOper.Init4DiffDir(Motors: array of TSeatMotor; Dirs: array of TMotorDir; MoveTime: array of Double; Count: Integer);
+var
+    i, j, n: Integer;
+begin
+    n := 0;
+    for j := 0 to 2 do
+    begin
+        for i := 0 to Count - 1 do
+        begin
+            if (Motors[i].Dir = Dirs[i]) and (MoveTime[i] = 0) and (j = 0) then
+                Continue;
+
+            mMotors[n] := Motors[i];
+            mMotors[n].Dir := Dirs[i];
+            mMotors[n].MoveTime := MoveTime[i];
+            Inc(n);
+        end;
+
+        if n > 0 then
+        begin
+            Init(mMotors, n);
+            break;
+        end
+    end;
+
+    if n = 0 then
+    begin
+        gLog.Error('TSeatMotorOper.Init4DiffDir 조건 불일치', []);
+    end;
+
+end;
+
+procedure TSeatMotorOper.Init(Motors: array of TSeatMotor; Dirs: array of TMotorDir; MoveTime: array of Double; Count: Integer);
+var
+    i: Integer;
+begin
+    Init(Motors, Dirs, Count);
+
+    for i := 0 to mCount - 1 do
+    begin
+        mMotors[i].MoveTime := MoveTime[i];
+    end;
+
+end;
+
+procedure TSeatMotorOper.Init(Motors: array of TSeatMotor; Dirs: array of TMotorDir; UseStopCond: array of Boolean; MtrStopCond: TNotifySeatMotorStopCond; Count: Integer);
+var
+    i: Integer;
+begin
+    Init(Motors, Dirs, Count);
+
+    for i := 0 to mCount - 1 do
+    begin
+        if UseStopCond[i] = False then
+            mMotors[i].OnStopCond := mMotors[i].DefStopCond
+        else
+            mMotors[i].OnStopCond := MtrStopCond;
+    end;
+
+end;
+
+procedure TSeatMotorOper.Init(Motors: array of TSeatMotor; UseStopCond: array of Boolean; MtrStopCond: TNotifySeatMotorStopCond; Count: Integer);
+var
+    i: Integer;
+begin
+    Init(Motors, Count);
+
+    for i := 0 to mCount - 1 do
+    begin
+        if UseStopCond[i] = False then
+            mMotors[i].OnStopCond := nil
+        else
+            mMotors[i].OnStopCond := MtrStopCond;
+    end;
+
+end;
+
+procedure TSeatMotorOper.InitBurnishing(Motors: array of TSeatMotor; RepeatCounts: array of Integer);
+var
+    i, TotCount: Integer;
+begin
+    Init(Motors);
+
+    TotCount := Min(Length(RepeatCounts), Length(Motors));
+
+    for i := 0 to TotCount - 1 do
+    begin
+        mMotors[i].mCurRepeatCount := 0;
+        mMotors[i].mTotRepeatCount := RepeatCounts[i];
+
+        gLog.Debug('%s TotRptCount:%d', [mMotors[i].Name, mMotors[i].mTotRepeatCount]);
+    end;
+
+end;
+
+procedure TSeatMotorOper.InitLimit(Motors: array of TSeatMotor; RepeatCounts: array of Integer);
+begin
+    InitBurnishing(Motors, RepeatCounts);
+end;
+
+procedure TSeatMotorOper.Clear;
+begin
+    mCount := 0;
+    mPwrCount := 0;
+    mImsCount := 0;
+    mIdx := 0;
+end;
+
+procedure TSeatMotorOper.StopAll;
+var
+    i: Integer;
+begin
+    for i := 0 to mCount - 1 do
+        mMotors[i].FSMStop; // mMotors[i].Stop으로 변경...
+end;
+
+function TSeatMotorOper.FSMMoveEx(): Integer;
+var
+    i, j: Integer;
+begin
+    Result := 0;
+    case mState of
+        0:
+            begin
+                mTC.Stop;
+                mPwrResult := mPwrCount <= 0;
+                mImsResult := mImsCount <= 0;
+                mIdx := 0;
+                Inc(mState);
+            end;
+        1:
+            begin
+                if not mPwrResult then
+                begin
+                    for i := 0 to mPwrCount - 1 do
+                    begin
+                        if mFSMRet[i] = 0 then
+                        begin
+                            mCurMotor := mPwrMotors[i];
+                            mFSMRet[i] := mPwrMotors[i].FSMMove;
+                            case mFSMRet[i] of
+                                -1, -2:
+                                    begin
+                                        StopAll();
+                                        mLstError^ := mPwrMotors[i].mLstError;
+                                        mLstToDo^ := mPwrMotors[i].mLstToDo;
+                                        mPwrMotors[i].mErr := True;
+                                        Exit(-1);
+                                    end;
+                                1:
+                                    begin
+                                        for j := 0 to mPwrCount - 1 do
+                                        begin
+                                            if mFSMRet[j] <= 0 then
+                                                Exit;
+
+                                        end;
+                                        mPwrResult := True;
+
+                                    end;
+                            end;
+                        end;
+                    end;
+                end;
+                /// /////////////////////////////////////////
+                ///
+                if not mImsResult and mTC.IsTimeOut then
+                begin
+                    mCurMotor := mImsMotors[mIdx];
+                    mFSMRetEx[mIdx] := mImsMotors[mIdx].FSMMove();
+                    case mFSMRetEx[mIdx] of
+                        -2, -1:
+                            begin
+                                mImsMotors[mIdx].FSMStop;
+                                mLstError^ := mImsMotors[mIdx].mLstError;
+                                mLstToDo^ := mImsMotors[mIdx].mLstToDo;
+                                mImsMotors[mIdx].mErr := True;
+                                Exit(-1);
+                            end;
+                        1:
+                            begin
+                                Inc(mIdx);
+                                if mIdx >= mImsCount then
+                                begin
+                                    mImsResult := True;
+                                    Exit;
+                                end;
+                                mTC.Start(TSMParam.mMoveGapTime * 1000);
+                            end;
+                    end;
+                end;
+
+                if mPwrResult and mImsResult then
+                begin
+                    Exit(1);
+                end;
+            end;
+    end;
+end;
+
+function TSeatMotorOper.FSMMove(IsEach: Boolean): Integer;
+var
+    i: Integer;
+begin
+    Result := 0;
+    case mState of
+        0:
+            begin
+                if mCount <= 0 then
+                    Exit(-1);
+
+                for i := 0 to mCount - 1 do
+                begin
+                    if not mMotors[i].Use then
+                        mFSMRet[i] := 1
+                    else
+                        mFSMRet[i] := 0;
+
+                    mMotors[i].ClearFSM;
+                end;
+
+                if IsEach then
+                begin
+                    mState := 2;
+                    mIdx := 0;
+                end
+                else
+                begin
+                    Inc(mState);
+                end;
+            end;
+        1: // 동시 작동
+            begin
+                for i := 0 to mCount - 1 do
+                begin
+                    if mFSMRet[i] = 0 then
+                    begin
+                        mCurMotor := mMotors[i];
+                        mFSMRet[i] := mMotors[i].FSMMove;
+                        case mFSMRet[i] of
+                            -1, -2:
+                                begin
+                                    StopAll();
+                                    mLstError^ := mMotors[i].mLstError;
+                                    mLstToDo^ := mMotors[i].mLstToDo;
+                                    mMotors[i].mErr := True;
+                                    Exit(-1);
+                                end;
+                        end;
+                    end;
+                end;
+
+                for i := 0 to mCount - 1 do
+                begin
+                    if (mFSMRet[i] <= 0) then
+                    begin
+                        Exit;
+                    end;
+                end;
+
+                Result := 1;
+
+            end;
+        2: // 개별 작동
+            begin
+                mCurMotor := mMotors[mIdx];
+                mFSMRet[mIdx] := mMotors[mIdx].FSMMove();
+                case mFSMRet[mIdx] of
+                    -2, -1:
+                        begin
+                            mMotors[mIdx].FSMStop; // -> Stop으로 ...
+                            mLstError^ := mMotors[mIdx].mLstError;
+                            mLstToDo^ := mMotors[mIdx].mLstToDo;
+                            mMotors[mIdx].mErr := True;
+                            Exit(-1);
+                        end;
+                    1:
+                        begin
+                            if mMotors[mIdx].IsExternStopCondUsed and (mMotors[mIdx].StopReason <> srByExternCond) then
+                            begin
+                                mLstError^ := '정지 센서 감지 오류';
+                                mLstToDo^ := '정지 센서 상태를 확인 하세요';
+                                mMotors[mIdx].mLstError := mLstError^;
+                                mMotors[mIdx].mLstToDo := mLstToDo^;
+                                mMotors[mIdx].mErr := True;
+                                Exit(-1);
+                            end;
+
+                            Inc(mIdx);
+                            if mIdx >= mCount then
+                            begin
+                                Exit(1);
+                            end;
+                            mTC.Start(TSMParam.mMoveGapTime * 1000);
+                            Inc(mState);
+                        end;
+                end;
+            end;
+        3:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    mState := 2;
+                end;
+
+            end;
+    else
+        mLstError^ := '모터 이동 프로세스 에러';
+        mLstToDo^ := '프로그램을 다시 시작하세요';
+        gLog.Panel('%s %d', [mLstError, mState]);
+        Result := -1;
+    end;
+end;
+
+function TSeatMotorOper.FSMMove(NextMtrIntervalAsSec: Double): Integer;
+var
+    i: Integer;
+begin
+    Result := 0;
+    case mState of
+        0:
+            begin
+                if mCount <= 0 then
+                    Exit(-1);
+
+                mSubCount := 1;
+                for i := 0 to mCount - 1 do
+                begin
+                    if not mMotors[i].Use then
+                        mFSMRet[i] := 1
+                    else
+                        mFSMRet[i] := 0;
+
+                    mMotors[i].ClearFSM;
+                end;
+
+                mTC.Start(NextMtrIntervalAsSec * 1000);
+                Inc(mState);
+
+            end;
+        1:
+            begin
+                for i := 0 to mSubCount - 1 do
+                begin
+                    if mFSMRet[i] = 0 then
+                    begin
+                        mCurMotor := mMotors[i];
+                        mFSMRet[i] := mMotors[i].FSMMove;
+                        case mFSMRet[i] of
+                            -1, -2:
+                                begin
+                                    StopAll();
+                                    mLstError^ := mMotors[i].mLstError;
+                                    mLstToDo^ := mMotors[i].mLstToDo;
+                                    mMotors[i].mErr := True;
+                                    mState := 0;
+                                    Exit(-1);
+                                end;
+
+                        end;
+
+                    end;
+                end;
+
+                if mTC.IsTimeOut then
+                begin
+                    if mSubCount < mCount then
+                    begin
+                        mTC.Start(NextMtrIntervalAsSec * 1000);
+                        Inc(mSubCount);
+                    end;
+                end;
+
+                for i := 0 to mCount - 1 do
+                begin
+                    if (mFSMRet[i] <= 0) then
+                    begin
+                        Exit;
+                    end;
+                end;
+
+                // 모든 모터 FSM 상태 성공
+                mState := 0;
+                Result := 1;
+
+            end;
+    end;
+
+end;
+
+function TSeatMotorOper.FSMMove(Motors1, Motors2: array of TSeatMotor; NextMtrIntervalAsSec: Double): Integer;
+var
+    i: Integer;
+begin
+    Result := 0;
+    case mState of
+        0:
+            begin
+                mCount := Length(Motors1);
+                if mCount <= 0 then
+                    Exit(-1);
+
+                mSubCount := 1;
+
+                for i := 0 to mCount - 1 do
+                begin
+                    mMotors[i] := Motors1[i];
+                end;
+
+                for i := 0 to mCount - 1 do
+                begin
+                    if not mMotors[i].Use then
+                        mFSMRet[i] := 1
+                    else
+                        mFSMRet[i] := 0;
+                end;
+
+                mTC.Start(NextMtrIntervalAsSec * 1000);
+                Inc(mState);
+
+            end;
+        1: // 동시 작동
+            begin
+                for i := 0 to mSubCount - 1 do
+                begin
+                    if mFSMRet[i] = 0 then
+                    begin
+                        mCurMotor := mMotors[i];
+                        mFSMRet[i] := mMotors[i].FSMMove;
+                        case mFSMRet[i] of
+                            -1, -2:
+                                begin
+                                    StopAll();
+                                    mLstError^ := mMotors[i].mLstError;
+                                    mLstToDo^ := mMotors[i].mLstToDo;
+                                    mMotors[i].mErr := True;
+                                    Exit(-1);
+                                end;
+                        end;
+                    end;
+                end;
+
+                if mTC.IsTimeOut then
+                begin
+                    if mSubCount < mCount then
+                    begin
+                        mTC.Start(NextMtrIntervalAsSec * 1000);
+                        Inc(mSubCount);
+                    end;
+                end;
+
+                for i := 0 to mCount - 1 do
+                begin
+                    if (mFSMRet[i] <= 0) then
+                    begin
+                        Exit;
+                    end;
+                end;
+
+                if mMotors[0] = Motors2[0] then
+                begin
+                    mState := 0;
+                    Exit(1);
+                end
+                else
+                    Inc(mState);
+            end;
+        2:
+            begin
+                mCount := Length(Motors2);
+                mSubCount := 1;
+                for i := 0 to mCount - 1 do
+                begin
+                    mMotors[i] := Motors2[i];
+                end;
+
+                for i := 0 to mCount - 1 do
+                begin
+                    if not mMotors[i].Use then
+                        mFSMRet[i] := 1
+                    else
+                        mFSMRet[i] := 0;
+                end;
+
+                Dec(mState);
+            end;
+    end;
+end;
+
+procedure Swap(var A, B: TSeatMotor);
+var
+    Temp: TSeatMotor;
+begin
+    Temp := A;
+    A := B;
+    B := Temp;
+end;
+
+procedure TSeatMotorOper.ReorderForLastMove(MtrID: TMotorOrd);
+var
+    i, j: Integer;
+    Temp: TSeatMotor;
+begin
+
+    if mMotors[mCount - 1].ID = MtrID then
+    begin
+        Exit;
+    end;
+
+    for i := 0 to mCount - 1 do
+    begin
+        if mMotors[i].ID = MtrID then
+        begin
+            Temp := mMotors[i];
+            for j := i to mCount - 2 do
+            begin
+                mMotors[j] := mMotors[j + 1];
+            end;
+
+            mMotors[mCount - 1] := Temp;
+            Exit;
+        end;
+    end;
+
+    {
+      for i := 0 to mCount - 1 do
+      begin
+      if mMotors[i].ID = MtrID then
+      begin
+      Swap(mMotors[i], mMotors[mCount - 1]);
+      Exit;
+      end;
+      end;
+      }
+end;
+
+procedure TSeatMotorOper.ReverseMotorsDir;
+var
+    i: Integer;
+begin
+    for i := 0 to mCount - 1 do
+    begin
+        mMotors[i].ReverseDir;
+    end;
+end;
+
+function TSeatMotorOper.FSMTest(IsEach: Boolean; LastMoveMtr: TMotorOrd; NextMtrIntervalAsSec: Double): Integer;
+var
+    i: Integer;
+begin
+    Result := 0;
+    case mState of
+        0:
+            begin
+                if mCount <= 0 then
+                    Exit(-1);
+                mSubCount := 1;
+
+                for i := 0 to mCount - 1 do
+                begin
+                    mFSMRet[i] := 0;
+                    mMotors[i].FSMStart;
+                end;
+
+                if IsEach then
+                begin
+                    mState := 2;
+                    mIdx := 0;
+                    // 슬라이드는 맨 나중에
+                    ReorderForLastMove(LastMoveMtr);
+                end
+                else
+                begin
+                    Inc(mState);
+                    mTC.Start(NextMtrIntervalAsSec * 1000);
+                end;
+            end;
+
+        1: // 동시 작동
+            begin
+                for i := 0 to mSubCount - 1 do
+                begin
+                    if (mFSMRet[i] = 0) then
+                    begin
+                        mCurMotor := mMotors[i];
+                        mFSMRet[i] := mMotors[i].FSMITest;
+                        case mFSMRet[i] of
+                            -2, -1:
+                                begin
+                                    StopAll;
+                                    mLstError^ := mMotors[i].mLstError;
+                                    mLstToDo^ := mMotors[i].mLstToDo;
+                                    mMotors[i].mErr := True;
+                                    mState := 0;
+                                    Exit(-1);
+                                end;
+                        end;
+                    end
+                end;
+
+                if mTC.IsTimeOut then
+                begin
+                    if mSubCount < mCount then
+                    begin
+                        mTC.Start(NextMtrIntervalAsSec * 1000);
+                        Inc(mSubCount);
+                    end;
+                end;
+
+                for i := 0 to mCount - 1 do
+                begin
+                    if (mFSMRet[i] <= 0) then
+                    begin
+                        Exit;
+                    end;
+                end;
+
+                mState := 0;
+                Exit(1);
+            end;
+
+        2: // 개별 작동
+            begin
+                mCurMotor := mMotors[mIdx];
+                mFSMRet[mIdx] := mMotors[mIdx].FSMITest();
+                case mFSMRet[mIdx] of
+                    -2, -1:
+                        begin
+                            mMotors[mIdx].FSMStop;
+                            mLstError^ := mMotors[mIdx].mLstError;
+                            mLstToDo^ := mMotors[mIdx].mLstToDo;
+                            Exit(-1);
+                        end;
+                    1:
+                        begin
+                            Inc(mIdx);
+                            if mIdx >= mCount then
+                            begin
+                                Exit(1);
+                            end;
+                            mTC.Start(TSMParam.mMoveGapTime * 1000);
+                            Inc(mState);
+                        end;
+                end;
+            end;
+        3:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    mState := 2;
+                end;
+
+            end;
+    else
+        mLstError^ := '모터 검사 프로세스 에러';
+        mLstToDo^ := '프로그램을 다시 시작하세요';
+        gLog.Panel('%s TSeatMotorOper.mState:%d', [mLstError, mState]);
+        Result := -1;
+    end;
+end;
+
+procedure TSeatMotorOper.Init(Motors: array of TSeatMotor; UseStopCond: array of Boolean; MtrStopCond: array of TNotifySeatMotorStopCond; Count: Integer);
+var
+    i: Integer;
+begin
+    Init(Motors, Count);
+
+    for i := 0 to mCount - 1 do
+    begin
+        if UseStopCond[i] = False then
+            mMotors[i].OnStopCond := nil
+        else
+            mMotors[i].OnStopCond := MtrStopCond[i];
+    end;
+end;
+
+procedure TSeatMotorOper.Init(Motors: array of TSeatMotor; Dirs: array of TMotorDir; UseStopCond: array of Boolean; MtrStopCond: array of TNotifySeatMotorStopCond; Count: Integer);
+var
+    i: Integer;
+begin
+    Init(Motors, Dirs, Count);
+
+    for i := 0 to mCount - 1 do
+    begin
+        if UseStopCond[i] = False then
+            mMotors[i].OnStopCond := mMotors[i].DefStopCond
+        else
+            mMotors[i].OnStopCond := MtrStopCond[i];
+    end;
+
+end;
+
+{ TBaseIMSCtrler }
+
+procedure TBaseIMSCtrler.ClearLimitStatus;
+var
+    It: TMotorOrd;
+begin
+    for It := Low(TMotorOrd) to MtrOrdHi do
+    begin
+        mLimit[It] := False;
+        mLimitStatus[It] := 0;
+    end;
+end;
+
+constructor TBaseIMSCtrler.Create(DIO: TBaseDIO; DOIgnCh: Integer);
+begin
+    mDIO := DIO;
+    mDOIgnCh := DOIgnCh;
+    mEndOfMotorID := MtrOrdHi;
+
+    mEnabled := True;
+end;
+
+function TBaseIMSCtrler.DeleteLimit(MotorID: TMotorOrd): Boolean;
+begin
+    gLog.Panel('TBaseIMSCtrler.DeleteLimit(MotorID: TMotorOrd) 미구현');
+    Result := False;
+end;
+
+constructor TBaseIMSCtrler.Create(EndOfMotorID: TMotorOrd);
+begin
+    mEndOfMotorID := EndOfMotorID;
+    mEnabled := True;
+end;
+
+function TBaseIMSCtrler.DeleteLimit: Boolean;
+begin
+    gLog.Panel('TBaseIMSCtrler.DeleteLimit 미구현');
+    Result := False;
+end;
+
+function TBaseIMSCtrler.EnableRCReq: Boolean;
+begin
+    Result := True; // True 유지 할 것
+end;
+
+function TBaseIMSCtrler.KeyOn: Integer;
+begin
+
+    // SetVehicleSpeed(0);             // 속도 줄이고 5Km 이하.
+    SetDrvDoorOpenSw(False); // 문닫고
+    SetIgnSw(True); // 키꽂아 돌리고
+    // SetDioIgn(True);
+    // SetPPosSw;
+    SetAuthState;
+    Result := 1;
+
+end;
+
+function TBaseIMSCtrler.KeyOff: Integer;
+begin
+    // SetVehicleSpeed(0);             // 속도 줄이고 5Km 이하.
+    SetDrvDoorOpenSw(True); // 문열고
+    SetIgnSw(False); // 키빼고
+    // SetDioIgn(False);
+    // SetPPosSw;
+    SetAuthState;
+
+    Result := 1;
+end;
+
+function TBaseIMSCtrler.FSMPlayMemP1: Integer;
+begin
+    Result := FSMPushOnOff(SetMemP1);
+end;
+
+function TBaseIMSCtrler.FSMPlayMemP2: Integer;
+begin
+    Result := FSMPushOnOff(SetMemP2);
+end;
+
+function TBaseIMSCtrler.FSMSaveMemP1: Integer;
+begin
+    case mState of
+        0:
+            case FSMPushOnOff(StartMemSet) of
+                -1:
+                    Exit(-1);
+                1:
+                    begin
+                        mTC.Start(500);
+                        Inc(mState);
+                    end;
+            end;
+        1:
+            begin
+                if mTC.IsTimeOut then
+                    Inc(mState);
+            end;
+        2:
+            case FSMPushOnOff(SetMemP1) of
+                -1:
+                    begin
+                        mState := 0;
+                        Exit(-1);
+                    end;
+                1:
+                    begin
+                        mState := 0;
+                        Exit(1);
+                    end;
+            end;
+    end;
+    Result := 0
+
+end;
+
+function TBaseIMSCtrler.FSMSaveMemP2: Integer;
+begin
+    case mState of
+        0:
+            case FSMPushOnOff(StartMemSet) of
+                -1:
+                    Exit(-1);
+                1:
+                    begin
+                        mTC.Start(500);
+                        Inc(mState);
+                    end;
+
+            end;
+        1:
+            begin
+                if mTC.IsTimeOut then
+                    Inc(mState);
+            end;
+        2:
+
+            case FSMPushOnOff(SetMemP2) of
+                -1:
+                    begin
+                        mState := 0;
+                        Exit(-1);
+                    end;
+                1:
+                    begin
+                        mState := 0;
+                        Exit(1);
+                    end;
+            end;
+    end;
+    Result := 0;
+end;
+
+function TBaseIMSCtrler.FSMPushOnOff(OnOffFunc: TOnOffFunc; Timeout: Double): Integer;
+begin
+    case mSubState of
+        0:
+            begin
+                OnOffFunc(True);
+                mTC.Start(Timeout * 1000);
+                Inc(mSubState);
+            end;
+        1:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    OnOffFunc(False);
+                    mSubState := 0;
+                    Exit(1);
+                end;
+            end;
+    end;
+
+    Result := 0;
+end;
+
+function TBaseIMSCtrler.GetLimit(MtrID: TMotorOrd): Boolean;
+begin
+    Result := mLimit[MtrID];
+end;
+
+function TBaseIMSCtrler.GetLimitStatus(MtrID: TMotorOrd): TSMLimitStatus;
+begin
+    Result := lsInvalid;
+end;
+
+function TBaseIMSCtrler.GetLimitStatusStr(MtrID: TMotorOrd): string;
+begin
+    case GetLimitStatus(MtrID) of
+        lsNone:
+            Result := 'X';
+        lsDone:
+            Result := 'O';
+        lsIng:
+            Result := '>';
+        lsInvalid:
+            Result := '-';
+
+    end;
+end;
+
+function TBaseIMSCtrler.GetPos(MtrID: TMotorOrd): Integer;
+begin
+    Result := mPos[MtrID];
+end;
+
+function TBaseIMSCtrler.IsAllLimited: Boolean;
+var
+    It: TMotorOrd;
+begin
+    for It := Low(TMotorOrd) to mEndOfMotorID do
+    begin
+        if not mLimit[It] then
+            Exit(False);
+
+    end;
+
+    Result := True;
+
+end;
+
+function TBaseIMSCtrler.IsLimitRespDone: Boolean;
+begin
+    Result := False;
+end;
+
+function TBaseIMSCtrler.IsPending: Boolean;
+begin
+    Result := False;
+end;
+
+function TBaseIMSCtrler.IsPosRespDone: Boolean;
+begin
+    Result := False;
+end;
+
+function TBaseIMSCtrler.PeriodicSend: Boolean;
+begin
+    Result := True;
+end;
+
+procedure TBaseIMSCtrler.ProcessLimitDone;
+begin
+    gLog.Panel('Base:ProcessLimitDone 미구현');
+end;
+
+procedure TBaseIMSCtrler.ProcessPosDone;
+begin
+    gLog.Panel('Base:ProcessPosDone 미구현');
+end;
+
+function TBaseIMSCtrler.ReqEasyAccess: Boolean;
+begin
+    Result := False;
+end;
+
+function TBaseIMSCtrler.ReqLimit: Boolean;
+begin
+    gLog.Panel('Base:ReqLimit 미구현');
+    Result := False;
+end;
+
+function TBaseIMSCtrler.ReqPos: Boolean;
+begin
+    gLog.Panel('Base:ReqPos');
+    Result := False;
+end;
+
+procedure TBaseIMSCtrler.Reset;
+begin
+    gLog.Panel('Base:Reset 미구현');
+end;
+
+procedure TBaseIMSCtrler.SelfTest;
+begin
+
+end;
+
+function TBaseIMSCtrler.SetAuthState: Boolean;
+begin
+    gLog.Panel('Base:SetAuthState');
+    Result := False;
+end;
+
+function TBaseIMSCtrler.SetDioIgn(Value: Boolean): Boolean;
+begin
+    if Assigned(mDIO) then
+    begin
+        gLog.Panel('SetDioIgn: CH:%d-%s', [mDOIgnCh, BoolToStr(Value, True)]);
+        mDIO.SetIO(mDOIgnCh, Value);
+        Result := True;
+    end;
+
+    Exit(True);
+end;
+
+function TBaseIMSCtrler.SetDrvDoorOpenSw(Value: Boolean): Boolean;
+begin
+    gLog.Panel('Base:SetDrvDoorOpenSw: %s', [BoolToStr(Value, True)]);
+    Result := False;
+end;
+
+procedure TBaseIMSCtrler.SetEnabled(const Value: Boolean);
+begin
+    if mEnabled <> Value then
+        mEnabled := Value;
+end;
+
+function TBaseIMSCtrler.SetIgn(Value: Boolean): Boolean;
+begin
+    Result := SetIgnSw(Value) and SetDioIgn(Value);
+end;
+
+function TBaseIMSCtrler.SetIgnSw(Value: Boolean): Boolean;
+begin
+    gLog.Panel('Base:SetIgnSw: %s', [BoolToStr(Value, True)]);
+    Result := False;
+end;
+
+function TBaseIMSCtrler.SetLimit(MotorID: TMotorOrd): Boolean;
+begin
+    gLog.Panel('Base:SetLimit');
+    Result := False;
+end;
+
+function TBaseIMSCtrler.SetLimitAll: Boolean;
+begin
+    gLog.Panel('Base:SetLimitAll');
+    Result := False;
+end;
+
+function TBaseIMSCtrler.SetMemOrd(MemOrd: TMemoryOrd; IsOn: Boolean): Boolean;
+begin
+    Result := True;
+    case MemOrd of
+        meMEM1:
+            Result := SetMemP1(IsOn);
+        meMEM2:
+            Result := SetMemP2(IsOn);
+        meKEY_ON:
+            begin
+                SetDrvDoorOpenSw(False); // 문닫고
+                SetIgnSw(True); // 키꽂아 돌리고
+                SetDioIgn(True);
+            end;
+        meKEY_OFF:
+            begin
+                SetDrvDoorOpenSw(True); // 문열고
+                SetIgnSw(False); // 키빼고
+                SetDioIgn(False);
+            end;
+    else
+        Result := False;
+    end;
+
+end;
+
+function TBaseIMSCtrler.SetPPosSw(Value: Boolean): Boolean;
+begin
+    gLog.Panel('Base:SetPPosSw');
+    Result := False;
+end;
+
+function TBaseIMSCtrler.SetSpeedMeter: Boolean;
+begin
+    gLog.Panel('Base:SetSpeedMeter');
+    Result := False;
+
+end;
+
+function TBaseIMSCtrler.SetVehicleSpeed(Speed: byte): Boolean;
+begin
+    gLog.Panel('Base:SetVehicleSpeed: %d', [Integer(Speed)]);
+    Result := False;
+end;
+
+function TBaseIMSCtrler.ToLimitStr: string;
+var
+    i: TMotorOrd;
+begin
+    for i := Low(TMotorOrd) to MtrOrdHi do
+        Result := Result + Format('%s: %s(%d), ', [GetMotorName(i), BoolToStr(mLimit[i], True), mLimitStatus[i]]);
+end;
+
+function TBaseIMSCtrler.ToPosStr: string;
+var
+    i: TMotorOrd;
+begin
+    for i := Low(TMotorOrd) to MtrOrdHi do
+    begin
+        Result := Result + Format('%s: %d, ', [GetMotorName(i), mPos[i]]);
+    end;
+end;
+
+{ TBaseMoveCtrler }
+
+function TBaseMoveCtrler.FSMMove(MtrID: TMotorOrd; Dir: TMotorDir): Integer;
+begin
+
+    case Move(MtrID, Dir) of
+        True:
+            Result := 1;
+        False:
+            Result := -1;
+    end;
+end;
+
+function TBaseMoveCtrler.FSMStop(MtrID: TMotorOrd; Dir: TMotorDir): Integer;
+begin
+    case Stop(MtrID, Dir) of
+        True:
+            Result := 1;
+        False:
+            Result := -1;
+    end;
+end;
+
+function TBaseMoveCtrler.GetCurr: Double;
+begin
+    Result := 0;
+end;
+
+function TBaseMoveCtrler.GetIsMove: Boolean;
+begin
+    Result := mIsMove;
+end;
+
+function TBaseMoveCtrler.IsBwMove: Boolean;
+begin
+    Result := False;
+end;
+
+function TBaseMoveCtrler.IsFwMove: Boolean;
+begin
+    Result := False;
+end;
+
+function TBaseMoveCtrler.Move(MtrID: TMotorOrd; Dir: TMotorDir): Boolean;
+begin
+    if Dir = twForw then
+        Result := MoveToForw(MtrID)
+    else if Dir = twBack then
+        Result := MoveToBack(MtrID)
+    else
+        Result := Stop(MtrID, Dir);
+end;
+
+function TBaseMoveCtrler.Stop(MtrID: TMotorOrd): Boolean;
+begin
+    if mDir = twForw then
+    begin
+        Result := StopForForw(MtrID);
+    end
+    else
+    begin
+        Result := StopForBack(MtrID);
+    end;
+
+    TAsyncCalls.Invoke(
+        procedure
+        begin
+            Sleep(200);
+            if mDir = twForw then
+            begin
+                StopForBack(MtrID); // 양방향 모두 정지 하게끔...  반대방향도 정지
+            end
+            else
+            begin
+                StopForForw(MtrID);
+            end;
+        end).Forget;
+
+end;
+
+procedure TBaseMoveCtrler.SetEnabled(const Value: Boolean);
+begin
+    if mEnabled <> Value then
+        mEnabled := Value;
+end;
+
+procedure TBaseMoveCtrler.SetIgnoreStop(const Value: Boolean);
+begin
+    if Value then
+        gLog.Panel('%s: STOP 비활성(무시)', [Name])
+    else
+        gLog.Panel('%s: STOP 활성', [Name]);
+
+    mIgnoreStop := Value;
+end;
+
+procedure TBaseMoveCtrler.SetIMS(Value: Boolean);
+begin
+    gLog.Panel('TBaseMoveCtrler.SetIMS 미구현');
+end;
+
+function TBaseMoveCtrler.Stop(MtrID: TMotorOrd; Dir: TMotorDir): Boolean;
+begin
+
+    if Dir = twForw then
+        Result := StopForForw(MtrID)
+    else
+        Result := StopForBack(MtrID);
+
+end;
+
+{ TSimulCurr }
+
+function TSimulCurr.FSMIGetVal: Double;
+begin
+    Result := 0.0;
+    case mState of
+        0:
+            begin
+
+            end;
+        1:
+            begin
+                mTC.Start(200);
+                Inc(mState);
+            end;
+        2:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    if mIsEndPos then
+                    begin
+                        mIsEndPos := False;
+
+                        if mIsIMS then
+                        begin
+                            mState := 0;
+                            Exit(0.0);
+                        end;
+
+                        mTC.Start(1000);
+                    end
+                    else
+                        mTC.Start(mRunSec * 1000);
+
+                    Result := 1.2 + random(10) / 10.0; // 초기 전류
+
+                    Inc(mState);
+                end;
+            end;
+        3:
+            begin
+                if mTC.IsTimeOut then // 구속 전류 및 IMS
+                begin
+                    if mIsIMS then
+                    begin
+                        Result := 0;
+                        mState := 0;
+                    end
+                    else
+                    begin
+                        Result := 12.0;
+                        Inc(mState);
+                        mTC.Start(500);
+                    end;
+                end
+                else
+                begin
+                    Result := 2.5 + random(10) / 10.0; // 기동 중 전류
+                end;
+
+            end;
+        4:
+            begin
+                if mTC.IsTimeOut then
+                begin
+                    mState := 0;
+
+                end;
+
+                Result := 12.0;
+            end;
+    end;
+end;
+
+procedure TSimulCurr.Start(RunSec: Double; IsIMS: Boolean);
+begin
+    mRunSec := RunSec;
+    mState := 1;
+    mIsIMS := IsIMS;
+end;
+
+procedure TSimulCurr.Stop;
+begin
+    mState := 0;
+end;
+
+procedure SetSimMtrToEndPos(Value: Boolean);
+var
+    i: TMotorOrd;
+begin
+    for i := Low(TMotorOrd) to MtrOrdHi do
+        gSimCurr[i].mIsEndPos := Value;
+end;
+
+procedure SetSimLimitState(State: Integer; LimitClear: Boolean);
+begin
+    gSimLimitState := State;
+    gSimLimitClear := LimitClear;
+end;
+
+procedure StartSimMotor(MtrID: TMotorOrd; Curr, InitNoise, RunNoise: Double; IsIMS: Boolean);
+begin
+    gSimCurr[MtrID].Start(Curr, IsIMS);
+    gSimNoise[MtrID].Start(InitNoise, RunNoise);
+
+end;
+
+procedure StopSimMotor(MtrID: TMotorOrd);
+begin
+    gSimCurr[MtrID].Stop;
+    // gSimNoise[MtrID].Stop;
+
+end;
+{ TSimulNoise }
+
+function TSimulNoise.FSMIGetVal: Double;
+begin
+    Result := 0.0;
+    case mState of
+        0:
+            ;
+        1:
+            begin
+                mTC.Start(mRunSec * 1000);
+                Inc(mState);
+            end;
+        2:
+            begin
+                Result := 20 + random(3);
+
+                if mTC.GetPassTimeAsSec >= mInitSec then
+                    Inc(mState);
+            end;
+        3:
+            begin
+                Result := 30 + random(3);
+
+                if mTC.IsTimeOut then
+                begin
+                    mState := 0;
+                end;
+            end;
+
+    end;
+
+end;
+
+procedure TSimulNoise.Start(InitSec, RunSec: Double);
+begin
+    mInitSec := InitSec;
+    mRunSec := RunSec;
+    mState := 1;
+end;
+
+{ TSMParam }
+
+class procedure TSMParam.Init;
+var
+    MtrIt: TMotorOrd;
+begin
+    mMoveMinCurr := 0.2;
+{$IFDEF _USE_PWS_CURR}
+    mMoveCheckTime := 3.5;
+    mReadDelayTime := 3.0;
+{$ELSE}
+    mMoveCheckTime := 1.5;
+    mReadDelayTime := 1.0;
+{$ENDIF}
+
+    mMoveGapTime := 0.3;
+    mMoveLimitCurr := 30.0;
+
+    for MtrIt := Low(TMotorOrd) to MtrOrdHi do
+        mSetTimeToLimit[MtrIt] := 2.0;
+
+    mTotNGRetryCount := 2;
+
+end;
+
+class procedure TSMParam.Read(IniFile: TIniFile);
+var
+    MtrIt: TMotorOrd;
+begin
+    try
+        mMoveMinCurr := IniFile.ReadFloat('SEAT MOTOR', 'MOVE MIN CURR', 0.2);
+        mMoveCheckTime := IniFile.ReadFloat('SEAT MOTOR', 'MOVE CHECK TIME', 1.5);
+        mReadDelayTime := IniFile.ReadFloat('SEAT MOTOR', 'READ DELAY TIME', 1.0);
+        mMoveGapTime := IniFile.ReadFloat('SEAT MOTOR', 'MOVE GAP TIME', 0.3);
+        mMoveLimitCurr := IniFile.ReadFloat('SEAT MOTOR', 'MOVE LIMIT CURR', 30);
+        for MtrIt := Low(TMotorOrd) to MtrOrdHi do
+            mSetTimeToLimit[MtrIt] := IniFile.ReadFloat('SEAT MOTOR', 'SET TIME TO LIMIT ' + GetMotorName(MtrIt), 2.0);
+
+        mTotNGRetryCount := IniFile.ReadInteger('SEAT MOTOR', 'TOT NG RETRY COUNT', 2);
+    except
+        raise Exception.Create('TSMParam.Read 예외 발생');
+    end;
+
+end;
+
+class procedure TSMParam.Write(IniFile: TIniFile);
+var
+    MtrIt: TMotorOrd;
+begin
+    try
+        IniFile.WriteFloat('SEAT MOTOR', 'MOVE MIN CURR', mMoveMinCurr);
+        IniFile.WriteFloat('SEAT MOTOR', 'MOVE CHECK TIME', mMoveCheckTime);
+        IniFile.WriteFloat('SEAT MOTOR', 'READ DELAY TIME', mReadDelayTime);
+        IniFile.WriteFloat('SEAT MOTOR', 'MOVE GAP TIME', mMoveGapTime);
+        IniFile.WriteFloat('SEAT MOTOR', 'MOVE LIMIT CURR', mMoveLimitCurr);
+
+        for MtrIt := Low(TMotorOrd) to MtrOrdHi do
+            IniFile.WriteFloat('SEAT MOTOR', 'SET TIME TO LIMIT ' + GetMotorName(MtrIt), mSetTimeToLimit[MtrIt]);
+
+        IniFile.WriteInteger('SEAT MOTOR', 'TOT NG RETRY COUNT', mTotNGRetryCount);
+    except
+        raise Exception.Create('TSMParam.Write 예외 발생');
+    end;
+
+end;
+
+initialization
+    TSMParam.Init;
+
+end.
+
