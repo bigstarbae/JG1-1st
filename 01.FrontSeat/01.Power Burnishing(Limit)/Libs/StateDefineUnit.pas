@@ -19,6 +19,7 @@ type
                     _WS_MOVE_TO_UNLOADING_POS,      // 부하 언로딩위치로
                     _WS_WAIT_UNLOADING_DONE,
                     _WS_MOVE_TO_D_POS, // 납품위치로
+                    _WS_WAIT_ECU_SAVE_TIME,
                     _WS_WAIT_ALL_TEST_END,
                     _WS_SAVE_DATA,
                     _WS_WAIT_POP_SEND,

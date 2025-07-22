@@ -933,7 +933,7 @@ begin
     mDIO.SetIO(DO_IGN1, true);
     mDIO.SetIO(DO_CAN_100K, mCurModelType.IsHI or mCurModelType.IsRJ1);
     mDIO.SetIO(DO_CAN_500K, mCurModelType.IsJG1);
-    mDIO.SetIO(DO_TEST_PW, true);
+    mDIO.SetIO(DO_SPEC_CHCEK_PW, true);
     mDIO.SetIO(DO_JG1_CAR, mCurModelType.IsJG1);
     mDIO.SetIO(DO_RJ1_HI_CAR, mCurModelType.IsHI or mCurModelType.IsRJ1);
     mDIO.SetIO(DO_RJ1_HI_PASS_SW, mCurModelType.IsPsgPos and (mCurModelType.IsHI or mCurModelType.IsRJ1));
@@ -1869,6 +1869,7 @@ begin
                     -1:
                         begin
                             SetError(mMtrOper.CurMotor.mLstError, mMtrOper.CurMotor.mLstToDo);
+
                             gLog.Panel('%s : 모터 정렬 실패', [Name]);
                         end;
                     1:
@@ -1887,7 +1888,9 @@ begin
         _WS_WAIT_WEIGHT_LOADING:
             begin
                 if mDelayTC.IsTimeOut then
-                    SetError('웨이트 로딩 시간 지남 ', '웨이트 로딩 센서를 확인해 주세요')
+                begin
+                    SetError('웨이트 로딩 시간 지남 ', '웨이트 로딩 센서를 확인해 주세요');
+                end
                 else
                 begin
                     if mLIO.IsIO(mLDIChs.mLoadDoneWeight) then
@@ -2059,15 +2062,31 @@ begin
                     begin
                         mLIO.SetIO(mLDOChs.mUnLoadReqWeight, false);
 
-                        gLog.Panel('%s: 웨이트 언로딩 완료', [Name]);
+                        gLog.Panel('%s: 웨이트 언로딩 완료, ECU 저장 대기 시작', [Name]);
 
-                        mWorkState := _WS_WAIT_ALL_TEST_END;
+                        mDelayTC.Start(5000);
+
+
+                        mWorkState := _WS_WAIT_ECU_SAVE_TIME;
 
                     end;
 
                 end;
 
             end;
+
+        _WS_WAIT_ECU_SAVE_TIME:
+            begin
+                if mDelayTC.IsTimeOut then
+                begin
+                    mWorkState := _WS_WAIT_ALL_TEST_END;
+
+
+                end;
+
+            end;
+
+
 
         _WS_WAIT_ALL_TEST_END:
             begin
@@ -2105,7 +2124,7 @@ begin
 
                 StopMotors;
                 ClearElecDOs;
-                mDCPower.SetCurr(1.0);
+                //mDCPower.SetCurr(1.0);
 
                 mLIO.SetIO(mLDOChs.mAlarm, True);
 
@@ -2289,12 +2308,7 @@ end;
 
 function TTsWork.GetMotorCurr(Motor: TMotorOrd): Double;
 begin
-{$IFDEF _USE_PWS_CURR}
-    Result := gDcPower.Items[0].MeasCurr;
-    Exit;
-{$ENDIF}
     Result := mMotors[Motor].GetCurr;
-
 end;
 
 function TTsWork.GetMotors(Mtr: TMotorOrd): TSeatMotor;

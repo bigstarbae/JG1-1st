@@ -30,8 +30,10 @@
   Ver.241203.00
     : TCANSignal.Write: 2Byte 범위 Write 구현
 
-  Ver.250717.00
-    : Write큐 전송시 기본 주기 추가
+  Ver.250721.00
+    : Write Queue 전송시 기본 주기 추가
+    : Queue Type TTsListEx로 변경
+    : CAN FD Preset 지원
 
 }
 
@@ -42,15 +44,13 @@ unit BaseCAN;
 interface
 
 uses
-    Classes, Generics.Collections, IniFiles, TimeChecker, Deltics.MultiCast,
-    BaseDAQ, MyUtils, TSQueueEx, Windows;
+    Windows, Classes, Generics.Collections, IniFiles, TimeChecker, Deltics.MultiCast, BaseDAQ, MyUtils, TSListEx, CanFDPreset;
 
 const
     CAN_R_DEBUG_LEVEL0 = 0;
     CAN_R_DEBUG_LEVEL1 = 1;
     CAN_R_DEBUG_LEVEL2 = 2;
     MAX_CAN_DATA_LEN = 64;
-
 
 type
     {
@@ -142,6 +142,7 @@ type
     TBaseCAN = class;
 
     PMultiCANFrame = ^TMultiCANFrame;
+
     TMultiCANFrame = packed record // 수신 처리 전용
     private
         mState: integer;
@@ -283,6 +284,8 @@ type
         class procedure SetWQueueing(const Value: Boolean); static;
 
         class procedure RunQueueThread; static;
+        function GetPreset: PCANFDPreset;
+        procedure SetPreset(const Value: PCANFDPreset);
 
     protected
         mCh, mBaudRate: integer;
@@ -308,10 +311,12 @@ type
         mDefaultWriteIntervalMs: Integer;
 
         mUseFD: Boolean;
-        mPreScaleStr: AnsiString;
+        mPreset: TCANFDPreset;
+
+        mNextWriteHighPriority: Boolean;
 
         class var
-            mQueue: TTSQueueEx<TCANQueueItem>;
+            mQueue: TTSListEx<TCANQueueItem>;
         class var
             mRQueueing: Boolean;      // 읽기 Queue처리
         class var
@@ -347,12 +352,14 @@ type
         function Open: boolean; overload; virtual;
         function Open(BaudRate: integer): boolean; overload; virtual;
         function Open(Ch, BaudRate: integer): boolean; overload; virtual;
+        function OpenFD(Ch, BaudRate: Integer; Preset: TCANFDPreset): Boolean;
 
         function ReOpen: boolean; virtual; abstract;
 
         procedure Close; override;
 
         function IsWIDExists(MsgID: Cardinal): boolean; // 쓰기 프레임 ID 존재 여부?
+        procedure SetNextWriteHighPriority; // 큐 사용시 최우선
 
         // 기본 W/R
         function Write(const ID: Cardinal; Flags: integer; Data: array of byte; Len: integer = 8): boolean; overload; virtual; abstract;
@@ -429,9 +436,10 @@ type
         property LastWRet: Boolean read mLastWRet write mLastWRet;
 
         property UseFD: Boolean read mUseFD write mUseFD;
-        property PreScaleStr: AnsiString read mPreScaleStr write mPreScaleStr;
+        property Preset: PCANFDPreset read GetPreset write SetPreset;
 
         property DefaultWriteInterval: Integer read mDefaultWriteIntervalMs write mDefaultWriteIntervalMs;
+
 
         class property RQueueing: Boolean read mRQueueing write SetRQueueing;
         class property WQueueing: Boolean read mWQueueing write SetWQueueing;
@@ -1625,6 +1633,11 @@ begin
     Result := mItems[Index];
 end;
 
+function TBaseCAN.GetPreset: PCANFDPreset;
+begin
+    Result := @mPreset;
+end;
+
 function TBaseCAN.GetRFrame: PCANFrame;
 begin
     Result := @mCurRFrame;
@@ -1649,7 +1662,7 @@ end;
 
 function TBaseCAN.Write(Frame: TCANFrame): boolean;
 begin
-    Result := Write(Frame.mID, 0, Frame.mData, Frame.mLen);
+    Result := Write(Frame.mID, Frame.mData, Frame.mLen);
 end;
 
 function TBaseCAN.WFrameCount: integer;
@@ -1718,7 +1731,21 @@ end;
 
 function TBaseCAN.Write(const ID: Cardinal; Data: array of byte; Len: integer): boolean;
 begin
-    Result := Write(ID, IfThen(IsExtendedID(ID), 4, 0), Data, Len);
+
+    if mWQueueing then
+    begin
+        if mNextWriteHighPriority then
+        begin
+            mNextWriteHighPriority := False;
+            mQueue.PushFrontWithEvent(TCANQueueItem.Create(Self, TCANFrame.Create(ID, Data, Len), crwtWrite));
+        end
+        else
+            AddToWQueue(Self, TCANFrame.Create(ID, Data, Len));
+
+        Result := True;
+    end
+    else
+        Result := Write(ID, IfThen(IsExtendedID(ID), 4, 0), Data, Len);
 end;
 
 function TBaseCAN.WriteNextWFrame: boolean;
@@ -1812,7 +1839,7 @@ var
     QItem: TCANQueueItem;
 begin
     if not Assigned(mQueue) then
-        mQueue := TTSQueueEx<TCANQueueItem>.Create;
+        mQueue := TTSListEx<TCANQueueItem>.Create;
 
     TAsyncCalls.Invoke(
         procedure
@@ -1833,6 +1860,16 @@ begin
             FreeAndNil(TBaseCAN.mQueue);
 
         end).Forget;
+end;
+
+procedure TBaseCAN.SetNextWriteHighPriority;
+begin
+    mNextWriteHighPriority := True;
+end;
+
+procedure TBaseCAN.SetPreset(const Value: PCANFDPreset);
+begin
+    mPreset := Value^;
 end;
 
 class procedure TBaseCAN.SetRQueueing(const Value: Boolean);
@@ -1916,6 +1953,13 @@ begin
     //raise Exception.Create('TBaseCAN.Open(Ch, BaudRate) 구현 안됨');
     mCh := Ch;
     Result := Open(BaudRate);
+end;
+
+function TBaseCAN.OpenFD(Ch, BaudRate: Integer; Preset: TCANFDPreset): Boolean;
+begin
+    mUseFD := True;
+    mPreset := Preset;
+    Result := Open(Ch, BaudRate);
 end;
 
 function TBaseCAN.Open(BaudRate: integer): boolean;
@@ -2486,6 +2530,7 @@ begin
 
 
                             // Flow Ctrl
+                            CAN.SetNextWriteHighPriority;
                             CAN.Write(mReqID, 0, [$30, mFCBlockSize, mFCSepTime, $AA, $AA, $AA, $AA, $AA], 8);
                         end
                 else
@@ -2590,7 +2635,7 @@ begin
     else
     begin
         Result := mCAN.WriteFromQueue(mFrame);
-        if mFrame.mIntervalMs > 0 then
+        if mFrame.mIntervalMs >= 0 then
             Sleep(mCAN.GetEffectiveWriteInterval(mFrame.mIntervalMs));
     end;
 
@@ -2605,7 +2650,7 @@ initialization
     TBaseCAN.mRDebugLevel := CAN_R_DEBUG_LEVEL2;
 
     if not Assigned(TBaseCAN.mQueue) then
-        TBaseCAN.mQueue := TTSQueueEx<TCANQueueItem>.Create;
+        TBaseCAN.mQueue := TTSListEx<TCANQueueItem>.Create;
 
 
 finalization
@@ -2630,5 +2675,4 @@ finalization
     end;
 
 end.
-
 

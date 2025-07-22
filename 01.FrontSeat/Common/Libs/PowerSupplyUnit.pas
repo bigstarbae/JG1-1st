@@ -512,7 +512,9 @@ begin
 
     mSetPower:= false ;
 end;
+
 const _ER_PROC = 7 ;
+
 procedure TDcPower.WorkProcess(Sender: TObject);
 begin
     ;

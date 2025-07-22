@@ -1,4 +1,4 @@
-unit TsWorkUnit;
+ï»¿unit TsWorkUnit;
 {$I myDefine.inc}
 
 interface
@@ -22,7 +22,7 @@ type
     TCtrlerType = (ctSimul, ctDIO, ctCAN, ctLIN);
 
     TPwrMtrsMoveType = (pmtEach, pmtGroup, pmtSameTime, pmtInterval);
-    // °³º°, ±×·ìº°, µ¿½Ã, ½Ã°£Â÷
+    // ê°œë³„, ê·¸ë£¹ë³„, ë™ì‹œ, ì‹œê°„ì°¨
 
     TTsWork = class(TBaseTsWork)
     private
@@ -35,24 +35,23 @@ type
         procedure FreeGrpHelpers;
         function FSMWaitForWeightUnLoadDone: Integer;
         function FSMTestMemory: Integer;
-        function FSMPlayAndCheckMemory(MemNum: Integer): Integer;
         function FSMTestVentSensor: integer;
 
     protected
         mDBX: TDataBox;
 
-        mNextTsWork: TTsWork; // ¿· °øÁ¤
+        mNextTsWork: TTsWork; // ì˜† ê³µì •
 
-        // ----- »óÅÂ ¸Ó½Å º¯¼ö: ·¹°Å½ÃÀÎ XXXProc´Â Á¡ÁøÀû XXXState·Î º¯°æ ÇÊ¿ä
+        // ----- ìƒíƒœ ë¨¸ì‹  ë³€ìˆ˜: ë ˆê±°ì‹œì¸ XXXProcëŠ” ì ì§„ì  XXXStateë¡œ ë³€ê²½ í•„ìš”
         mWorkState: TWorkState;
         mElecState: TElecState;
         mMemTestState: TMemTestState;
 
         mLocalState,
 
-        // Sub FSM ÇÔ¼ö¿ë
-        mInitState, mFuncState, mDTCState, // ¸ğÅÍ ÃÊ±âÀ§Ä¡ Á¤·ÄµîÀÇ ÇÔ¼ö¿¡¼­ »ç¿ë.
-        mOutPosState, // ³³Ç° À§Ä¡¿ë
+        // Sub FSM í•¨ìˆ˜ìš©
+        mInitState, mFuncState, mDTCState, // ëª¨í„° ì´ˆê¸°ìœ„ì¹˜ ì •ë ¬ë“±ì˜ í•¨ìˆ˜ì—ì„œ ì‚¬ìš©.
+        mOutPosState, // ë‚©í’ˆ ìœ„ì¹˜ìš©
         mSpecChkState, mPopState, mVentSensorState: Integer;
 
         mLimitChkState: Integer;
@@ -60,49 +59,50 @@ type
         mJogMvState: Integer;
         mJogMtrIdx: TMotorOrd;
 
-        mSubThLoop: Boolean; // ASyncCalls¿ë ½º·¹µå Flag
+        mSubThLoop: Boolean; // ASyncCallsìš© ìŠ¤ë ˆë“œ Flag
 
         // ------------------------------------------------------
         // --------------------------------------------------------------------
         // DAQ Dev etc..
-        mDevCom: TDevCom; // Áøµ¿ ÃøÁ¤±â¿ë Comport
+        mDevCom: TDevCom; // ì§„ë™ ì¸¡ì •ê¸°ìš© Comport
 
         mRetry: integer;
 
         // DAQ Dev etc..
 
-        mLIO, mDIO: TBaseDIO; // BoardIO, gDIO¿¡ Á¾¼ÓµÇÁö ¾Ê°í TTsWork°øÁ¤ ¸¶´Ù
+        mLIO, mDIO: TBaseDIO; // BoardIO, gDIOì— ì¢…ì†ë˜ì§€ ì•Šê³  TTsWorkê³µì • ë§ˆë‹¤
         mAD: TBaseAD;
         mAO: TBaseAO;
         mAT: TBaseAD;
         mCAN: TBaseCAN;
 
-        // ÀÚÃ¼ ÂüÁ¶ Ãëµæ
+        // ìì²´ ì°¸ì¡° ì·¨ë“
         mDCPower: TDcPower; // TTsWr
         mPop: TPopSystem;
 
         mRetryCount: integer;
 
         // -------------------------------------------------------------------
-        // ¸ğµ¨ Á¤º¸
-        mOldMtrModelType, // ¸ğÅÍ ÄÁÆ®·Ñ·¯ ÀÌÀü ¸ğµ¨ Å¸ÀÔ
+        // ëª¨ë¸ ì •ë³´
+        mOldMtrModelType, // ëª¨í„° ì»¨íŠ¸ë¡¤ëŸ¬ ì´ì „ ëª¨ë¸ íƒ€ì…
         mPreModelType, mCurModelType: TModelType;
         mCurModels: PModels;
         mMdlExData: TMdlExData;
         mMdlNo: Integer;
 
         // --------------------------------------------------------------------
-        // SeatMotor °ü·Ã
+        // SeatMotor ê´€ë ¨
 
         mMainCon: TSeatConnector;
         mExtCon: TSeatConnector;
         mMatCon: TSeatConnector;
         mConnectors: TSeatConnectorList;
 
-        mMoveCtrler: array[TMotorOrd] of TDIODirectMoveCtrler; // Factory ÀüÈ¯ °ËÅä
-        mUDSMoveCtrler: TCANUDSMoveCtrler; // ¸ğÅÍµéÀÌ °øÀ¯
-        mIMSCtrler: TCANIMSCtrler;  // ¶Ç´Â TBaseIMSCtrler
+        mMoveCtrler: array[TMotorOrd] of TDIODirectMoveCtrler; // Factory ì „í™˜ ê²€í† 
+        mUDSMoveCtrler: TCANUDSMoveCtrler; // ëª¨í„°ë“¤ì´ ê³µìœ 
+        mIMSCtrler: TCANIMSCtrler;  // ë˜ëŠ” TBaseIMSCtrler
         mDIOMemCtrler: TDIOMemoryCtrler;
+        mIMSSimCtrler: TSimulIMSCtrler;
 
         mCurMotor: TSeatMotor;
         mMotors: array[TMotorOrd] of TSeatMotor;
@@ -111,22 +111,22 @@ type
 
         // --------------------------------------------------------------------                   a
 
-        // Á¤·Ä½Ã : Çö ¹æÇâ°ú ¹İ´ë ¹æÇâÀÎ °æ¿ìÀÇ ¸ğÅÍ¸¸À» ´ã´Â ¹öÆÛ ¿ëµµ
+        // ì •ë ¬ì‹œ : í˜„ ë°©í–¥ê³¼ ë°˜ëŒ€ ë°©í–¥ì¸ ê²½ìš°ì˜ ëª¨í„°ë§Œì„ ë‹´ëŠ” ë²„í¼ ìš©ë„
         mAlignMotors: array[TMotorOrd] of TSeatMotor;
         mAlignMtrDirs: array[TMotorOrd] of TMotorWayOrd;
         mAlignMtrCount: Integer;
 
         mGrpExt: array[TMotorOrd] of TSeatMtrGrpExtender;
 
-        mFlag: Boolean; // °ø¿ë Flag
+        mFlag: Boolean; // ê³µìš© Flag
 
         // ---------------------------------------------------------------
-        // »ç¾ç Ã¼Å©
+        // ì‚¬ì–‘ ì²´í¬
 
-        mConStatus: Boolean; // Ä¿³ØÅÍ Á¢¼Ó »óÅÂ
-        mIsSpecChkOK: Boolean; // Ä¿³ØÅÍ Á¢¼Ó ¹× »ç¾çÃ¼Å© ¸¸Á·
+        mConStatus: Boolean; // ì»¤ë„¥í„° ì ‘ì† ìƒíƒœ
+        mIsSpecChkOK: Boolean; // ì»¤ë„¥í„° ì ‘ì† ë° ì‚¬ì–‘ì²´í¬ ë§Œì¡±
         mIsCanRcvTimeOut: Boolean;
-        mSkipConChk: Boolean; // Ä¿³ØÅÍ Ã¼Å© ¼ö½Ã °¨½Ã ¸ğµå ÇØÁ¦
+        mSkipConChk: Boolean; // ì»¤ë„¥í„° ì²´í¬ ìˆ˜ì‹œ ê°ì‹œ ëª¨ë“œ í•´ì œ
         mStartSpecChk: Boolean;
 
         // LAN DI
@@ -147,11 +147,11 @@ type
         mFilter: TAPD3;
         mTmpTime: Double;
 
-        // ----- ¸ğÅÍÁ¦¾î¿¡ ÇÊ¿äÇÑ º¯¼öµé
-        mdstRepeat: Integer; // ÇÔ¼ö³»¿¡¼­ ¾Ë¾Æ¼­ ÇÔÀ¸·Î ´Ù¸¥µ¥ »ç¿ë±İÁö
+        // ----- ëª¨í„°ì œì–´ì— í•„ìš”í•œ ë³€ìˆ˜ë“¤
+        mdstRepeat: Integer; // í•¨ìˆ˜ë‚´ì—ì„œ ì•Œì•„ì„œ í•¨ìœ¼ë¡œ ë‹¤ë¥¸ë° ì‚¬ìš©ê¸ˆì§€
         // mdstWay, mdstVtWay: TMotorWayOrd;
 
-        mdstMemRepeat: Integer; // ¸Ş¸ğ¸® ºÒ·®³ª¸é ¹İº¹ µ¿ÀÛ È½¼ö.
+        mdstMemRepeat: Integer; // ë©”ëª¨ë¦¬ ë¶ˆëŸ‰ë‚˜ë©´ ë°˜ë³µ ë™ì‘ íšŸìˆ˜.
         mdstNgRepeat: Integer;
         mdstFlag: BYTE;
         mdstResult: Integer;
@@ -160,14 +160,14 @@ type
 
         // -----
 
-        // Testerµé Ãß°¡
-        mBuckTester: TBuckleTester;     // ¹öÅ¬ °Ë»ç
-        mAPTTester: TResistTester;      // ¾ÓÄ«ÇÇÆ¼ ÀúÇ× °Ë»ç
-        mODSTester: TResistTester;      // ODS ÀúÇ× °Ë»ç
+        // Testerë“¤ ì¶”ê°€
+        mBuckTester: TBuckleTester;     // ë²„í´ ê²€ì‚¬
+        mAPTTester: TResistTester;      // ì•™ì¹´í”¼í‹° ì €í•­ ê²€ì‚¬
+        mODSTester: TResistTester;      // ODS ì €í•­ ê²€ì‚¬
 
-        // ECU Á¤º¸ ÀĞ±â
-        mECUVer: TCanECUVer;        // CAN Åë½ÅÀ¸·Î ECU ¹öÀü ÀĞ±â
-        mECUVerList: TECUVerList;   // ECU ¹öÀü ¸®½ºÆ® °ü¸®.
+        // ECU ì •ë³´ ì½ê¸°
+        mECUVer: TCanECUVer;        // CAN í†µì‹ ìœ¼ë¡œ ECU ë²„ì „ ì½ê¸°
+        mECUVerList: TECUVerList;   // ECU ë²„ì „ ë¦¬ìŠ¤íŠ¸ ê´€ë¦¬.
         mEVItem: PECUVerItem;
 
         mOldCurr: Double;
@@ -177,14 +177,14 @@ type
         mIsModelLoaded, mIsTesting: Boolean;
         mIsDelivering: Boolean;
 
-        mIsPrnDone: Boolean; // ÀÎ¼â ¿Ï·á
-        mIsTestingNG: Boolean; // ÃøÁ¤ Áß NG, Áï½Ã NGÃ³¸® Flag
+        mIsPrnDone: Boolean; // ì¸ì‡„ ì™„ë£Œ
+        mIsTestingNG: Boolean; // ì¸¡ì • ì¤‘ NG, ì¦‰ì‹œ NGì²˜ë¦¬ Flag
 
-        mIsRearDPos: Boolean; // Slide ÈÄ¹æ ³³Ç° À§Ä¡ ¼¾¼­ ¹ŞÀ½ À¯¹«
+        mIsRearDPos: Boolean; // Slide í›„ë°© ë‚©í’ˆ ìœ„ì¹˜ ì„¼ì„œ ë°›ìŒ ìœ ë¬´
 
         mJogDir: TMotorDir;
 
-        mPreDIStr: string; // ÀÓ½Ã
+        mPreDIStr: string; // ì„ì‹œ
 
         mOldEndPosChk: Boolean;
 
@@ -199,7 +199,7 @@ type
 
         mIsConnected: Boolean;
 
-        // ¦¡¦¡¦¡ HV °ü·Ã ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
+        // â”€â”€â”€ HV ê´€ë ¨ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         mHVTester: THVTester;
         mCurHVTest: THVTest;
 
@@ -208,7 +208,7 @@ type
 
         mHVRetryCnt: integer;
 
-        // ¦¡¦¡¦¡ ??? ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
+        // â”€â”€â”€ ??? â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         mPeriodicCanData: TPeriodicCanData;
 
         mCS: TCriticalSection;
@@ -225,7 +225,7 @@ type
 
         function FSMDTCReader: Integer;
 
-        // ¦¡¦¡¦¡ HV °ü·Ã ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
+        // â”€â”€â”€ HV ê´€ë ¨ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         procedure InitHVTester;
         procedure InitHVCanSig(MdlType: TModelType);
@@ -242,15 +242,15 @@ type
         procedure OnRcvedPopData(Sender: TObject; ACommand: Integer);
         function AnalysysRcvDatas(var RcvData, Value: string): Boolean;
 
-        // Event Ã³¸®
+        // Event ì²˜ë¦¬
         procedure UpdateForm(AStatus: TTsModeORD);
 
-        // ÀÛµ¿
+        // ì‘ë™
         procedure RunJogMode;
         procedure LanDIChStatus(Ch: Integer; State: Boolean);
         procedure CheckLimit;
 
-        // SPEC Ã¼Å©  ¹× ÃÊ±âÈ­
+        // SPEC ì²´í¬  ë° ì´ˆê¸°í™”
         function AssignConnector: Boolean;
         function IsSpecChecking: Boolean;
         procedure ShowSpecChkMsg;
@@ -264,8 +264,8 @@ type
         procedure FreeConnectors;
         procedure FreeGrpExtenders;
 
-        // ¸ğÅÍ °Ë»ç  -------------------------------------------------------------------
-        // ¸ğÅÍ »ı¼º ¹× Á¦°Å
+        // ëª¨í„° ê²€ì‚¬  -------------------------------------------------------------------
+        // ëª¨í„° ìƒì„± ë° ì œê±°
         procedure CreateMotors;
         procedure FreeMotors;
         procedure InitMotors;
@@ -274,7 +274,7 @@ type
         procedure SeatMotorTestStatus(Motor: TSeatMotor; TestStatus: TSeatMotorTestStatus);
 
         function FSMCheckSpec: Integer;
-        // ºÎÇÏ ·Îµù ¹× ¾ğ·Îµù À§Ä¡·Î º¸³»±â
+        // ë¶€í•˜ ë¡œë”© ë° ì–¸ë¡œë”© ìœ„ì¹˜ë¡œ ë³´ë‚´ê¸°
 
         function FSMAlignMotor(PwrMoveType: TPwrMtrsMoveType; IsEndPosChk: Boolean = True): Integer;
         function FSMMoveToOutPos: Integer;
@@ -322,7 +322,7 @@ type
         //
         procedure InitMotorsCtrler(MdlType: TModelType);
 
-        // Ä¿³ØÅÍ °áÇÕ ¿©ºÎ Ã¼Å© ½ÃÀÛ¿ë
+        // ì»¤ë„¥í„° ê²°í•© ì—¬ë¶€ ì²´í¬ ì‹œì‘ìš©
         procedure StartDevState4SpecChk;
 
         function IsStartChOn: Boolean; override;
@@ -330,7 +330,7 @@ type
         function IsErrorState: Boolean;
         function IsTesting: Boolean;
         function IsPopLinkMode: Boolean;
-        function IsStableState: Boolean; // ex> ¿· °øÁ¤¿¡¼­ ºí·ÏÅ·(SaveDataµî )ÀÛ¾÷ ÇÏ±â Àü »ç¿ëÇÏÀÚ
+        function IsStableState: Boolean; // ex> ì˜† ê³µì •ì—ì„œ ë¸”ë¡í‚¹(SaveDataë“± )ì‘ì—… í•˜ê¸° ì „ ì‚¬ìš©í•˜ì
 
         function IsElecTestRun: Boolean;
         function IsAuto(): Boolean;
@@ -339,7 +339,7 @@ type
 
         procedure CanRead(Sender: TObject);
 
-        // ¿ÜºÎ ÀåÄ¡ ¹× Ch ¼³Á¤
+        // ì™¸ë¶€ ì¥ì¹˜ ë° Ch ì„¤ì •
         procedure SetLanDIChs(StartAbsCh: Integer);
         procedure SetLanDOChs(StartAbsCh: Integer);
         procedure InitJogChs;
@@ -351,7 +351,7 @@ type
 
         function GetPowerEnable: Boolean;
 
-        // ½Ç½Ã°£ DAQ °ª ÀĞ±â
+        // ì‹¤ì‹œê°„ DAQ ê°’ ì½ê¸°
         function GetMainCurr: Double;
         function GetMotorCurr(Motor: TMotorOrd): Double;
         function GetDistance1: double;
@@ -366,7 +366,7 @@ type
         procedure ShowMsg(Msg, ToDo: string); overload;
         procedure ShowMsg(Msgs, ToDos: array of string; IsAlarm: Boolean = False); overload;
 
-        // »óÅÂ º¸±â
+        // ìƒíƒœ ë³´ê¸°
         procedure ShowProcState; override;
         procedure ShowPopData;
 
@@ -417,7 +417,7 @@ type
         property HVTester: THVTester read mHVTester;
     end;
 
-function GetConnectedSt: TTsWork; // Àü±Ø Á¢¼Ó ¿Ï·áµÈ °øÁ¤, 2°³°¡ ¸ğµÎ Á¢¼ÓµÇ¾ú´Ù¸é Ã¹¹øÂ° °øÁ¤¸¸ ¸®ÅÏ
+function GetConnectedSt: TTsWork; // ì „ê·¹ ì ‘ì† ì™„ë£Œëœ ê³µì •, 2ê°œê°€ ëª¨ë‘ ì ‘ì†ë˜ì—ˆë‹¤ë©´ ì²«ë²ˆì§¸ ê³µì •ë§Œ ë¦¬í„´
 
 var
     gTsPwrWorks: array[0..ord(High(TStationID))] of TTsWork;
@@ -426,10 +426,10 @@ implementation
 
 uses
     Forms, Dialogs, Log, LanIoUnit, LOTNO, Math, Rs232, Work, DataUnitHelper,
-    TypInfo, UDSDef, ClipBrd, LangTran, MsgForm, UDSCarConfig, PCANBasic;
+    TypInfo, UDSDef, ClipBrd, LangTran, MsgForm, UDSCarConfig, CANFDPreset;
 
 const
-    _CAN_TIME_OUT = 0.3; // ÀÏ¹İÀûÀÎ ÀÀ´ä´ë±â
+    _CAN_TIME_OUT = 0.3; // ì¼ë°˜ì ì¸ ì‘ë‹µëŒ€ê¸°
     _RELAY_AFTER_RUN_DELAY = 250;
     _MEM_DELAY = 1.0;
 
@@ -492,7 +492,9 @@ begin
     CreateMotors;
     CreateHVTester;
 
-    // ¹öÅ¬ Å×½ºÅÍ »ı¼º
+    InitJogChs;
+
+    // ë²„í´ í…ŒìŠ¤í„° ìƒì„±
     mBuckTester := TBuckleTester.Create(mDIO, mAD, -1, -1);
     mAPTTester := TResistTester.Create(0, mAT);
     mODSTester := TResistTester.Create(0, mAT);
@@ -500,7 +502,7 @@ begin
     mSubThLoop := True;
     mIsCanRcvTimeOut := True;
 
-    // HI ¿îÀü¼® ±âÁØ
+    // HI ìš´ì „ì„ ê¸°ì¤€
     mDTCReader := TDTCReader.Create(mCAN, $706, $726);
     mECUVer := TCanECUVer.Create(mCAN, $706, $726, [evtPartNo, evtOemSW, evtOemHW]);
 
@@ -508,8 +510,8 @@ begin
 
     if not mECUVerList.Load(GetEnvPath('ECUVerList.ini')) then
     begin
-        gLog.ERROR('ECUVerList.ini ÆÄÀÏ ÀĞ±â ½ÇÆĞ', []);
-        // ShowError('ECUVerList.ini ÆÄÀÏÀÌ Env Æú´õ °æ·Î¿¡ ¾ø½À´Ï´Ù', 'ECU Ver ¸ñ·ÏÀ» ¼³Á¤¿¡¼­ ÀçÀÛ¼º ÇÏ¼¼¿ä');
+        gLog.ERROR('ECUVerList.ini íŒŒì¼ ì½ê¸° ì‹¤íŒ¨', []);
+        // ShowError('ECUVerList.ini íŒŒì¼ì´ Env í´ë” ê²½ë¡œì— ì—†ìŠµë‹ˆë‹¤', 'ECU Ver ëª©ë¡ì„ ì„¤ì •ì—ì„œ ì¬ì‘ì„± í•˜ì„¸ìš”');
     end;
 
     mPeriodicCanData := TPeriodicCanData.Create(CAN, mCurModelType.GetCarType);
@@ -551,7 +553,7 @@ begin
         mDIO.SetIO(_DIO_OUT_START + i, False);
     end;
 
-    gLog.Panel('%s: Destroy', [Name]); // Name¿¡¼­ mDBXÂüÁ¶ÇÏ¹Ç·Î À§Ä¡ °íÁ¤!
+    gLog.Panel('%s: Destroy', [Name]); // Nameì—ì„œ mDBXì°¸ì¡°í•˜ë¯€ë¡œ ìœ„ì¹˜ ê³ ì •!
 
     FreeAndNil(mDBX);
 
@@ -573,7 +575,9 @@ begin
     FreeAndNil(mECUVer);
     FreeAndNil(mECUVerList);
     FreeAndNil(mHVTester);
+
     FreeAndNil(mDIOMemCtrler);
+    FreeAndNil(mIMSSimCtrler);
 
     for DevType := Low(THVDevType) to High(THVDevType) do
     begin
@@ -604,7 +608,7 @@ begin
 
 end;
 
-procedure TTsWork.CanRead(Sender: TObject); // ¼ö½ÅµÇ´Â Can ÆĞÅ¶ÀÌ ÀÖÀ¸¸é ÁÖ±â ¼Û½Å
+procedure TTsWork.CanRead(Sender: TObject); // ìˆ˜ì‹ ë˜ëŠ” Can íŒ¨í‚·ì´ ìˆìœ¼ë©´ ì£¼ê¸° ì†¡ì‹ 
 var
     PosState: Byte;
 begin
@@ -621,10 +625,10 @@ begin
                 begin
                 end;
 
-            $42C:   // RL Æúµù/¾ğÆúµù, ¿öÅ©ÀÎ »óÅÂ(?)
+            $42C:   // RL í´ë”©/ì–¸í´ë”©, ì›Œí¬ì¸ ìƒíƒœ(?)
                 begin
                 end;
-            $42D:    // RR Æúµù/¾ğÆúµù, ¿öÅ©ÀÎ »óÅÂ(?)
+            $42D:    // RR í´ë”©/ì–¸í´ë”©, ì›Œí¬ì¸ ìƒíƒœ(?)
                 begin
                 end;
         end;
@@ -639,7 +643,7 @@ begin
     begin
         if CANFrame.Compare(0, [$03, $7F, $2F], 3) then
         begin
-            gLog.Error('%s: ECU ¿À·ù ¼ö½Å: %s', [Name, CANFrame.ToStr]);
+            gLog.Error('%s: ECU ì˜¤ë¥˜ ìˆ˜ì‹ : %s', [Name, CANFrame.ToStr]);
         end;
     end;
 
@@ -687,49 +691,50 @@ begin
 
         mCAN.Close;
 
-        // ¸ğµ¨ Å¸ÀÔ¿¡ µû¸¥ Ä¿³ØÅÍ ÆÄÀÏ º¯°æ
+        // ëª¨ë¸ íƒ€ì…ì— ë”°ë¥¸ ì»¤ë„¥í„° íŒŒì¼ ë³€ê²½
         case mCurModelType.GetCarType of
             ctJG1:
                 begin
                     ConnectorFileName := 'JG1_Connector.json';
                     mCAN.UseFD := true;
-                    mCAN.PreScaleStr := CLASSIC_S_POINT_80_1_PRESET;
+                    mCAN.Preset.FromStr(FD_S_POINT_80_PRESET_1);
                     mCAN.Open(0, 500);
                 end;
             ctRJ1:
                 begin
                     ConnectorFileName := 'RJ1_Connector.json';
                     mCAN.UseFD := true;
-                    mCAN.PreScaleStr := CLASSIC_S_POINT_80_1_PRESET;
+                    mCAN.Preset.FromStr(CLASSIC_S_POINT_80_1_PRESET);
                     mCAN.Open(0, 500);
                 end;
             ctHI:
                 begin
                     ConnectorFileName := 'HI_Connector.json';
                     mCAN.UseFD := true;
-                    mCAN.PreScaleStr := FD_S_POINT_80_PRESET_1;
+                    mCAN.Preset.FromStr(CLASSIC_S_POINT_80_1_PRESET);
                     mCAN.Open(0, 100);
                 end;
         end;
 
-        // ÇØ´ç ¸ğµ¨ÀÇ Ä¿³ØÅÍ ÆÄÀÏ ·Îµå
+        // í•´ë‹¹ ëª¨ë¸ì˜ ì»¤ë„¥í„° íŒŒì¼ ë¡œë“œ
         if not gConMan.Load(GetEnvPath(ConnectorFileName)) then
         begin
-            gLog.Error('Ä¿³ØÅÍ Á¤º¸ ÆÄÀÏ:%s ¿­±â ½ÇÆĞ', [ConnectorFileName]);
-            SetError(Format('Ä¿³ØÅÍ Á¤º¸ ÆÄÀÏ %s ¿­±â ½ÇÆĞ', [ConnectorFileName]), Format('EnvÆú´õ³» %s ÆÄÀÏÀÌ ÀÖ´ÂÁö È®ÀÎÇÏ¼¼¿ä', [ConnectorFileName]));
+            gLog.Error('ì»¤ë„¥í„° ì •ë³´ íŒŒì¼:%s ì—´ê¸° ì‹¤íŒ¨', [ConnectorFileName]);
+            SetError(Format('ì»¤ë„¥í„° ì •ë³´ íŒŒì¼ %s ì—´ê¸° ì‹¤íŒ¨', [ConnectorFileName]), Format('Enví´ë”ë‚´ %s íŒŒì¼ì´ ìˆëŠ”ì§€ í™•ì¸í•˜ì„¸ìš”', [ConnectorFileName]));
             Exit;
         end;
 
-        gLog.Panel('%s: Ä¿³ØÅÍ ÆÄÀÏ ·Îµå ¼º°ø: %s', [Name, ConnectorFileName]);
+        gLog.Panel('%s: ì»¤ë„¥í„° íŒŒì¼ ë¡œë“œ ì„±ê³µ: %s', [Name, ConnectorFileName]);
 
         MdlNo := gModels.FindModel(mCurModelType, Mask);
         if MdlNo > 0 then
         begin
-            gLog.Panel('%s: °øÁ¤ MODEL %d -> %d(0x%X)', [Name, gModels.GetModelNo(StationID), MdlNo, ATypeBits]);
+            gLog.Panel('%s: ê³µì • MODEL %d -> %d(0x%X)', [Name, gModels.GetModelNo(StationID), MdlNo, ATypeBits]);
+            mCurModels := gModels.GetPModels(MdlNo);
 
-            gModels.SelectModel(StationID, MdlNo); // ¸ğµ¨ No ¼³Á¤
-            mDBX.SetModel(gModels.CurrentModel(StationID)); // Çö °øÁ¤¿¡ ¸ğµ¨ ¼³Á¤
-            RsBuf.rModel.rTypes := mCurModelType; // ¸ğµ¨»ç¾çÀº °øÁ¤º°·Î ´Ù¸£´Ï º°µµ·Î ¼³Á¤, Ä¿³ØÅÍ Ã¼°áÈ®ÀÎ¿¡ ¸ğµ¨ÂüÁ¶¸¦ À§ÇØ ¼³Á¤ÇØ¾ß ÇÔ.
+            gModels.SelectModel(StationID, MdlNo); // ëª¨ë¸ No ì„¤ì •
+            mDBX.SetModel(gModels.CurrentModel(StationID)); // í˜„ ê³µì •ì— ëª¨ë¸ ì„¤ì •
+            RsBuf.rModel.rTypes := mCurModelType; // ëª¨ë¸ì‚¬ì–‘ì€ ê³µì •ë³„ë¡œ ë‹¤ë¥´ë‹ˆ ë³„ë„ë¡œ ì„¤ì •, ì»¤ë„¥í„° ì²´ê²°í™•ì¸ì— ëª¨ë¸ì°¸ì¡°ë¥¼ ìœ„í•´ ì„¤ì •í•´ì•¼ í•¨.
 
             AssignConnector;
 
@@ -737,9 +742,11 @@ begin
 
             if not IsRun then
                 mLIO.SetIO(mLDOChs.mTestReady, False);
-            // °è¼Ó ONµÇ´Â °æ¿ì ¹æÁöÀ§ÇØ ¸ğµ¨ º¯°æ½Ã OFFÃ³¸® : °ËÁõ ÇÊ¿ä
+            // ê³„ì† ONë˜ëŠ” ê²½ìš° ë°©ì§€ìœ„í•´ ëª¨ë¸ ë³€ê²½ì‹œ OFFì²˜ë¦¬ : ê²€ì¦ í•„ìš”
 
-            SendToForm(gUsrMsg, SYS_MODEL, mDBX.Tag); // UI Àû¿ë
+            SendToForm(gUsrMsg, SYS_MODEL, mDBX.Tag); // UI ì ìš©
+
+            //Initial(True);
 
             gLog.Panel('%s: MODEL : %s', [Name, RsBuf.rModel.rTypes.ToStr()]);
         end
@@ -747,7 +754,7 @@ begin
         begin
             mIsModelChange := False;
             gModels.SelectModel(StationID, -1);
-            gLog.Panel('%s: °øÁ¤ ÇØ´ç MODEL ¾øÀ½(0x%X & 0x%X(Mask) = 0x%X)', [Name, ATypeBits, Mask, Mask and ATypeBits]);
+            gLog.Panel('%s: ê³µì • í•´ë‹¹ MODEL ì—†ìŒ(0x%X & 0x%X(Mask) = 0x%X)', [Name, ATypeBits, Mask, Mask and ATypeBits]);
         end;
 
     end;
@@ -771,15 +778,15 @@ end;
 procedure TTsWork.SetMainCurrZero;
 begin
     inherited;
-  // ¸ŞÀÎ Àü·ù¸¦ 0À¸·Î ¼³Á¤ÇÏ´Â ·ÎÁ÷
+  // ë©”ì¸ ì „ë¥˜ë¥¼ 0ìœ¼ë¡œ ì„¤ì •í•˜ëŠ” ë¡œì§
     if Assigned(mAD) then
     begin
         mAD.SetZeros(AI_MAIN_CURR, AI_MAIN_CURR);
-        gLog.Debug('%s: ¸ŞÀÎ Àü·ù ÇÉ ZERO', [Name]);
+        gLog.Debug('%s: ë©”ì¸ ì „ë¥˜ í•€ ZERO', [Name]);
     end;
 
-    // ¶Ç´Â ÀÌ¹Ì ÀÖ´Â ¸Ş¼­µå È£Ãâ
-    // SetMotorCurrPinsToZero;  // ÀÌ¹Ì ±¸ÇöµÈ ¸Ş¼­µå°¡ ÀÖ´Ù¸é
+    // ë˜ëŠ” ì´ë¯¸ ìˆëŠ” ë©”ì„œë“œ í˜¸ì¶œ
+    // SetMotorCurrPinsToZero;  // ì´ë¯¸ êµ¬í˜„ëœ ë©”ì„œë“œê°€ ìˆë‹¤ë©´
 
 end;
 
@@ -787,7 +794,7 @@ procedure TTsWork.SetMotorCurrPinsToZero;
 begin
     //mAD.SetZeros(AI_MTR_CURR_START, AI_MTR_CURR_START + MAX_SW_PIN_COUNT - 1);
 
-    gLog.Debug('%s: Ä¿³ØÅÍ Àü·ù ÇÉ ZERO', [Name]);
+    gLog.Debug('%s: ì»¤ë„¥í„° ì „ë¥˜ í•€ ZERO', [Name]);
 end;
 
 procedure TTsWork.InitJogChs;
@@ -818,6 +825,8 @@ begin
     mMtrSwivel := TSeatMotor.Create(tmSwivel, mUDSMoveCtrler, mAD, [AI_MOTOR_CURR, AI_MOTOR_CURR, AI_NOISE]);
 
     mIMSCtrler := TCANIMSCtrler.Create(mCAN, _UDS_MSG_2GEN_TAGET_PSM_ID, _UDS_MSG_2GEN_RESP_PSM_ID, $12A3);
+    mDIOMemCtrler := TDIOMemoryCtrler.Create(mCAN, mDIO, DO_IMS_SET, DO_IMS_SW1, DO_IMS_SW2, _UDS_MSG_2GEN_TAGET_PSM_ID, _UDS_MSG_2GEN_RESP_PSM_ID, $12A3);
+    mIMSSimCtrler := TSimulIMSCtrler.Create(mCAN);
 
     mMtrOper := TSeatMotorOper.Create(@mLstError, @mLstToDo);
 
@@ -870,7 +879,7 @@ begin
     i := 0;
     for It := Low(TMotorOrd) to MtrOrdHi do
     begin
-        gLog.Panel('GrpExt[%s] = Grps[%d] ¿¬°á', [GetMotorName(It), i]);
+        gLog.Panel('GrpExt[%s] = Grps[%d] ì—°ê²°', [GetMotorName(It), i]);
         mGrpExt[It] := TSeatMtrGrpExtender.Create(Grps[i]);
         Inc(i);
     end;
@@ -883,7 +892,7 @@ begin
     mHVSimCtrlers[hvdHeatPsg] := THVSimulCtrler.Create(3, 1);
     mHVSimCtrlers[hvdVentPsg] := THVSimulCtrler.Create(1.5);
 
-    // Remote HV Ctrl »ç¿ë½Ã È°¼º
+    // Remote HV Ctrl ì‚¬ìš©ì‹œ í™œì„±
     mHVCANCtrlers[hvdHeatDrv] := THVCmdTypeCanCtrler.Create(mCAN, TCANSignal.Create($08B, 2, 4, 4), TCANSignal.Create($140, 4, 5, 3), mAD, AI_SHVU1);
     mHVCANCtrlers[hvdVentDrv] := THVCmdTypeCanCtrler.Create(mCAN, TCANSignal.Create($08B, 2, 4, 4), TCANSignal.Create($140, 4, 2, 3), mAD, AI_SHVU1);
     mHVCANCtrlers[hvdHeatPsg] := THVCmdTypeCanCtrler.Create(mCAN, TCANSignal.Create($08B, 2, 0, 4), TCANSignal.Create($14C, 3, 3, 4), mAD, AI_SHVU1);
@@ -957,6 +966,7 @@ procedure TTsWork.InitMotorsCtrler(MdlType: TModelType);
 var
     It: TMotorOrd;
     IsInit, IsIMSChanged, IsDrvPosChanged: boolean;
+    IMSCtrler: TCANIMSCtrler;
 begin
     IsInit := not mOldMtrModelType.IsIMS and not MdlType.IsIMS;
     IsIMSChanged := (mOldMtrModelType.IsIMS <> MdlType.IsIMS) or IsInit;
@@ -972,41 +982,38 @@ begin
     mMotors[tmLegSupt].Use := RsBuf.rModel.rTypes.IsLegSuptExists;
     mMotors[tmSwivel].Use := RsBuf.rModel.rTypes.isSwivelExists;
 
-    mIMSCtrler.Free;
-
 {$IFDEF VIRTUALIO}
-    mIMSCtrler := TSimulIMSCtrler.Create(mCAN);
+    IMSCtrler := mIMSSimCtrler;
 {$ELSE}
     if MdlType.IsRJ1 and MdlType.IsPsgPos then
     begin
-        mIMSCtrler := TDIOMemoryCtrler.Create(mCAN, mDIO, DO_IMS_SET, DO_IMS_SW1, DO_IMS_SW2, _UDS_MSG_2GEN_TAGET_PSM_ID, _UDS_MSG_2GEN_RESP_PSM_ID, $12A3);
+        IMSCtrler := mDIOMemCtrler;
+        gLog.Panel('DIOMem Ctrl ì…‹íŒ…');
     end
     else
-    begin
-
-        mIMSCtrler := TCANIMSCtrler.Create(mCAN, _UDS_MSG_2GEN_TAGET_PSM_ID, _UDS_MSG_2GEN_RESP_PSM_ID, $12A3);
-    end;
-
+        IMSCtrler := mIMSCtrler;
 {$ENDIF}
 
-    // IMSCtrler´Â 1°³ ÀÎ½ºÅÏ½º·Î »ç¿ë, ¿îÀü/Á¶¼ö¼®¿¡ µû¶ó ÆÄ¶ó¹ÌÅÍ¸¸ º¯°æ
+    // IMSCtrlerëŠ” 1ê°œ ì¸ìŠ¤í„´ìŠ¤ë¡œ ì‚¬ìš©, ìš´ì „/ì¡°ìˆ˜ì„ì— ë”°ë¼ íŒŒë¼ë¯¸í„°ë§Œ ë³€ê²½
     for It := Low(TMotorOrd) to High(TMotorOrd) do
     begin
         mMotors[It].IsIMS := MdlType.IsIMS;
     end;
 
-    TUDSCarConfigurator.SetupCANIDs(mIMSCtrler, mUDSMoveCtrler, MdlType.GetCarType, MdlType.IsDrvPos);
+    TUDSCarConfigurator.SetupCANIDs(IMSCtrler, mUDSMoveCtrler, MdlType.GetCarType, MdlType.IsDrvPos);
     TUDSCarConfigurator.SetUpUDSMoveData(mUDSMoveCtrler, MdlType.GetCarType, MdlType.IsIMS);
 
     if mCurModelType.IsRJ1 and (not mCurModelType.IsIMS) then
-        mUDSMoveCtrler.AdvenceType := True;
+        mUDSMoveCtrler.AdvenceType := True
+    else
+        mUDSMoveCtrler.AdvenceType := false;
 
     if MdlType.IsIMS then
     begin
         if MdlType.IsDrvPos then
-            mIMSCtrler.RCID.Create($12A3)
+            IMSCtrler.RCID.Create($12A3)
         else
-            mIMSCtrler.RCID.Create($12A5);
+            IMSCtrler.RCID.Create($12A5);
     end;
 
     /// /////////////////////////////////////////
@@ -1020,7 +1027,7 @@ begin
 
             mMotors[It].MoveCtrler.Enabled := false;
             mMotors[It].MoveCtrler := mUDSMoveCtrler;
-            mMotors[It].IMSCtrler := mIMSCtrler;
+            mMotors[It].IMSCtrler := IMSCtrler;
             mMotors[It].MoveCtrler.Enabled := true;
         end;
     end;
@@ -1104,7 +1111,7 @@ begin
 
                 end;
 
-                gLog.Panel('HI PE HV Sig ¼³Á¤ ¿Ï·á');
+                gLog.Panel('HI PE HV Sig ì„¤ì • ì™„ë£Œ');
 
             end;
 
@@ -1133,18 +1140,18 @@ var
 begin
     with mDBX do
     begin
-        // »ç¾çº° ¸ğÅÍ Àü·ù, Ctrler¼³Á¤,
+        // ì‚¬ì–‘ë³„ ëª¨í„° ì „ë¥˜, Ctrlerì„¤ì •,
         InitMotorsCtrler(RsBuf.rModel.rTypes);
 
         TimeParam.mMoveGapTime := 1.5;
-        TimeParam.mMoveCheckTime := 1.5;
-        TimeParam.mReadDelayTime := 1.5;
+        TimeParam.mMoveCheckTime := 1.0;
+        TimeParam.mReadDelayTime := 1.0;
 
         for MtrIt := Low(TMotorOrd) to MtrOrdHi do
         begin
             MtrCnst := mCurModels.rConstraints[MtrIt];
 
-            mGrpExt[MtrIt].Param.Create(mMotors[MtrIt].MoveCurrRange,  // ÃÖ¼Ò ~ ±¸¼Ó(LockDir)
+            mGrpExt[MtrIt].Param.Create(mMotors[MtrIt].MoveCurrRange,  // ìµœì†Œ ~ êµ¬ì†(LockDir)
                 RsBuf.rModel.rSpecs.rMotors[MtrIt].rTime, RsBuf.rModel.rSpecs.rMotors[MtrIt].rCurr, RsBuf.rModel.rSpecs.rMotors[MtrIt].rInitNoiseTime, RsBuf.rModel.rSpecs.rMotors[MtrIt].rInitNoise, RsBuf.rModel.rSpecs.rMotors[MtrIt].rRunNoise, MtrCnst.rStroke);
 
             mGrpExt[MtrIt].Param.mNoiseExcludeSec.Create(gSysEnv.rSoundProof.rNoiseCollectStart, gSysEnv.rSoundProof.rNoiseCollectEnd);
@@ -1153,7 +1160,7 @@ begin
             mGrpExt[MtrIt].ShowCurrSpec := IsTested(tsCurr);
             mGrpExt[MtrIt].ShowNoiseSpec := IsTested(tsNoise);
 
-            mMotors[MtrIt].SetMoveParam(MtrCnst.rLockedCurr, MtrCnst.rMaxTime);     // ¸ğÅÍº° ±¸¼ÓÀü·ù, ±¸¼Ó½Ã°£
+            mMotors[MtrIt].SetMoveParam(MtrCnst.rLockedCurr, MtrCnst.rMaxTime);     // ëª¨í„°ë³„ êµ¬ì†ì „ë¥˜, êµ¬ì†ì‹œê°„
             mMotors[MtrIt].Use := IsTested(MotorORd2TsOrd(MtrIt));
             mMotors[MtrIt].SetOffset(mCurModels.rMtrOffset[Ord(StationID)].rVals[MtrIt, twForw].rCurr, mCurModels.rMtrOffset[Ord(StationID)].rVals[MtrIt, twBack].rCurr);
             mMotors[MtrIt].mTotRepeatCount := GetBurnishingCount(mMotors[MtrIt]);
@@ -1164,11 +1171,11 @@ begin
 
             if mCurModelType.IsIMS then
             begin
-                mMotors[MtrIt].IsHLimitSet := True;
+                mMotors[MtrIt].IsHLimitSet := false;
             end
         end;
 
-        gLog.Panel('¸ğÅÍ »ç¿ë: S:%s, T:%s, H:%s, C:%s, SW: %s', [BoolToStr(mMotors[tmSlide].Use, true), BoolToStr(mMotors[tmTilt].Use, true), BoolToStr(mMotors[tmHeight].Use, true), BoolToStr(mMotors[tmLegSupt].Use, true), BoolToStr(mMotors[tmSwivel].Use, true)]);
+        gLog.Panel('ëª¨í„° ì‚¬ìš©: S:%s, T:%s, H:%s, C:%s, SW: %s', [BoolToStr(mMotors[tmSlide].Use, true), BoolToStr(mMotors[tmTilt].Use, true), BoolToStr(mMotors[tmHeight].Use, true), BoolToStr(mMotors[tmLegSupt].Use, true), BoolToStr(mMotors[tmSwivel].Use, true)]);
     end;
 end;
 
@@ -1210,8 +1217,8 @@ begin
             if mDCPower <> nil then
             begin
                 // mDIO.SetIO(DO_SPEC_MX5A, False);
-                mDCPower.PowerOFF(True); // ºñ»óÁ¤Áö½Ã
-                gLog.Panel('ºñ»ó Á¤Áö!!');
+                mDCPower.PowerOFF(True); // ë¹„ìƒì •ì§€ì‹œ
+                gLog.Panel('ë¹„ìƒ ì •ì§€!!');
             end;
 
             UpdateForm(tw_EMERGY);
@@ -1226,7 +1233,7 @@ begin
         if State then
         begin
 
-            gLog.Panel('%s: ºñ»ó Á¤Áö!!', [Name]);
+            gLog.Panel('%s: ë¹„ìƒ ì •ì§€!!', [Name]);
             UpdateForm(tw_EMERGY);
         end
         else
@@ -1337,7 +1344,7 @@ begin
     case CtrlerType of
         ctSimul:
             begin
-                gLog.Panel('%s: HV Simul ¼³Á¤', [Name]);
+                gLog.Panel('%s: HV Simul ì„¤ì •', [Name]);
                 for i := Low(THVDevType) to High(THVDevType) do
                 begin
                     mHVSimCtrlers[i].Name := 'SIM' + IntToStr(ord(i));
@@ -1346,7 +1353,7 @@ begin
             end;
         ctDIO:
             begin
-                gLog.Panel('%s: HV DIO ¼³Á¤', [Name]);
+                gLog.Panel('%s: HV DIO ì„¤ì •', [Name]);
                 for i := Low(THVDevType) to High(THVDevType) do
                 begin
                     //
@@ -1395,7 +1402,7 @@ begin
     if gSysEnv.rElec.rHV.rUseSwZeroCurr then
         mHVTester.SetZero;
 
-    // Àü·ù Å×½ºÆ® ºñÈ°¼ºÈ­
+    // ì „ë¥˜ í…ŒìŠ¤íŠ¸ ë¹„í™œì„±í™”
     mHVTester.HDrvTest.UseCurrTest := true;
     mHVTester.VDrvTest.UseCurrTest := true;
     mHVTester.HPsgTest.UseCurrTest := False;
@@ -1427,6 +1434,7 @@ begin
     mFuncState := 0;
     mOutPosState := 0;
     mInitState := 0;
+    mMemTestState := _MEM_INIT;
 
     mdstRepeat := 0;
     mdstNgRepeat := 0;
@@ -1454,14 +1462,14 @@ begin
     {
       if not DevCom.IsOpen and not DevCom.Open then
       begin
-      SetError(Format('%s(COM%d) Åë½Å Æ÷Æ® ¿­±â ½ÇÆĞ', [GetDevComName(DevCom.DevID), DevCom.Port]), 'Åë½Å Æ÷Æ®¹× ¹è¼±À» Á¡°ËÇÏ¼¼¿ä');
+      SetError(Format('%s(COM%d) í†µì‹  í¬íŠ¸ ì—´ê¸° ì‹¤íŒ¨', [GetDevComName(DevCom.DevID), DevCom.Port]), 'í†µì‹  í¬íŠ¸ë° ë°°ì„ ì„ ì ê²€í•˜ì„¸ìš”');
       end;
     }
 
 
     if not mCAN.IsOpen then
     begin
-        gLog.Panel('CANÀÌ ¿­¸®Áö ¾Ê¾Ò½À´Ï´Ù.');
+        gLog.Panel('CANì´ ì—´ë¦¬ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.');
     end;
 
 
@@ -1481,11 +1489,11 @@ begin
             begin
                 mPop.ClearRcvDatas();
                 mPop.AddData(nil, SYS_REQ_MODEL, '');
-                gLog.Panel('POP Data ¿äÃ»', []);
+                gLog.Panel('POP Data ìš”ì²­', []);
             end
             else if IsConnected and IsExists then
             begin
-                gLog.Panel('POP ¼ö½Å ¼³Á¤: %s, %s', [GetPartNo, GetLotNo]);
+                gLog.Panel('POP ìˆ˜ì‹  ì„¤ì •: %s, %s', [GetPartNo, GetLotNo]);
                 mDBX.SetData(roPartNo, GetPartNo);
                 mDBX.SetData(roLotNo, GetLotNo);
             end;
@@ -1527,7 +1535,7 @@ begin
     if IsPopLinkMode then
         gLog.Panel('%s: initial(%s, %s, %s)', [Name, RsBuf.rModel.rTypes.GetCarTypeStr, mPop.rcvPartNo, mPop.rcvPalletNo])
     else
-        gLog.Panel('%s: initial(´Üµ¿: %s)', [Name, RsBuf.rModel.rTypes.GetCarTypeStr]);
+        gLog.Panel('%s: initial(ë‹¨ë™: %s)', [Name, RsBuf.rModel.rTypes.GetCarTypeStr]);
 
     mAPTTester.Init;
     mODSTester.Init;
@@ -1604,7 +1612,6 @@ begin
     Result := Result / 10;
 end;
 
-
 procedure TTsWork.SaveResult;
 var
     IsOK: Boolean;
@@ -1620,8 +1627,8 @@ begin
     SaveGraphDatas(mDBX.GetGraphTime, mGrpExt[tmSlide].Graph);
     SaveGraphDatas(mDBX.GetGraphTime, mGrpExt[tmTilt].Graph);
     SaveGraphDatas(mDBX.GetGraphTime, mGrpExt[tmHeight].Graph);
-//    if RsBuf.rModel.rTypes.IsCushExtExists then
-//        SaveGraphDatas(mDBX.GetGraphTime, mGrpExt[tmCushExt].Graph);
+    SaveGraphDatas(mDBX.GetGraphTime, mGrpExt[tmLegSupt].Graph);
+    SaveGraphDatas(mDBX.GetGraphTime, mGrpExt[tmSwivel].Graph);
 
     mDBX.SetData(roPartNo, mPop.GetPartNo);
     mDBX.SetData(roLotNo, mPop.GetLotNo);
@@ -1671,7 +1678,7 @@ begin
     mDCPower.SetVolt(gSysEnv.rOP.rTest.rVolt);
     mSpecChkTC.Start(1000 * 5);
     UpdateForm(tw_SPEC_CHK_START);
-    gLog.Panel('%s: »ç¾ç DO ¹× ÃÖ¼Ò ´ë±â Àü·ù ¼³Á¤: %0.1f(A)..', [Name, gSysEnv.rOP.rTest.rSpecCurr]);
+    gLog.Panel('%s: ì‚¬ì–‘ DO ë° ìµœì†Œ ëŒ€ê¸° ì „ë¥˜ ì„¤ì •: %0.1f(A)..', [Name, gSysEnv.rOP.rTest.rSpecCurr]);
 end;
 
 procedure TTsWork.Stop(IsForce: Boolean);
@@ -1732,6 +1739,8 @@ begin
     if Assigned(mDevCom) then
         mDevCom.Close;
 
+    gDCPower.Items[0].PowerOFF(true);
+
     mSkipConChk := False;
 end;
 
@@ -1758,7 +1767,7 @@ begin
 
                 if RsBuf.rModel.rTypes.IsIMS then
                 begin
-                    gLog.Panel('%s: IMS ¸ğÅÍ Á¤·Ä', [Name]);
+                    gLog.Panel('%s: IMS ëª¨í„° ì •ë ¬', [Name]);
                     mFuncState := 5;
                 end
                 else
@@ -1766,30 +1775,30 @@ begin
                     case PwrMoveType of
                         pmtEach:
                             begin
-                                gLog.Panel('%s: PWR ¸ğÅÍ °³º° Á¤·Ä', [Name]);
+                                gLog.Panel('%s: PWR ëª¨í„° ê°œë³„ ì •ë ¬', [Name]);
                                 mFuncState := 1;
                             end;
                         pmtSameTime:
                             begin
-                                gLog.Panel('%s: PWR ¸ğÅÍ µ¿½Ã Á¤·Ä', [Name]);
+                                gLog.Panel('%s: PWR ëª¨í„° ë™ì‹œ ì •ë ¬', [Name]);
                                 mFuncState := 2;
                             end;
 
                         pmtGroup:
                             begin
-                                gLog.Panel('%s: PWR ¸ğÅÍ ±×·ìº° Á¤·Ä', [Name]);
+                                gLog.Panel('%s: PWR ëª¨í„° ê·¸ë£¹ë³„ ì •ë ¬', [Name]);
                                 mFuncState := 3;
                             end;
                         pmtInterval:
                             begin
-                                gLog.Panel('%s: PWR ¸ğÅÍ ½ÃÂ÷ Á¤·Ä', [Name]);
+                                gLog.Panel('%s: PWR ëª¨í„° ì‹œì°¨ ì •ë ¬', [Name]);
                                 mFuncState := 4;
 
                             end;
                     end;
                 end;
             end;
-        1: // PWR °³º°
+        1: // PWR ê°œë³„
             begin
                 case mMtrOper.FSMMove(True) of
                     -1:
@@ -1819,7 +1828,7 @@ begin
                 end;
             end;
 
-        3: // ±×·ì
+        3: // ê·¸ë£¹
             begin
                 case mMtrOper.FSMMove([mMtrTilt, mMtrHeight], [mMtrSlide, mMtrLegSupt]) of
                     -1:
@@ -1833,7 +1842,7 @@ begin
                         end;
                 end;
             end;
-        4: // ½ÃÂ÷
+        4: // ì‹œì°¨
             begin
                 case mMtrOper.FSMMove(0.4) of
                     -1:
@@ -1849,7 +1858,7 @@ begin
 
             end;
 
-        5: // IMS °³º°
+        5: // IMS ê°œë³„
             begin
                 case mMtrOper.FSMMove(True) of
                     -1:
@@ -1873,7 +1882,7 @@ begin
         0:
             begin
                 mMtrSlide.ClearFSM;
-                mMtrSlide.IsEndPosChk := False; // ±¸¼ÓÀü·ù ¹Ì¹ß»ıÀ» ³¡´Ü ÆÇ´Ü Á¶°Ç Àá½Ã ¹«½Ã
+                mMtrSlide.IsEndPosChk := False; // êµ¬ì†ì „ë¥˜ ë¯¸ë°œìƒì„ ëë‹¨ íŒë‹¨ ì¡°ê±´ ì ì‹œ ë¬´ì‹œ
                 Inc(mFuncState);
             end;
         1:
@@ -1907,18 +1916,18 @@ begin
             begin
                 if mIMSCtrler.EnableRCReq then
                 begin
-                    gLog.Panel('%s: Routine Control Enable ¿äÃ»', [Name]);
-                    mDelayTC.Start(200); // Â÷Á¾¿¡ µû¶ó µô·¹ÀÌ ÇÊ¿ä
+                    gLog.Panel('%s: Routine Control Enable ìš”ì²­', [Name]);
+                    mDelayTC.Start(200); // ì°¨ì¢…ì— ë”°ë¼ ë”œë ˆì´ í•„ìš”
                     Inc(mFuncState);
                 end
                 else
                 begin
-                    gLog.Error('%s: RC Enable ¿äÃ» ½ÇÆĞ', [Name]);
-                    SetError('¸®¹ÌÆ® È°¼ºÈ­ ½ÇÆĞ', 'CAN Åë½ÅÀ» È®ÀÎÇÏ¼¼¿ä');
+                    gLog.Error('%s: RC Enable ìš”ì²­ ì‹¤íŒ¨', [Name]);
+                    SetError('ë¦¬ë¯¸íŠ¸ í™œì„±í™” ì‹¤íŒ¨', 'CAN í†µì‹ ì„ í™•ì¸í•˜ì„¸ìš”');
                 end;
             end;
 
-        1:  // Enable ÈÄ ´ë±â
+        1:  // Enable í›„ ëŒ€ê¸°
             begin
                 if mDelayTC.IsTimeOut then
                 begin
@@ -1926,38 +1935,38 @@ begin
                 end;
             end;
 
-        2:  // ¸®¹ÌÆ® »óÅÂ ¿äÃ»
+        2:  // ë¦¬ë¯¸íŠ¸ ìƒíƒœ ìš”ì²­
             begin
                 if mIMSCtrler.ReqLimit then
                 begin
-                    gLog.Panel('%s: ¸®¹ÌÆ® »óÅÂ ¿äÃ»', [Name]);
-                    mDelayTC.Start(1000); // ÀÀ´ä ´ë±â Å¸ÀÓ¾Æ¿ô
+                    gLog.Panel('%s: ë¦¬ë¯¸íŠ¸ ìƒíƒœ ìš”ì²­', [Name]);
+                    mDelayTC.Start(1000); // ì‘ë‹µ ëŒ€ê¸° íƒ€ì„ì•„ì›ƒ
                     Inc(mFuncState);
                 end
                 else
                 begin
-                    gLog.Error('%s: ¸®¹ÌÆ® ¿äÃ» ½ÇÆĞ', [Name]);
-                    SetError('¸®¹ÌÆ® ¿äÃ» ½ÇÆĞ', 'CAN Åë½ÅÀ» È®ÀÎÇÏ¼¼¿ä');
+                    gLog.Error('%s: ë¦¬ë¯¸íŠ¸ ìš”ì²­ ì‹¤íŒ¨', [Name]);
+                    SetError('ë¦¬ë¯¸íŠ¸ ìš”ì²­ ì‹¤íŒ¨', 'CAN í†µì‹ ì„ í™•ì¸í•˜ì„¸ìš”');
                 end;
             end;
 
-        3:  // ÀÀ´ä ´ë±â
+        3:  // ì‘ë‹µ ëŒ€ê¸°
             begin
                 if mIMSCtrler.IsLimitRespDone then
                 begin
-                        // ¸®¹ÌÆ® µ¥ÀÌÅÍ Ã³¸®
+                        // ë¦¬ë¯¸íŠ¸ ë°ì´í„° ì²˜ë¦¬
                     mIMSCtrler.ProcessLimitDone;
 
-                    // °¢ ¸ğÅÍÀÇ ¸®¹ÌÆ® »óÅÂ È®ÀÎ
-                    gLog.Panel('%s: ¸®¹ÌÆ® »óÅÂ - S:%d, T:%d, H:%d, L:%d', [Name, Ord(mIMSCtrler.GetLimitStatus(tmSlide)), Ord(mIMSCtrler.GetLimitStatus(tmTilt)), Ord(mIMSCtrler.GetLimitStatus(tmHeight)), Ord(mIMSCtrler.GetLimitStatus(tmLegSupt))]);
+                    // ê° ëª¨í„°ì˜ ë¦¬ë¯¸íŠ¸ ìƒíƒœ í™•ì¸
+                    gLog.Panel('%s: ë¦¬ë¯¸íŠ¸ ìƒíƒœ - S:%d, T:%d, H:%d, L:%d', [Name, Ord(mIMSCtrler.GetLimitStatus(tmSlide)), Ord(mIMSCtrler.GetLimitStatus(tmTilt)), Ord(mIMSCtrler.GetLimitStatus(tmHeight)), Ord(mIMSCtrler.GetLimitStatus(tmLegSupt))]);
 
                     mFuncState := 0;
                     Exit(1);
                 end
                 else if mDelayTC.IsTimeOut then
                 begin
-                    gLog.Error('%s: ¸®¹ÌÆ® ÀÀ´ä Å¸ÀÓ¾Æ¿ô', [Name]);
-                    SetError('¸®¹ÌÆ® ÀÀ´ä ¾øÀ½', 'CAN Åë½ÅÀ» È®ÀÎÇÏ¼¼¿ä');
+                    gLog.Error('%s: ë¦¬ë¯¸íŠ¸ ì‘ë‹µ íƒ€ì„ì•„ì›ƒ', [Name]);
+                    SetError('ë¦¬ë¯¸íŠ¸ ì‘ë‹µ ì—†ìŒ', 'CAN í†µì‹ ì„ í™•ì¸í•˜ì„¸ìš”');
                     Exit(-1);
                 end;
             end;
@@ -1980,7 +1989,7 @@ begin
       }
     if Result then
     begin
-        gLog.Panel('%s: %s ³³Ç°À§Ä¡ ¼¾¼­ °ËÃâ', [Name, Motor.Name]);
+        gLog.Panel('%s: %s ë‚©í’ˆìœ„ì¹˜ ì„¼ì„œ ê²€ì¶œ', [Name, Motor.Name]);
     end;
 end;
 
@@ -1993,7 +2002,7 @@ begin
                 mMtrOper.Init([mMtrHeight], [twBack]);
                 Inc(mFuncState);
                 UpdateForm(tw_DELIVERY_START);
-                gLog.Panel('%s: ³³Ç° À§Ä¡ ½ÃÀÛ', [Name]);
+                gLog.Panel('%s: ë‚©í’ˆ ìœ„ì¹˜ ì‹œì‘', [Name]);
                 mMtrHeight.OnStopCond := HgtMtrStopCond;
 
             end;
@@ -2007,7 +2016,7 @@ begin
                         end;
                     1:
                         begin
-                            gLog.Panel('%s: ³³Ç° À§Ä¡ ¿Ï·á');
+                            gLog.Panel('%s: ë‚©í’ˆ ìœ„ì¹˜ ì™„ë£Œ');
                             UpdateForm(tw_DELIVERY_END);
                             mFuncState := 0;
                             Exit(1);
@@ -2084,22 +2093,22 @@ begin
 
     if not gConMan.AssignByID(CurModelType.MakeMainConID, mMainCon) then
     begin
-        gLog.Error('¼±ÅÃ ¸ğµ¨ ¸ŞÀÎ Ä¿³ØÅÍ Á¤º¸ ¾øÀ½', []);
-        SetError('¼±ÅÃ ¸ğµ¨ ¸ŞÀÎ Ä¿³ØÅÍ Á¤º¸ ¾øÀ½', '¼±ÅÃ ¸ğµ¨ »ç¾çÀÌ³ª EnvÆú´õ³» ÆÄÀÏÀÌ ÀÖ´ÂÁö  È®ÀÎ ÇÏ¼¼¿ä');
+        gLog.Error('ì„ íƒ ëª¨ë¸ ë©”ì¸ ì»¤ë„¥í„° ì •ë³´ ì—†ìŒ', []);
+        SetError('ì„ íƒ ëª¨ë¸ ë©”ì¸ ì»¤ë„¥í„° ì •ë³´ ì—†ìŒ', 'ì„ íƒ ëª¨ë¸ ì‚¬ì–‘ì´ë‚˜ Enví´ë”ë‚´ íŒŒì¼ì´ ìˆëŠ”ì§€  í™•ì¸ í•˜ì„¸ìš”');
         Exit;
     end;
 
     if not gConMan.AssignByID(CurModelType.MakeBackExtConID, mExtCon) then
     begin
-        gLog.Error('¼±ÅÃ ¸ğµ¨ ¹é ½ºÀ§Ä¡ Ä¿³ØÅÍ Á¤º¸ ¾øÀ½', []);
-        SetError('¼±ÅÃ ¸ğµ¨ ½ºÀ§Ä¡ Ä¿³ØÅÍ Á¤º¸ ¾øÀ½', '¼±ÅÃ ¸ğµ¨ »ç¾çÀÌ³ª EnvÆú´õ³» ÆÄÀÏÀÌ ÀÖ´ÂÁö È®ÀÎ ÇÏ¼¼¿ä');
+        gLog.Error('ì„ íƒ ëª¨ë¸ ë°± ìŠ¤ìœ„ì¹˜ ì»¤ë„¥í„° ì •ë³´ ì—†ìŒ', []);
+        SetError('ì„ íƒ ëª¨ë¸ ìŠ¤ìœ„ì¹˜ ì»¤ë„¥í„° ì •ë³´ ì—†ìŒ', 'ì„ íƒ ëª¨ë¸ ì‚¬ì–‘ì´ë‚˜ Enví´ë”ë‚´ íŒŒì¼ì´ ìˆëŠ”ì§€ í™•ì¸ í•˜ì„¸ìš”');
         Exit;
     end;
 
     if not gConMan.AssignByID(CurModelType.MakeHtrMatConID, mMatCon) then
     begin
-        gLog.Error('¼±ÅÃ ¸ğµ¨ È÷ÅÍ MAT Ä¿³ØÅÍ Á¤º¸ ¾øÀ½', []);
-        SetError('¼±ÅÃ ¸ğµ¨ ½ºÀ§Ä¡ Ä¿³ØÅÍ Á¤º¸ ¾øÀ½', '¼±ÅÃ ¸ğµ¨ »ç¾çÀÌ³ª EnvÆú´õ³» ÆÄÀÏÀÌ ÀÖ´ÂÁö È®ÀÎ ÇÏ¼¼¿ä');
+        gLog.Error('ì„ íƒ ëª¨ë¸ íˆí„° MAT ì»¤ë„¥í„° ì •ë³´ ì—†ìŒ', []);
+        SetError('ì„ íƒ ëª¨ë¸ ìŠ¤ìœ„ì¹˜ ì»¤ë„¥í„° ì •ë³´ ì—†ìŒ', 'ì„ íƒ ëª¨ë¸ ì‚¬ì–‘ì´ë‚˜ Enví´ë”ë‚´ íŒŒì¼ì´ ìˆëŠ”ì§€ í™•ì¸ í•˜ì„¸ìš”');
         Exit;
     end;
 
@@ -2134,20 +2143,21 @@ end;
 function TTsWork.MtrJogRunReq(MtrIdx, ChIdx: Integer; Dir: TMotorDir): Boolean;
 begin
     gLog.Debug('MtrJog: SpecChkState:%d, SpecChkOk:%s', [mSpecChkState, BoolToStr(mIsSpecChkOK, True)]);
+    Result := true;
 
-    if not mIsSpecChkOK then
-    begin
-        Exit(False);
-    end;
-{$IFDEF VIRTUALIO}
-    Result := True;
-{$ELSE}
-    Result := (gSysEnv.rOP.rTest.rCurr * 0.9) <= mDCPower.Curr;
-{$ENDIF}
+//    if not mIsSpecChkOK then
+//    begin
+//        Exit(False);
+//    end;
+//{$IFDEF VIRTUALIO}
+//    Result := True;
+//{$ELSE}
+//    Result := (gSysEnv.rOP.rTest.rCurr * 0.9) <= mDCPower.Curr;
+//{$ENDIF}
     gLog.Debug('MtrJog: MtrJogRunReq. Result:%s', [BoolToStr(Result, True)]);
 end;
 
-// UI ¸Ş½ÃÁö Ã³¸® ¹× ½ÇÀû ÀúÀå.
+// UI ë©”ì‹œì§€ ì²˜ë¦¬ ë° ì‹¤ì  ì €ì¥.
 
 function AvgToIdx(Avg: Boolean): Integer;
 begin
@@ -2157,7 +2167,7 @@ begin
         Result := 1;
 end;
 
-// Àü·ù , ¼Óµµ, ¼ÒÀ½ NG½Ã
+// ì „ë¥˜ , ì†ë„, ì†ŒìŒ NGì‹œ
 function TTsWork.NeedsRetest(Motor: TSeatMotor): Boolean;
 begin
     Result := False;
@@ -2169,11 +2179,11 @@ var
     ROrd: TResultOrd;
     MtrIt: TMotorOrd;
 begin
-    gLog.Panel('SeatMotorTestStatus È£Ãâ: %s - Status: %d', [Motor.Name, Ord(TestStatus)]);
+    gLog.Panel('SeatMotorTestStatus í˜¸ì¶œ: %s - Status: %d', [Motor.Name, Ord(TestStatus)]);
 
     if not IsRun then
     begin
-        gLog.Panel('IsRun = False·Î ÀÎÇØ Á¾·á');
+        gLog.Panel('IsRun = Falseë¡œ ì¸í•´ ì¢…ë£Œ');
         Exit;
     end;
 
@@ -2181,28 +2191,28 @@ begin
     mDBX.RsBuf.rCurMtr := Motor.ID;
 
     case TestStatus of
-        msStart: // ÀÛµ¿ ½ÃÀÛ
+        msStart: // ì‘ë™ ì‹œì‘
             begin
                 UpdateForm(tw_MTR_TEST_START);
             end;
-        msStop: // ÀÛµ¿ Á¤Áö & ½ÇÀû ÀúÀå Ã³¸® (ºí·°Å· Ã³¸®¶ó Invoke»ç¿ë)
+        msStop: // ì‘ë™ ì •ì§€ & ì‹¤ì  ì €ì¥ ì²˜ë¦¬ (ë¸”ëŸ­í‚¹ ì²˜ë¦¬ë¼ Invokeì‚¬ìš©)
             begin
                 ProcessMotorData(Motor)
             end;
 
-        msLimitSetStart: // IMS ¸®¹ÌÆ® ¼³Á¤ ½ÃÀÛ
+        msLimitSetStart: // IMS ë¦¬ë¯¸íŠ¸ ì„¤ì • ì‹œì‘
             begin
                 // UpdateForm(tw_LIMIT_SET);
             end;
 
-        msLimitReaded: // IMS ¸®¹ÌÆ® ÀĞÀ½
+        msLimitReaded: // IMS ë¦¬ë¯¸íŠ¸ ì½ìŒ
             begin
                 UpdateForm(tw_LIMIT_READED);
             end;
 
-        msTestEnd: // ½ÃÇè Á¾·á, ÀçÃøÁ¤ ÆÇ´Ü
+        msTestEnd: // ì‹œí—˜ ì¢…ë£Œ, ì¬ì¸¡ì • íŒë‹¨
             begin
-                // Àü·ù , ¼Óµµ, ¼ÒÀ½ NG½Ã
+                // ì „ë¥˜ , ì†ë„, ì†ŒìŒ NGì‹œ
                 if NeedsRetest(Motor) then
                 begin
                     Motor.IsRetest := True;
@@ -2257,27 +2267,40 @@ begin
             end;
         1:
             begin
+                mDCPower.PowerON(true);
+
+                gLog.Panel('%s : íŒŒì›Œ ON', [Name]);
+
+                Inc(mSpecChkState);
+                mspChkTC.Start(1000);
+
+            end;
+        2:
+            begin
+                if not mSpChkTC.IsTimeOut then
+                    Exit;
+
                 mDCPower.SetCurr(gSysEnv.rOP.rTest.rSpecCurr);
                 mDCPower.SetVolt(gSysEnv.rOP.rTest.rVolt);
 
                 UpdateForm(tw_SPEC_CHK_START);
-                mSpChkTC.Start(150 * 1000);
+                mSpChkTC.Start(10 * 1000);
                 Inc(mSpecChkState);
 
-                gLog.Panel('%s: »ç¾ç Á¡°Ë Àü·ù ¼³Á¤: %0.1f(A)', [Name, gSysEnv.rOP.rTest.rSpecCurr]);
+                gLog.Panel('%s: ì‚¬ì–‘ ì ê²€ ì „ë¥˜ ì„¤ì •: %0.1f(A)', [Name, gSysEnv.rOP.rTest.rSpecCurr]);
             end;
-        2:
+        3:
             begin
 
-                // ¸ŞÀÎ Àü·ù°¡ ¼³Á¤»óÀÇ 50%ÀÌÇÏÀÌ¸é Á¤»ó ¾Æ´Ï¸é ¼îÆ® ¹ß»ı (Ä¿³ØÅÍ ÀÌÁ¾ »ğÀÔ µî..)
+                // ë©”ì¸ ì „ë¥˜ê°€ ì„¤ì •ìƒì˜ 50%ì´í•˜ì´ë©´ ì •ìƒ ì•„ë‹ˆë©´ ì‡¼íŠ¸ ë°œìƒ (ì»¤ë„¥í„° ì´ì¢… ì‚½ì… ë“±..)
                 if GetMainCurr <= (gSysEnv.rOP.rTest.rSpecCurr * 0.5) then
                 begin
                     Inc(mSpecChkState);
                 end
                 else
                 begin
-                    gLog.Panel('%s: ¼³Á¤ Àü·ù 50%% ÀÌ»ó °¨Áö Error(%.1f(A) > %.1f(A)', [Name, GetMainCurr, (gSysEnv.rOP.rTest.rSpecCurr * 0.5)]);
-                    SetError('»ç¾ç Ã¼Å© Àü·ù ÀÌ»ó ERROR', 'Ä¿³ØÅÍ ¼îÆ®, ÀÌÁ¾ Ã¼°á, ÅëÀü ºí·° Á¢ÃË ºÒ·® ¿©ºÎ ¶Ç´Â ¿Ã¹Ù¸¥ »ç¾çÀÎÁö È®ÀÎ ÇÏ¼¼¿ä.');
+                    gLog.Panel('%s: ì„¤ì • ì „ë¥˜ 50%% ì´ìƒ ê°ì§€ Error(%.1f(A) > %.1f(A)', [Name, GetMainCurr, (gSysEnv.rOP.rTest.rSpecCurr * 0.5)]);
+                    SetError('ì‚¬ì–‘ ì²´í¬ ì „ë¥˜ ì´ìƒ ERROR', 'ì»¤ë„¥í„° ì‡¼íŠ¸, ì´ì¢… ì²´ê²°, í†µì „ ë¸”ëŸ­ ì ‘ì´‰ ë¶ˆëŸ‰ ì—¬ë¶€ ë˜ëŠ” ì˜¬ë°”ë¥¸ ì‚¬ì–‘ì¸ì§€ í™•ì¸ í•˜ì„¸ìš”.');
                     mIsSpecChkOK := False;
 
                     mSpecChkState := 0;
@@ -2286,13 +2309,13 @@ begin
 
                 if mSpChkTC.IsTimeOut then
                 begin
-                    // TO DO : NG °á°ú µğÅ×ÀÏ Ã³¸® À¯¹«..
-                    SetError('»ç¾ç Ã¼Å© ¼³Á¤ Àü·ù ERROR', 'ÆÄ¿ö Àü¿øON È®ÀÎ¿©ºÎ¸¦ Á¡°Ë ÇÏ¼¼¿ä');
+                    // TO DO : NG ê²°ê³¼ ë””í…Œì¼ ì²˜ë¦¬ ìœ ë¬´..
+                    SetError('ì‚¬ì–‘ ì²´í¬ ì„¤ì • ì „ë¥˜ ERROR', 'íŒŒì›Œ ì „ì›ON í™•ì¸ì—¬ë¶€ë¥¼ ì ê²€ í•˜ì„¸ìš”');
                     mSpecChkState := 0;
                     Exit(-1);
                 end;
             end;
-        3:
+        4:
             begin
                 mDCPower.SetCurr(gSysEnv.rOP.rTest.rCurr);
                 mDCPower.SetVolt(gSysEnv.rOP.rTest.rVolt);
@@ -2303,7 +2326,7 @@ begin
                 Inc(mSpecChkState);
 
             end;
-        4:
+        5:
             begin
             {$IFDEF VIRTUALLANIO}
                 mIsSpecChkOK := True;
@@ -2318,27 +2341,25 @@ begin
                 Inc(mSpecChkState);
                 mIsConnected := true;
             end;
-        5:
+        6:
             begin
                 if (mDCPower.Curr <> gSysEnv.rOP.rTest.rCurr) then
                 begin
                     mDCPower.SetCurr(gSysEnv.rOP.rTest.rCurr);
                     mDCPower.SetVolt(gSysEnv.rOP.rTest.rVolt);
 
-                    gLog.Panel('%s: ½ÃÇè Àü·ù %0.1f(A) ¼³Á¤', [Name, gSysEnv.rOP.rTest.rCurr]);
+                    gLog.Panel('%s: ì‹œí—˜ ì „ë¥˜ %0.1f(A) ì„¤ì •', [Name, gSysEnv.rOP.rTest.rCurr]);
                 end;
 
                 Inc(mSpecChkState);
             end;
-        6:
+        7:
             begin
                 if (gSysEnv.rOP.rTest.rCurr * 0.9) <= mDCPower.Curr then
                 begin
                     mIsSpecChkOK := True;
 
-                    InitMotorsCtrler(RsBuf.rModel.rTypes);
-
-                    gLog.Panel('%s: ½ÃÇè Àü·ù %0.1f(A) ¼³Á¤ ¿Ï·á', [Name, mDCPower.Curr]);
+                    gLog.Panel('%s: ì‹œí—˜ ì „ë¥˜ %0.1f(A) ì„¤ì • ì™„ë£Œ', [Name, mDCPower.Curr]);
                     mSpecChkState := 0;
                     mSkipConChk := True;
                     UpdateForm(tw_SPEC_CHK_END);
@@ -2349,7 +2370,7 @@ begin
                 begin
                     if mOldCurr <> mDCPower.Curr then
                     begin
-                        // gLog.Panel('%s: Àü·ù %0.1f(A) ¼³Á¤ ¹Ì´Ş', [Name, mOldCurr]);
+                        // gLog.Panel('%s: ì „ë¥˜ %0.1f(A) ì„¤ì • ë¯¸ë‹¬', [Name, mOldCurr]);
                         mOldCurr := mDCPower.Curr;
                     end;
 
@@ -2364,8 +2385,8 @@ procedure TTsWork.ShowSpecChkMsg;
 begin
     if not gModels.IsModelLoaded then
     begin
-        ShowMsg(['¸ğµ¨ ¼³Á¤ ¿À·ù', '¸ğµ¨ÀÌ ¼³Á¤µÇÁö ¾Ê¾Ò½À´Ï´Ù'], ['¸ğµ¨ ¸Ş´º¿¡ ÇöÁ¦Ç° »ç¾çÀÌ µî·ÏµÇ¾ú´ÂÁö È®ÀÎ ÇÏ¼¼¿ä'], True);
-        gLog.Error('»ç¾ç Ã¼Å©: ¸ğµ¨ ¼³Á¤ ¿À·ù', []);
+        ShowMsg(['ëª¨ë¸ ì„¤ì • ì˜¤ë¥˜', 'ëª¨ë¸ì´ ì„¤ì •ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤'], ['ëª¨ë¸ ë©”ë‰´ì— í˜„ì œí’ˆ ì‚¬ì–‘ì´ ë“±ë¡ë˜ì—ˆëŠ”ì§€ í™•ì¸ í•˜ì„¸ìš”'], True);
+        gLog.Error('ì‚¬ì–‘ ì²´í¬: ëª¨ë¸ ì„¤ì • ì˜¤ë¥˜', []);
 
         Exit;
     end;
@@ -2414,7 +2435,7 @@ var
     bTm: Boolean;
     DIStr: string;
     MtrIt: TMotorORD;
-  I: Integer;
+    I: Integer;
 
     function GetDIStr(StartCh, EndCh: Integer): string;
     var
@@ -2443,7 +2464,7 @@ begin
 
     mPeriodicCanData.Run;
 
-    // Elec °Ë»ç Ãß°¡
+    // Elec ê²€ì‚¬ ì¶”ê°€
 
     if FSMTestElecPart < 0 then
     begin
@@ -2471,8 +2492,8 @@ begin
                 begin
                     if (GetAccurateTime - mTmpTime) > 10000.0 then
                     begin
-                        SetError('Àü¿øÀÌ ON µÇÁö ¾Ê¾Ò½À´Ï´Ù', 'ÆÄ¿ö¼­ÇÃ¶óÀÌ Åë½Å¿¬°á ¹× »óÅÂ¸¦ È®ÀÎÈÄ ÀçÀÛ¾÷ÇÏ¼¼¿ä');
-                        gLog.Panel('%s: ÆÄ¿ö Error', [Name]);
+                        SetError('ì „ì›ì´ ON ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤', 'íŒŒì›Œì„œí”Œë¼ì´ í†µì‹ ì—°ê²° ë° ìƒíƒœë¥¼ í™•ì¸í›„ ì¬ì‘ì—…í•˜ì„¸ìš”');
+                        gLog.Panel('%s: íŒŒì›Œ Error', [Name]);
                     end;
                     Exit;
                 end;
@@ -2480,8 +2501,8 @@ begin
 //
 //                if (GetNoise < 20) or (GetNoise > 990) then
 //                begin
-//                    SetError(Format(_TRNS('¼ÒÀ½¼¾¼­°ª:%f db,  ±âÁØÄ¡(%f db) ÀÌÇÏ°Å³ª ¿À·ù ÀÔ´Ï´Ù'), [GetNoise, 20]), '¼¾¼­ ¿¬°á ¹× Àü¿øÀ» È®ÀÎ ÇÏ¼¼¿ä');
-//                    gLog.Error('%s: ¼ÒÀ½¼¾¼­°ª:%f db,  ±âÁØÄ¡(%f db) ÀÌÇÏ, ¼¾¼­ ÀÌ»ó Ã¼Å©', [Name, GetNoise, 20]);
+//                    SetError(Format(_TRNS('ì†ŒìŒì„¼ì„œê°’:%f db,  ê¸°ì¤€ì¹˜(%f db) ì´í•˜ê±°ë‚˜ ì˜¤ë¥˜ ì…ë‹ˆë‹¤'), [GetNoise, 20]), 'ì„¼ì„œ ì—°ê²° ë° ì „ì›ì„ í™•ì¸ í•˜ì„¸ìš”');
+//                    gLog.Error('%s: ì†ŒìŒì„¼ì„œê°’:%f db,  ê¸°ì¤€ì¹˜(%f db) ì´í•˜, ì„¼ì„œ ì´ìƒ ì²´í¬', [Name, GetNoise, 20]);
 //                    Exit;
 //                end;
 
@@ -2495,7 +2516,7 @@ begin
                 mdstRepeat := 0;
                 mFuncState := 0;
 
-                gLog.Panel('%s: ECU Á¤º¸ ÀĞ±â ½ÃÀÛ', [Name]);
+                gLog.Panel('%s: ECU ì •ë³´ ì½ê¸° ì‹œì‘', [Name]);
                 mECUVer.ClearFSM;
                 mECUVer.Enabled := True;
                 UpdateForm(tw_ECU_INFO_START);
@@ -2517,13 +2538,13 @@ begin
                         begin
                             if mECUVer.RetryCount > mECUVer.MaxRetry then
                             begin
-                                SetError('ECU Ver. ÀĞ±â ½ÇÆĞ', 'Ä¿³ØÅÍ ¿¬°á ¶Ç´Â Á¦Ç° »ç¾çÀ» È®ÀÎ ÇÏ¼¼¿ä(CAN Åë½Å)');
-                                gLog.Panel('%s : ECU Á¤º¸ ÀĞ±â- ½ÇÆĞ', [Name]);
+                                SetError('ECU Ver. ì½ê¸° ì‹¤íŒ¨', 'ì»¤ë„¥í„° ì—°ê²° ë˜ëŠ” ì œí’ˆ ì‚¬ì–‘ì„ í™•ì¸ í•˜ì„¸ìš”(CAN í†µì‹ )');
+                                gLog.Panel('%s : ECU ì •ë³´ ì½ê¸°- ì‹¤íŒ¨', [Name]);
                             end
                             else
                             begin
                                 mECUVer.ClearFSM;
-                                gLog.Panel('ECU Á¤º¸ ÀĞ±â- Àç½Ãµµ(%d)', [mECUVer.RetryCount]);
+                                gLog.Panel('ECU ì •ë³´ ì½ê¸°- ì¬ì‹œë„(%d)', [mECUVer.RetryCount]);
                                 mTC.Start(1000);
                             end;
                             mWorkState := _WS_CHK_LIMIT_STATUS_BEFORE
@@ -2535,7 +2556,7 @@ begin
                             {
                             if mEVItem.IsEmpty then
                             begin
-                                SetError(mPop.GetPartNo + ' ÇØ´çÇÏ´Â ECU Á¤º¸°¡ ¾ø½À´Ï´Ù', 'ECU Á¤º¸¸¦ [°Ë»ç¼³Á¤ -> ECU Ver ¼³Á¤]¶õ¿¡¼­ ÀÔ·Â ÇÏ¼¼¿ä');
+                                SetError(mPop.GetPartNo + ' í•´ë‹¹í•˜ëŠ” ECU ì •ë³´ê°€ ì—†ìŠµë‹ˆë‹¤', 'ECU ì •ë³´ë¥¼ [ê²€ì‚¬ì„¤ì • -> ECU Ver ì„¤ì •]ë€ì—ì„œ ì…ë ¥ í•˜ì„¸ìš”');
                                 Exit;
                             end;
                             }
@@ -2550,18 +2571,18 @@ begin
 
                             UpdateForm(tw_ECU_INFO_END);
 
-                            //gLog.Panel('¼³Á¤ ECU Ver:%s, %s', [mEVItem.mECUSWVer, mEVItem.mECUPartNo]);
-                            gLog.Panel('[ÀĞÀº ECU Á¤º¸] PartNo: %s, HWVer: %s, SWVer: %s', [mECUVer.PartNo, mECUVer.oemHW, mECUVer.oemSW]);
+                            //gLog.Panel('ì„¤ì • ECU Ver:%s, %s', [mEVItem.mECUSWVer, mEVItem.mECUPartNo]);
+                            gLog.Panel('[ì½ì€ ECU ì •ë³´] PartNo: %s, HWVer: %s, SWVer: %s', [mECUVer.PartNo, mECUVer.oemHW, mECUVer.oemSW]);
 
                             if mCurModelType.IsIMS then
                             begin
                                 mWorkState := _WS_CHK_LIMIT_STATUS_BEFORE;
-                                gLog.Panel('¸®¹ÌÆ® È®ÀÎ ½ÃÀÛ');
+                                gLog.Panel('ë¦¬ë¯¸íŠ¸ í™•ì¸ ì‹œì‘');
                             end
                             else
                             begin
                                 mWorkState := _WS_MOVE_TO_LOADING_POS;
-                                gLog.Panel('¸ğÅÍ ¿şÀÌÆ® ·Îµù À§Ä¡·Î ÀÌµ¿');
+                                gLog.Panel('ëª¨í„° ì›¨ì´íŠ¸ ë¡œë”© ìœ„ì¹˜ë¡œ ì´ë™');
                             end;
 
                             mPeriodicCanData.SetIgn(false);
@@ -2577,44 +2598,39 @@ begin
                 case mMtrSlide.FSMReadLimitStatus of
                     -1:
                         begin
-                            SetError('¸®¹ÌÆ® ¼³Á¤ È®ÀÎ ½ÇÆĞ', 'Àåºñ¸¦ Á¡°ËÇÏ¼¼¿ä');
+                            SetError('ë¦¬ë¯¸íŠ¸ ì„¤ì • í™•ì¸ ì‹¤íŒ¨', 'ì¥ë¹„ë¥¼ ì ê²€í•˜ì„¸ìš”');
                             mWorkState := _WS_MOVE_TO_LOADING_POS;
 
-                            gLog.Panel('¸®¹ÌÆ® ¼³Á¤ È®ÀÎ ½ÇÆĞ');
+                            gLog.Panel('ë¦¬ë¯¸íŠ¸ ì„¤ì • í™•ì¸ ì‹¤íŒ¨');
                         end;
                     1:
                         begin
-                            for MtrIt := Low(TMotorORD) to MtrOrdHi do
-                            begin
-                                mMotors[MtrIt].IsHLimitSet := not mIMSCtrler.GetLimit(MtrIt);
-                            end;
-
                             mWorkState := _WS_MOVE_TO_LOADING_POS;
                             mFuncState := 0;
-                            gLog.Panel('½ÃÀÛ Àü ¸®¹ÌÆ® ¼³Á¤ È®ÀÎ ¿Ï·á');
+                            gLog.Panel('ì‹œì‘ ì „ ë¦¬ë¯¸íŠ¸ ì„¤ì • í™•ì¸ ì™„ë£Œ');
                         end;
                 end;
             end;
 
-        _WS_MOVE_TO_LOADING_POS:    // ¿şÀÌÆ® ¾ÈÂøÀ» À§ÇÑ Á¤·Ä : ÃÖÈÄ¹æ±îÁö ÈÄÁø
+        _WS_MOVE_TO_LOADING_POS:    // ì›¨ì´íŠ¸ ì•ˆì°©ì„ ìœ„í•œ ì •ë ¬ : ìµœí›„ë°©ê¹Œì§€ í›„ì§„
             begin
 
                 case FSMAlignMotor(pmtEach, true) of
                     -1:
                         begin
-                            SetError('¸ğÅÍ Á¤·Ä: ' + mMtrOper.CurMotor.mLstError, mMtrOper.CurMotor.mLstToDo);
-                            gLog.Panel('¸ğÅÍ Á¤·Ä ½ÇÆĞ ');
+                            SetError('ëª¨í„° ì •ë ¬: ' + mMtrOper.CurMotor.mLstError, mMtrOper.CurMotor.mLstToDo);
+                            gLog.Panel('ëª¨í„° ì •ë ¬ ì‹¤íŒ¨ ');
                             mWOrkState := _WS_WEIGHT_LOADING;
                         end;
                     1:
                         begin
-                            gLog.Panel('%s: ¿şÀÌÆ® ¾ÈÂø À§Ä¡ ¿Ï·á', [Name]);
+                            gLog.Panel('%s: ì›¨ì´íŠ¸ ì•ˆì°© ìœ„ì¹˜ ì™„ë£Œ', [Name]);
 
                             mFuncState := 0;
 
                             if gSysEnv.rMotor.CanBurnish then
                             begin
-                                gLog.Panel('%s: ¹ö´Ï½Ì ½ÃÀÛ', [Name]);
+                                gLog.Panel('%s: ë²„ë‹ˆì‹± ì‹œì‘', [Name]);
                                 mWorkState := _WS_BURNISHING;
                                 UpdateForm(tw_BURNISHING_START);
 
@@ -2622,7 +2638,8 @@ begin
                             else
                             begin
                                 mLIO.SetIO(mLDOChs.mWeightLodingReq, True);
-                                mWorkState := _WS_WEIGHT_LOADING;
+                                //mWorkState := _WS_WEIGHT_LOADING;
+                                mWorkState := _WS_MEMORY_TEST;
                             end;
                         end;
                 end;
@@ -2634,7 +2651,7 @@ begin
                 case mMtrOper.FSMBurnishing(False) of
                     -1:
                         begin
-                            SetError('¹ö´Ï½Ì: ' + mMtrOper.CurMotor.mLstError, mMtrOper.CurMotor.mLstToDo);
+                            SetError('ë²„ë‹ˆì‹±: ' + mMtrOper.CurMotor.mLstError, mMtrOper.CurMotor.mLstToDo);
                         end;
                     1:
                         begin
@@ -2653,8 +2670,8 @@ begin
                 case FSMWaitForWeightLoadDone of
                     -1:
                         begin
-                            SetError('¿şÀÌÆ® ¾ÈÂø ½ÇÆĞ', 'Àåºñ¸¦ Á¡°ËÇÏ¼¼¿ä');
-                            gLog.Panel('¿şÀÌÆ® ¾ÈÂø ½ÇÆĞ');
+                            SetError('ì›¨ì´íŠ¸ ì•ˆì°© ì‹¤íŒ¨', 'ì¥ë¹„ë¥¼ ì ê²€í•˜ì„¸ìš”');
+                            gLog.Panel('ì›¨ì´íŠ¸ ì•ˆì°© ì‹¤íŒ¨');
                         end;
                     1:
                         begin
@@ -2665,7 +2682,7 @@ begin
                             mLIO.SetIO(mLDOChs.mWeightLodingReq, false);
 
                             UpdateForm(tw_MEAS_START);
-                            gLog.Panel('%s: ¸ğÅÍ °Ë»ç ½ÃÀÛ', [Name]);
+                            gLog.Panel('%s: ëª¨í„° ê²€ì‚¬ ì‹œì‘', [Name]);
 
                         end;
                 end;
@@ -2680,20 +2697,20 @@ begin
                         end;
                     1:
                         begin
-                            gLog.Panel('%s: ¸ğÅÍ °Ë»ç ¿Ï·á', [Name]);
+                            gLog.Panel('%s: ëª¨í„° ê²€ì‚¬ ì™„ë£Œ', [Name]);
                             mMtrOper.ClearFSM;
                             mFuncState := 0;
 
                             if mCurModelType.IsIMS then
                             begin
                                 mWorkState := _WS_CHK_LIMIT_STATUS_END;
-                                gLog.Panel('Á¾·á ÈÄ ¸®¹ÌÆ® ¼³Á¤ È®ÀÎ ¿Ï·á');
+                                gLog.Panel('ì¢…ë£Œ í›„ ë¦¬ë¯¸íŠ¸ ì„¤ì • í™•ì¸ ì™„ë£Œ');
 
                             end
                             else
                             begin
                                 mWorkState := _WS_DTC_CLEAR;
-                                gLog.Panel('DTC Å¬¸®¾î ½ÃÀÛ ');
+                                gLog.Panel('DTC í´ë¦¬ì–´ ì‹œì‘ ');
 
                             end;
 
@@ -2706,13 +2723,12 @@ begin
                 case mMtrSlide.FSMReadLimitStatus of
                     -1:
                         begin
-                            SetError('¸®¹ÌÆ® ¼³Á¤ È®ÀÎ ½ÇÆĞ', 'Àåºñ¸¦ Á¡°ËÇÏ¼¼¿ä');
+                            SetError('ë¦¬ë¯¸íŠ¸ ì„¤ì • í™•ì¸ ì‹¤íŒ¨', 'ì¥ë¹„ë¥¼ ì ê²€í•˜ì„¸ìš”');
 
-                            gLog.Panel('¸®¹ÌÆ® ¼³Á¤ È®ÀÎ ½ÇÆĞ');
+                            gLog.Panel('ë¦¬ë¯¸íŠ¸ ì„¤ì • í™•ì¸ ì‹¤íŒ¨');
                         end;
                     1:
                         begin
-
 
                             mWorkState := _WS_MOVE_TO_UNLOADING_POS;
 
@@ -2725,20 +2741,20 @@ begin
                             if mCurModelType.IsIMS then
                             begin
                                 mMemTestState := _MEM_INIT;
-                                gLog.Panel('¾ğ·Îµù ¿Ï·á :¸Ş¸ğ¸® Å×½ºÆ® ½ÃÀÛ ');
+                                gLog.Panel('ì–¸ë¡œë”© ì™„ë£Œ :ë©”ëª¨ë¦¬ í…ŒìŠ¤íŠ¸ ì‹œì‘ ');
                                 mWorkState := _WS_MEMORY_TEST;
 
                             end
                             else
                             begin
                                 mWorkState := _WS_DTC_CLEAR;
-                                gLog.Panel('DTC Å¬¸®¾î ½ÃÀÛ ');
+                                gLog.Panel('DTC í´ë¦¬ì–´ ì‹œì‘ ');
 
                             end;
 
                             UpdateForm(tw_LIMIT_READED);
 
-                            gLog.Panel('Á¾·á ÈÄ ¸®¹ÌÆ® ¼³Á¤ È®ÀÎ ¿Ï·á');
+                            gLog.Panel('ì¢…ë£Œ í›„ ë¦¬ë¯¸íŠ¸ ì„¤ì • í™•ì¸ ì™„ë£Œ');
                         end;
                 end;
             end;
@@ -2748,14 +2764,14 @@ begin
                 case FSMTestMemory of
                     -1:
                         begin
-                            SetError('¸Ş¸ğ¸® Å×½ºÆ® ½ÇÆĞ', 'Á¦Ç° »óÅÂ¸¦ È®ÀÎÇÏ¼¼¿ä');
+                            SetError('ë©”ëª¨ë¦¬ í…ŒìŠ¤íŠ¸ ì‹¤íŒ¨', 'ì œí’ˆ ìƒíƒœë¥¼ í™•ì¸í•˜ì„¸ìš”');
                             mWorkState := _WS_WAIT_ALL_TEST_END;
                             UpdateForm(tw_MEMORY_END);
                         end;
                     1:
                         begin
-                            gLog.Panel('%s: ¸Ş¸ğ¸® Å×½ºÆ® ¿Ï·á', [Name]);
-                            // MEM1, MEM2 °á°ú´Â ÀÌ¹Ì ÀúÀåµÊ
+                            gLog.Panel('%s: ë©”ëª¨ë¦¬ í…ŒìŠ¤íŠ¸ ì™„ë£Œ', [Name]);
+                            // MEM1, MEM2 ê²°ê³¼ëŠ” ì´ë¯¸ ì €ì¥ë¨
                             mWorkState := _WS_DTC_CLEAR;
                             UpdateForm(tw_MEMORY_END);
                         end;
@@ -2780,7 +2796,7 @@ begin
                             mWorkState := _WS_MOVE_TO_UNLOADING_POS;
                             mElecState := _WS_ELEC_START;
 
-                            // FSMAlignMotor È£Ãâ Àü¿¡ ¸ğÅÍ ¹æÇâÀ» ¾ğ·Îµù À§Ä¡·Î ¸íÈ®ÇÏ°Ô Àç¼³Á¤
+                            // FSMAlignMotor í˜¸ì¶œ ì „ì— ëª¨í„° ë°©í–¥ì„ ì–¸ë¡œë”© ìœ„ì¹˜ë¡œ ëª…í™•í•˜ê²Œ ì¬ì„¤ì •
                             mFuncState := 0;
                             mMtrOper.Init([mMtrSlide, mMtrTilt, mMtrHeight, mMtrLegSupt, mMtrSwivel], [twBack, twBack, twForw, twBack, twBack]);
                             mMtrOper.ClearFSM;
@@ -2793,10 +2809,10 @@ begin
             begin
                 case FSMAlignMotor(pmtEach, True) of
                     -1:
-                        SetError('¸ğÅÍ ¾ğ·Îµù À§Ä¡ Á¤·Ä: ' + mMtrOper.CurMotor.mLstError, mMtrOper.CurMotor.mLstToDo);
+                        SetError('ëª¨í„° ì–¸ë¡œë”© ìœ„ì¹˜ ì •ë ¬: ' + mMtrOper.CurMotor.mLstError, mMtrOper.CurMotor.mLstToDo);
                     1:
                         begin
-                            gLog.Panel('%s: ¸ğÅÍ ¾ğ·Îµù À§Ãë Á¤·Ä ¿Ï·á', [Name]);
+                            gLog.Panel('%s: ëª¨í„° ì–¸ë¡œë”© ìœ„ì·¨ ì •ë ¬ ì™„ë£Œ', [Name]);
                             mWorkState := _WS_WEIGHT_UNLOADING;
                             mLIO.SetIO(mLDOChs.mWeightUnLodingReq, true);
                             UpdateForm(tw_UNLOADING);
@@ -2812,7 +2828,7 @@ begin
                     mFuncState := 0;
                     mLIO.SetIO(mLDOChs.mWeightUnLodingReq, false);
 
-                    gLog.Panel('%s: ¿şÀÌÆ® ¾ğ·Îµù ¿Ï·á, ³³Ç° À§Ä¡ ¼¾¼­ ¿äÃ» ', [Name]);
+                    gLog.Panel('%s: ì›¨ì´íŠ¸ ì–¸ë¡œë”© ì™„ë£Œ, ë‚©í’ˆ ìœ„ì¹˜ ì„¼ì„œ ìš”ì²­ ', [Name]);
 
                     mWorkState := _WS_REQ_D_POS_SENSOR;
                     mFuncState := 0;
@@ -2828,7 +2844,7 @@ begin
                     mWorkState := _WS_MOVE_TO_D_POS;
                     mLIO.SetIO(mLDOChs.mReqDPosSensorReady, false);
 
-                    gLog.Panel('%s: ³³Ç° À§Ä¡ ¼¾¼­ È®ÀÎ ¿Ï·á , ³³Ç° À§Ä¡·Î ÀÌµ¿ ½ÃÀÛ', [Name]);
+                    gLog.Panel('%s: ë‚©í’ˆ ìœ„ì¹˜ ì„¼ì„œ í™•ì¸ ì™„ë£Œ , ë‚©í’ˆ ìœ„ì¹˜ë¡œ ì´ë™ ì‹œì‘', [Name]);
 
                 end;
 
@@ -2839,7 +2855,7 @@ begin
                 case FSMMoveToOutPos of
                     -1:
                         begin
-                            SetError('³³Ç°À§Ä¡ ÀÌ»ó', '¸ğÅÍ »óÅÂ³ª ³³Ç°À§Ä¡ ¼¾¼­¸¦ Á¡°ËÇÏ¼¼¿ä');
+                            SetError('ë‚©í’ˆìœ„ì¹˜ ì´ìƒ', 'ëª¨í„° ìƒíƒœë‚˜ ë‚©í’ˆìœ„ì¹˜ ì„¼ì„œë¥¼ ì ê²€í•˜ì„¸ìš”');
                         end;
                     1:
                         begin
@@ -2848,7 +2864,7 @@ begin
                             mFuncState := 0;
                             mWorkState := _WS_WAIT_ALL_TEST_END;
                             mLIO.SetIO(mLDOChs.mReqDPosSensorRelease, true);
-                            gLog.Panel('%s: ³³Ç° À§Ä¡ ÀÌµ¿ ¿Ï·á , ³³Ç° À§Ä¡·Î ÀÌµ¿ ½ÃÀÛ', [Name]);
+                            gLog.Panel('%s: ë‚©í’ˆ ìœ„ì¹˜ ì´ë™ ì™„ë£Œ , ë‚©í’ˆ ìœ„ì¹˜ë¡œ ì´ë™ ì‹œì‘', [Name]);
 
                         end;
                 end;
@@ -2890,7 +2906,14 @@ begin
                     Exit;
 
                 mPop.Initial;
+                mWorkState := _WS_STOP_PWR;
+            end;
+
+        _WS_STOP_PWR:
+            begin
+                gDCPower.Items[0].PowerOFF(true);
                 mWorkState := _WS_END_OF_TEST;
+
             end;
 
         _WS_END_OF_TEST:
@@ -2902,9 +2925,9 @@ begin
             begin
 
                 if mLstError <> '' then
-                    gLog.Error('%s: Err ¸Ş½ÃÁö: %s', [Name, mLstError]);
-                gLog.Panel('%s: Err »óÅÂ½Ã: %s', [Name, GetStateStr]);
-                gLog.Panel('%s: Err »óÅÂ½Ã: ¼³Á¤ Àü¾Ğ:%f(V), ¼³Á¤ Àü·ù:%f(A), ¸ŞÀÎ Àü·ù: %f(A)', [Name, GetOutVolt, GetOutCurr, GetMainCurr]);
+                    gLog.Error('%s: Err ë©”ì‹œì§€: %s', [Name, mLstError]);
+                gLog.Panel('%s: Err ìƒíƒœì‹œ: %s', [Name, GetStateStr]);
+                gLog.Panel('%s: Err ìƒíƒœì‹œ: ì„¤ì • ì „ì••:%f(V), ì„¤ì • ì „ë¥˜:%f(A), ë©”ì¸ ì „ë¥˜: %f(A)', [Name, GetOutVolt, GetOutCurr, GetMainCurr]);
 
                 StopMotors;
                 ClearElecDOs;
@@ -2920,9 +2943,9 @@ begin
         _WS_ERROR_IDLE:
             ;
     else
-        mLstError := '¸ğµâ ÇÁ·Î¼¼¼­ ¿À·ù';
-        mLstToDo := 'ÇÁ·Î±×·¥À» ´Ù½Ã ½ÃÀÛÇÏ¼¼¿ä';
-        gLog.Panel('%s: ¸ğµâÇÁ·Î¼¼¼­ ¿À·ù %d', [Name, Ord(mWorkState)]);
+        mLstError := 'ëª¨ë“ˆ í”„ë¡œì„¸ì„œ ì˜¤ë¥˜';
+        mLstToDo := 'í”„ë¡œê·¸ë¨ì„ ë‹¤ì‹œ ì‹œì‘í•˜ì„¸ìš”';
+        gLog.Panel('%s: ëª¨ë“ˆí”„ë¡œì„¸ì„œ ì˜¤ë¥˜ %d', [Name, Ord(mWorkState)]);
 
         UpdateForm(tw_ERROR);
         mWorkState := _WS_ERROR;
@@ -2941,7 +2964,7 @@ begin
                 begin
                     Inc(mFuncState);
                     mDelayTC.Start(gSysEnv.rSoundProof.rWaitB4WeightUnLoading * 1000);
-                    gLog.Panel('%s: ¸ğÅÍ °Ë»ç ½ÃÀÛ ½ÅÈ£ ON', [Name])
+                    gLog.Panel('%s: ëª¨í„° ê²€ì‚¬ ì‹œì‘ ì‹ í˜¸ ON', [Name])
                 end;
             end;
         1:
@@ -2971,7 +2994,7 @@ begin
                 begin
                     Inc(mFuncState);
                     mDelayTC.Start(gSysEnv.rSoundProof.rWaitB4WeightUnLoading * 1000);
-                    gLog.Panel('%s: ¿şÀÌÆ® ¾ğ·Îµù ¿Ï·á: ¸Ş¸ğ¸® °Ë»ç ½ÃÀÛ', [Name])
+                    gLog.Panel('%s: ì›¨ì´íŠ¸ ì–¸ë¡œë”© ì™„ë£Œ: ë©”ëª¨ë¦¬ ê²€ì‚¬ ì‹œì‘', [Name])
                 end;
             end;
         1:
@@ -3001,7 +3024,7 @@ begin
     for MtrIt := Low(TMotorOrd) to MtrOrdHi do
     begin
         if not Assigned(mMotors[MtrIt].OnTestStatus) then
-            continue; // »ç¿ë¾ÈÇÏ´Â ¸ğÅÍ °É·¯³»±â ex>CushExt
+            continue; // ì‚¬ìš©ì•ˆí•˜ëŠ” ëª¨í„° ê±¸ëŸ¬ë‚´ê¸° ex>CushExt
 
         CurNode := TV.Items.AddChildObject(RootNode, mMotors[MtrIt].Name, mMotors[MtrIt]);
         TV.Items.AddChildObject(CurNode, mMotors[MtrIt].MoveCtrler.Name, mMotors[MtrIt].MoveCtrler);
@@ -3052,13 +3075,13 @@ end;
 
 function TTsWork.HgtMtrStopCond(Motor: TSeatMotor): boolean;
 begin
-    Result := False; // ±âº»ÀûÀ¸·Î´Â Á¤ÁöÇÏÁö ¾ÊÀ½
+    Result := False; // ê¸°ë³¸ì ìœ¼ë¡œëŠ” ì •ì§€í•˜ì§€ ì•ŠìŒ
 
     if Motor.ID = tmHeight then
     begin
         if GetDistance1 > 75 then
         begin
-            Result := True; // ¼¾¼­°¡ °¨ÁöµÇ¸é True¸¦ ¹İÈ¯ÇÏ¿© ¸ğÅÍ¸¦ Á¤Áö
+            Result := True; // ì„¼ì„œê°€ ê°ì§€ë˜ë©´ Trueë¥¼ ë°˜í™˜í•˜ì—¬ ëª¨í„°ë¥¼ ì •ì§€
         end;
     end;
 
@@ -3097,25 +3120,25 @@ begin
         hvsStepEnd:
             begin
                 RO := HVStepToRO(HVTest.CurStep);
-                mDBX.SetData(RO, HVTest.GetCurLedData); // LED Bit Data ¼³Á¤
+                mDBX.SetData(RO, HVTest.GetCurLedData); // LED Bit Data ì„¤ì •
 
                 if HVTest.UseCurrTest then
                 begin
-                    if HVTest.CurStep = HVTest.CurrRStep then // ¼³Á¤ÇÑ ´Ü¿¡¼­ ON Àü·ù ¼³Á¤
+                    if HVTest.CurStep = HVTest.CurrRStep then // ì„¤ì •í•œ ë‹¨ì—ì„œ ON ì „ë¥˜ ì„¤ì •
                     begin
                         mDBX.SetData(roDatOnCurr, HVTest.MaxCurr);
 
                     end
-                    else if HVTest.CurStep = 0 then // 0´Ü¿¡¼­ OFFÀü·ù ¼³Á¤
+                    else if HVTest.CurStep = 0 then // 0ë‹¨ì—ì„œ OFFì „ë¥˜ ì„¤ì •
                     begin
                         mDBX.SetData(roDatOffCurr, Max(0, HVTest.OffCurr));
                     end;
 
-                    // H/V NG¹ß»ı½Ã Áß´Ü ¿©ºÎ
+                    // H/V NGë°œìƒì‹œ ì¤‘ë‹¨ ì—¬ë¶€
                     //if not mDBX.GetResult(roDatHeatOnCurrDrv) and gsysEnv.rIsNGStop then
                     //begin
                     //    mHVTester.FSMStop;
-                        //mElecState := _PROC_ELEC_STOP;    ÀÓ½Ã
+                        //mElecState := _PROC_ELEC_STOP;    ì„ì‹œ
                     //end;
                 end;
 
@@ -3128,7 +3151,7 @@ begin
                 if HVTest.DevType = hvdVentDrv then
                     UpdateForm(tw_HV_TEST_END);
 
-                // HEAT LED NG½Ã Àç½ÃÇè  ÀÓ½Ã
+                // HEAT LED NGì‹œ ì¬ì‹œí—˜  ì„ì‹œ
                 {
                 if not HVTest.UseCurrTest then
                 begin
@@ -3160,7 +3183,7 @@ begin
     end
     else
     begin
-        raise EListError.CreateFmt('TTsWork.GetConnectors: Idx %d°¡ ¹üÀ§ ¹ş¾î³² (0..%d)', [Idx, mConnectors.Count - 1]);
+        raise EListError.CreateFmt('TTsWork.GetConnectors: Idx %dê°€ ë²”ìœ„ ë²—ì–´ë‚¨ (0..%d)', [Idx, mConnectors.Count - 1]);
     end;
 end;
 
@@ -3183,7 +3206,7 @@ begin
     for i := 0 to Length(PopDataORD) - 1 do
     begin
         if i = ord(roRsAbnormalSound) then
-            Result  := Result;
+            Result := Result;
 
         if IsCtrlRO(PopDataORD[i]) then
         begin
@@ -3218,13 +3241,13 @@ begin
                     begin
                         {
                           if rcvWorkDetail = '1' then
-                          ShowError(Format(_TRNS('LOT NO: %sÀÇ µ¥ÀÌÅÍ°¡ ¾ø½À´Ï´Ù'), [rcvLotNo]), 'SEAT Á¤º¸¸¦ È®ÀÎ ÇÏ¼¼¿ä')
+                          ShowError(Format(_TRNS('LOT NO: %sì˜ ë°ì´í„°ê°€ ì—†ìŠµë‹ˆë‹¤'), [rcvLotNo]), 'SEAT ì •ë³´ë¥¼ í™•ì¸ í•˜ì„¸ìš”')
                           else
                           begin
-                          ShowError(Format(_TRNS('LOT NO: %s - #%d CELL °øÁ¤¿¡¼­ NG ¹ß»ıÇÑ Á¦Ç°ÀÔ´Ï´Ù'), [rcvLotNo, StrToInt(rcvWorkDetail) - 2]), 'ÀÛ¾÷ÇÒ ¼ö ¾ø½À´Ï´Ù');
+                          ShowError(Format(_TRNS('LOT NO: %s - #%d CELL ê³µì •ì—ì„œ NG ë°œìƒí•œ ì œí’ˆì…ë‹ˆë‹¤'), [rcvLotNo, StrToInt(rcvWorkDetail) - 2]), 'ì‘ì—…í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤');
                           end;
                           }
-                        // ÀÛ¾÷ À¯¹« ¿¡·¯ Ç¥½Ã ¶Ç´Â ÁøÇà ÈÄ POP ¼Û½Å ¾È ÇÔ??
+                        // ì‘ì—… ìœ ë¬´ ì—ëŸ¬ í‘œì‹œ ë˜ëŠ” ì§„í–‰ í›„ POP ì†¡ì‹  ì•ˆ í•¨??
                         // UpdateForm(tw_HIDE_MSG);
                     end
                     else if rcvWorkType = '1' then
@@ -3232,7 +3255,7 @@ begin
                         {
                           if not RsBuf.rModel.rTypes.IsLimit then
                           begin
-                          ShowMsg('Á÷±¸µ¿ Á¦Ç°ÀÔ´Ï´Ù', '¸ŞÀÎ ÄÉÀÌºí°ú Á÷±¸µ¿ S/W ÄÉÀÌºíÀ» ²ÈÀ¸¼¼¿ä');
+                          ShowMsg('ì§êµ¬ë™ ì œí’ˆì…ë‹ˆë‹¤', 'ë©”ì¸ ì¼€ì´ë¸”ê³¼ ì§êµ¬ë™ S/W ì¼€ì´ë¸”ì„ ê½‚ìœ¼ì„¸ìš”');
                           end;
                           }
                     end
@@ -3254,7 +3277,7 @@ begin
                     mDBX.SaveData(mDBX.GetSaveTimes);
 
                     mPopState := 3;
-                    gLog.Panel('%s: (PC)POPÀü¼ÛÀÛ¾÷¿Ï·áÈ®ÀÎ', [Name]);
+                    gLog.Panel('%s: (PC)POPì „ì†¡ì‘ì—…ì™„ë£Œí™•ì¸', [Name]);
                 end;
             end;
         SYS_POP_CONNECTED, SYS_POP_CONNECTING, SYS_POP_DISCONNECTED, SYS_CMD_RCV_ERROR:
@@ -3262,7 +3285,7 @@ begin
                 if mPopState = 2 then
                 begin
                     mPopState := 3;
-                    gLog.Panel('%s: (PC)POPÀü¼ÛÀÛ¾÷½ÇÆĞ', [Name]);
+                    gLog.Panel('%s: (PC)POPì „ì†¡ì‘ì—…ì‹¤íŒ¨', [Name]);
                 end;
             end;
         // SYS_CMD_RCV_NAK
@@ -3281,10 +3304,10 @@ end;
 
 function TTsWork.GetMotors(Mtr: TMotorOrd): TSeatMotor;
 begin
-    // TMotorOrd´Â ÀÌ¹Ì Å¸ÀÔ ¾ÈÀüÇÏ¹Ç·Î ¹üÀ§ Ã¼Å© »ı·« °¡´É
+    // TMotorOrdëŠ” ì´ë¯¸ íƒ€ì… ì•ˆì „í•˜ë¯€ë¡œ ë²”ìœ„ ì²´í¬ ìƒëµ ê°€ëŠ¥
     if not Assigned(mMotors[Mtr]) then
     begin
-        ShowMessage(Format('¸ğÅÍ[%d]°¡ ÃÊ±âÈ­µÇÁö ¾ÊÀ½', [Ord(Mtr)]));
+        ShowMessage(Format('ëª¨í„°[%d]ê°€ ì´ˆê¸°í™”ë˜ì§€ ì•ŠìŒ', [Ord(Mtr)]));
         Result := nil;
         Exit;
     end;
@@ -3327,27 +3350,27 @@ begin
                 if not mPop.IsConnected or mPop.NotsndResult then
                 begin
                     mPopState := 4;
-                    gLog.Panel('(PC)POPÀü¼ÛÀÛ¾÷Åë°ú(POP: %s, IO: %s, ÀÛ¾÷: %s, PalletNO: %s)', [_ONOFF[mPop.IsConnected], _ONOFF[IsPopLinkMode], _ONOFF[IsRun], mDBX.GetResultToATxt(ord(roPalletNO), False, False)]);
+                    gLog.Panel('(PC)POPì „ì†¡ì‘ì—…í†µê³¼(POP: %s, IO: %s, ì‘ì—…: %s, PalletNO: %s)', [_ONOFF[mPop.IsConnected], _ONOFF[IsPopLinkMode], _ONOFF[IsRun], mDBX.GetResultToATxt(ord(roPalletNO), False, False)]);
 
                     if not IsPopLinkMode then
                     begin
-                        gLog.Panel('Åë°úÀÌÀ¯: ´Üµ¶¿îÀü¸ğµå.');
+                        gLog.Panel('í†µê³¼ì´ìœ : ë‹¨ë…ìš´ì „ëª¨ë“œ.');
                     end
                     else if not mPop.IsConnected then
                     begin
-                        gLog.Panel('Åë°úÀÌÀ¯: POP°ú ¿¬°áµÇÁö ¾Ê¾Ò½À´Ï´Ù.');
+                        gLog.Panel('í†µê³¼ì´ìœ : POPê³¼ ì—°ê²°ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.');
                     end
                     else if mPop.NotsndResult then
                     begin
-                        gLog.Panel('Åë°úÀÌÀ¯: POP ÀÛ¾÷Åë°ú ¼³Á¤ ON');
+                        gLog.Panel('í†µê³¼ì´ìœ : POP ì‘ì—…í†µê³¼ ì„¤ì • ON');
                     end
                     else if mDBX.IsExists(roPoprcved) then
                     begin
-                        gLog.Panel('Åë°úÀÌÀ¯: POP ¼ö½ÅÀÛ¾÷µÈ »ç¾çÀÌ ¾Æ´Õ´Ï´Ù.');
+                        gLog.Panel('í†µê³¼ì´ìœ : POP ìˆ˜ì‹ ì‘ì—…ëœ ì‚¬ì–‘ì´ ì•„ë‹™ë‹ˆë‹¤.');
                     end
                     else if mDBX.GetResultToATxt(ord(roPalletNO), False, False) = '' then
                     begin
-                        gLog.Panel('Åë°úÀÌÀ¯: POP ¼ö½ÅµÈ ÆÈ·¹Æ®NO°¡ ¾ø½À´Ï´Ù.');
+                        gLog.Panel('í†µê³¼ì´ìœ : POP ìˆ˜ì‹ ëœ íŒ”ë ˆíŠ¸NOê°€ ì—†ìŠµë‹ˆë‹¤.');
                     end;
 
                     UpdateForm(tw_POP_PASS);
@@ -3359,12 +3382,12 @@ begin
                 begin
                     mPopState := 2;
                     UpdateForm(tw_POP_START);
-                    gLog.Panel('%s: (PC)POPÀü¼Ûµ¥ÀÌÅÍÃß°¡: %s', [Name, stm]);
+                    gLog.Panel('%s: (PC)POPì „ì†¡ë°ì´í„°ì¶”ê°€: %s', [Name, stm]);
                 end
                 else
                 begin
                     mPopState := 3;
-                    gLog.Panel('%s: (PC)POPÀü¼Ûµ¥ÀÌÅ¸Ãß°¡½ÇÆĞ: %s', [Name, stm]);
+                    gLog.Panel('%s: (PC)POPì „ì†¡ë°ì´íƒ€ì¶”ê°€ì‹¤íŒ¨: %s', [Name, stm]);
                 end;
             end;
         2:
@@ -3381,22 +3404,22 @@ end;
 
 procedure TTsWork.ProcessMotorData(Motor: TSeatMotor);
 begin
-    mGrpExt[Motor.ID].BeginDataProcessing; // À§Ä¡ Fix!!
+    mGrpExt[Motor.ID].BeginDataProcessing; // ìœ„ì¹˜ Fix!!
 
 
     TAsyncCalls.Invoke(
         procedure
         var
             GrpData: TSMGrpData;
-            InitNoiseVal, RunNoiseVal: Double;  // ¡ç º¯¼ö ¼±¾ğ Ãß°¡
+            InitNoiseVal, RunNoiseVal: Double;  // â† ë³€ìˆ˜ ì„ ì–¸ ì¶”ê°€
         begin
-            mCS.Enter;        // Invoke¿¡¼­ µ¿½Ã¿¡ È£Ãâ½Ã ÀçÁøÀÔ ±İÁö
+            mCS.Enter;        // Invokeì—ì„œ ë™ì‹œì— í˜¸ì¶œì‹œ ì¬ì§„ì… ê¸ˆì§€
             try
 
                 mGrpExt[Motor.ID].FindData(Motor.Dir, @GrpData);
 
                 mDBX.SetData(GetDataRO('Speed', Motor.Dir), GrpData.mSpeed);
-                mDBX.SetData(GetDataRO('Curr', Motor.Dir), GrpData.mCurr.GetVal(matMax)); // Max ÃëÇÔ
+                mDBX.SetData(GetDataRO('Curr', Motor.Dir), GrpData.mCurr.GetVal(matMax)); // Max ì·¨í•¨
                 mDBX.SetData(GetDataRO('InitNoise', Motor.Dir), GrpData.mInitNoise.GetVal(gSysEnv.rSoundProof.rNoiseResultType));
                 mDBX.SetData(GetDataRO('RunNoise', Motor.Dir), GrpData.mRunNoise.GetVal(gSysEnv.rSoundProof.rNoiseResultType));
 
@@ -3438,11 +3461,11 @@ begin
 
     Exit;
 
-    ShowMsg(['Å×½ºÆ® ¸Ş½ÃÁö' + Name], ['(1) ¿Ã¹Ù¸¥ »ç¾ç(¸ğµ¨ Á¤º¸)ÀÎ°¡¿ä? POP ¼³Á¤À» È®ÀÎÇØ ÁÖ¼¼¿ä'], True);
+    ShowMsg(['í…ŒìŠ¤íŠ¸ ë©”ì‹œì§€' + Name], ['(1) ì˜¬ë°”ë¥¸ ì‚¬ì–‘(ëª¨ë¸ ì •ë³´)ì¸ê°€ìš”? POP ì„¤ì •ì„ í™•ì¸í•´ ì£¼ì„¸ìš”'], True);
 
     Exit;
 
-    ShowMsg(['Å×½ºÆ® ¸Ş½ÃÁö'], ['(1) ¿Ã¹Ù¸¥ »ç¾ç(¸ğµ¨ Á¤º¸)ÀÎ°¡¿ä? POP ¼³Á¤À» È®ÀÎÇØ ÁÖ¼¼¿ä', '(2) Á¦Ç° - ÆÈ·¹Æ®°£ ÄÉÀÌºíµéÀÌ Á¦´ë·Î ÀåÂø µÇ¾ú³ª¿ä?'#13'ÄÉÀÌºí Á¢ºÒÀ» È®ÀÎÇÏ¼¼¿ä', '(3) Àü±Ø °áÇÕ ¹× ÇÉ»óÅÂ°¡ ¾çÈ£ÇÑ°¡¿ä?', '(4) ¸ÖÆ¼¶óÀÎ'#13'Å×½ºÆ®ÀÔ´Ï´Ù'], True);
+    ShowMsg(['í…ŒìŠ¤íŠ¸ ë©”ì‹œì§€'], ['(1) ì˜¬ë°”ë¥¸ ì‚¬ì–‘(ëª¨ë¸ ì •ë³´)ì¸ê°€ìš”? POP ì„¤ì •ì„ í™•ì¸í•´ ì£¼ì„¸ìš”', '(2) ì œí’ˆ - íŒ”ë ˆíŠ¸ê°„ ì¼€ì´ë¸”ë“¤ì´ ì œëŒ€ë¡œ ì¥ì°© ë˜ì—ˆë‚˜ìš”?'#13'ì¼€ì´ë¸” ì ‘ë¶ˆì„ í™•ì¸í•˜ì„¸ìš”', '(3) ì „ê·¹ ê²°í•© ë° í•€ìƒíƒœê°€ ì–‘í˜¸í•œê°€ìš”?', '(4) ë©€í‹°ë¼ì¸'#13'í…ŒìŠ¤íŠ¸ì…ë‹ˆë‹¤'], True);
 end;
 
 procedure TTsWork.SetUsrLog(const szFmt: string; const Args: array of const; IsFile: Boolean);
@@ -3505,7 +3528,7 @@ begin
             begin
                 if mLIO.IsIO(mLDIChs.mVentSensor) then
                 begin
-                    gLog.Panel('ÅëÇ³ ¼¾¼­ °¨Áö ¼º°ø');
+                    gLog.Panel('í†µí’ ì„¼ì„œ ê°ì§€ ì„±ê³µ');
                     mDBX.SetData(roRsFlowTest, true);
                     Inc(mVentSensorState);
                 end
@@ -3546,7 +3569,7 @@ begin
                     -1:
                         begin
                             mElecState := _WS_ELEC_BUCKLE_START;
-                            gLog.Error('H/V °Ë»ç ¿À·ù', []);
+                            gLog.Error('H/V ê²€ì‚¬ ì˜¤ë¥˜', []);
 
                             Exit(-1);
                         end;
@@ -3562,7 +3585,7 @@ begin
                             begin
 
                                 mElecState := _WS_ELEC_BUCKLE_START;
-                                gLog.Panel('H/V Test ¿Ï·á');
+                                gLog.Panel('H/V Test ì™„ë£Œ');
                             end
                             else if mCurModelType.IsAnchorPT then
                             begin
@@ -3586,7 +3609,7 @@ begin
 
                 if mDBX.IsTested(tsBuckle) then
                 begin
-                    gLog.Panel('%s: ¹öÅ¬ °Ë»ç ½ÃÀÛ', [Name]);
+                    gLog.Panel('%s: ë²„í´ ê²€ì‚¬ ì‹œì‘', [Name]);
                     UpdateForm(tw_BUCK_TEST_START);
                     mBuckTester.FSMStart;
                     mElecState := _WS_ELEC_BUCKLE_TEST;
@@ -3606,7 +3629,7 @@ begin
                             mDBX.SetData(roRsBuckle, mBuckTester.IsOK);
                             if mBuckTester.TestType = btcurr then
                                 mDBX.SetData(roDatBuckle, mBuckTester.Curr);
-                            gLog.Panel('%s: ¹öÅ¬ °Ë»ç Á¾·á', [Name]);
+                            gLog.Panel('%s: ë²„í´ ê²€ì‚¬ ì¢…ë£Œ', [Name]);
                             UpdateForm(tw_BUCK_TEST_END);
                         end;
                 end;
@@ -3626,18 +3649,18 @@ begin
                 end;
 
                 case mAPTTester.FSMIRun of
-                    -1: // ½ÇÆĞ (¿¡·¯)
+                    -1: // ì‹¤íŒ¨ (ì—ëŸ¬)
                         begin
                             mDBX.SetData(roDatAncPT, mAPTTester.ResistValue);
                             mDBX.SetData(roRsAncPT, False);
                             UpdateForm(tw_APT_END);
                             mElecState := _WS_ELEC_END;
                         end;
-                    1: // ¿Ï·á
+                    1: // ì™„ë£Œ
                         begin
                             mDBX.SetData(roDatAncPT, mAPTTester.ResistValue);
                             mDBX.SetData(roRsAncPT, True);
-                            gLog.Panel('%s: Anchor PT Å×½ºÆ® ¿Ï·á - OK (%.2f)', [Name, mAPTTester.ResistValue]);
+                            gLog.Panel('%s: Anchor PT í…ŒìŠ¤íŠ¸ ì™„ë£Œ - OK (%.2f)', [Name, mAPTTester.ResistValue]);
                             mElecState := _WS_ELEC_END;
                             UpdateForm(tw_APT_END);
 
@@ -3661,171 +3684,57 @@ begin
 end;
 
 const
-    MEM_TEST_DELAY = 200;
-    MEM_MOVE_TIME = 2.5;          // ¸Ş¸ğ¸® À§Ä¡ ÀÌµ¿ ½Ã°£
-    MEM_CURR_THRESHOLD = 0.3;     // µ¿ÀÛ °¨Áö¿ë Àü·ù ÀÓ°è°ª
-    MEM_CURR_CHECK_TIME = 5.0;    // Àü·ù Ã¼Å© ÃÖ´ë ½Ã°£
+            MEM_TEST_DELAY = 200;          // ì§€ì—° ì‹œê°„ (ms)
+            MEM_MOVE_TIME = 2.5;           // ë©”ëª¨ë¦¬ ìœ„ì¹˜ ì´ë™ ì‹œê°„ (ì´ˆ)
+            MEM_CURR_THRESHOLD = 0.3;      // ë™ì‘ ê°ì§€ìš© ì „ë¥˜ ì„ê³„ê°’ (A, ê²€í†  í•„ìš”)
+            MEM_CURR_CHECK_TIME = 3.0;     // ì „ë¥˜ ì²´í¬ ìµœëŒ€ ì‹œê°„ (ì´ˆ, 3ì´ˆë¡œ ì„¤ì •)
+            FAST_MONITOR_INTERVAL = 50;    // ë¹ ë¥¸ ëª¨ë‹ˆí„°ë§ ê°„ê²© (ms)
+            FAST_MONITOR_COUNT = 40;       // ë¹ ë¥¸ ëª¨ë‹ˆí„°ë§ ìµœëŒ€ íšŸìˆ˜ (2ì´ˆç›¸å½“)
 
-// TTsWork Å¬·¡½º¿¡ Ãß°¡ÇÒ ¸Ş¼­µå
-
-function TTsWork.FSMPlayAndCheckMemory(MemNum: Integer): Integer;
-var
-    CurrVal: Double;
-begin
-    Result := 0; // 0: ÁøÇà Áß
-
-    case mFuncState of
-        0: // ¸Ş¸ğ¸® Àç»ı ½ÃÀÛ
-            begin
-                // ¸Ş¸ğ¸® Àç»ı ¸í·É
-                case MemNum of
-                    1:
-                        Result := mIMSCtrler.FSMPlayMemP1;
-                    2:
-                        Result := mIMSCtrler.FSMPlayMemP2;
-                else
-                    Result := -1;
-                end;
-
-                if Result = 1 then
-                begin
-                    gLog.Panel('%s: MEM%d Àç»ı ¸í·É ¼º°ø - ºü¸¥ ¸ğ´ÏÅÍ¸µ ½ÃÀÛ', [Name, MemNum]);
-                    mMMA.Clear;
-                    mTC.Start(50); // 50ms °£°İÀ¸·Î ºü¸¥ Ã¼Å©
-                    mLocalState := 0; // ºü¸¥ Ã¼Å© Ä«¿îÅÍ ÃÊ±âÈ­
-                    mFuncState := 1;
-                    Result := 0;
-                end;
-            end;
-
-        1: // ºü¸¥ ¿¬¼Ó ¸ğ´ÏÅÍ¸µ (50ms °£°İ)
-            begin
-                if not mTC.IsTimeOut then
-                    Exit;
-
-                CurrVal := GetMotorCurr(tmSlide);
-                mMMA.Add(CurrVal);
-                Inc(mLocalState);
-
-                // µ¿ÀÛ °¨ÁöµÇ¸é ÀÏ¹İ ¸ğ´ÏÅÍ¸µÀ¸·Î ÀüÈ¯
-                if CurrVal > MEM_CURR_THRESHOLD then
-                begin
-                    gLog.Panel('µ¿ÀÛ °¨Áö! - ÀÏ¹İ ¸ğ´ÏÅÍ¸µÀ¸·Î ÀüÈ¯');
-                    mTC.Start(MEM_CURR_CHECK_TIME * 1000); // 5ÃÊ Å¸ÀÌ¸Ó
-                    mFuncState := 2;
-                    Exit;
-                end;
-
-                // 40¹ø Ã¼Å© (2ÃÊ) ÈÄ¿¡µµ µ¿ÀÛ ¾øÀ¸¸é ¹Ù·Î ÆÇÁ¤
-                if mLocalState >= 40 then
-                begin
-                    gLog.Panel('ºü¸¥ ¸ğ´ÏÅÍ¸µ ¿Ï·á - µ¿ÀÛ ¾øÀ½');
-                    mFuncState := 3; // ¹Ù·Î ÆÇÁ¤À¸·Î
-                    Exit;
-                end;
-
-                // ´ÙÀ½ Ã¼Å©¸¦ À§ÇØ Å¸ÀÌ¸Ó Àç½ÃÀÛ
-                mTC.Start(50);
-            end;
-
-        2: // ÀÏ¹İ ¸ğ´ÏÅÍ¸µ (µ¿ÀÛÀÌ °¨ÁöµÈ °æ¿ì)
-            begin
-                CurrVal := GetMotorCurr(tmSlide);
-                mMMA.Add(CurrVal);
-
-                // µ¿ÀÛ ¿Ï·á °¨Áö
-                if (CurrVal < MEM_CURR_THRESHOLD) and (mMMA.mMax > MEM_CURR_THRESHOLD) then
-                begin
-                    gLog.Panel('µ¿ÀÛ ¿Ï·á °¨Áö');
-                    mFuncState := 3;
-                end
-                else if mTC.IsTimeOut then
-                begin
-                    gLog.Panel('ÀÏ¹İ ¸ğ´ÏÅÍ¸µ Å¸ÀÓ¾Æ¿ô');
-                    mFuncState := 3;
-                end;
-            end;
-
-        3: // ÃÖÁ¾ ÆÇÁ¤
-            begin
-                gLog.Panel('=== MEM%d ÃÖÁ¾ ÆÇÁ¤ ===', [MemNum]);
-                gLog.Panel('ÃÖ´ëÀü·ù: %.3f A, ÀÓ°è°ª: %.1f A', [mMMA.mMax, MEM_CURR_THRESHOLD]);
-
-                if mMMA.mMax > MEM_CURR_THRESHOLD then
-                begin
-                    gLog.Panel('%s: MEM%d µ¿ÀÛ OK', [Name, MemNum]);
-                    case MemNum of
-                        1:
-                            mDBX.SetData(roRsMem1, True);
-                        2:
-                            mDBX.SetData(roRsMem2, True);
-                    end;
-                end
-                else
-                begin
-                    gLog.Panel('%s: MEM%d µ¿ÀÛ NG', [Name, MemNum]);
-                    case MemNum of
-                        1:
-                            mDBX.SetData(roRsMem1, False);
-                        2:
-                            mDBX.SetData(roRsMem2, False);
-                    end;
-                end;
-
-                mFuncState := 0;
-                Result := 1;
-            end;
-    end;
-end;
 
 function TTsWork.FSMTestMemory: Integer;
-var
-    CurrVal: Double;
-    MtrIt: TMotorOrd;
 begin
-    Result := 0;
+    Result := 0; // ì§„í–‰ ì¤‘
 
     case mMemTestState of
         _MEM_INIT:
             begin
-                gLog.Panel('%s: ¸Ş¸ğ¸® Å×½ºÆ® ½ÃÀÛ - IGN ON', [Name]);
-                mPeriodicCanData.MemoryEnables(true);
+                gLog.Panel('%s: ë©”ëª¨ë¦¬ í…ŒìŠ¤íŠ¸ ì´ˆê¸°í™” (mMemTestState=%d)', [Name, Ord(mMemTestState)]);
+                mPeriodicCanData.MemoryEnables(True); // IGN ON ë“± í™œì„±í™”
 
-                mMtrOper.ClearFSM;
-                mMMA.Clear; // Min/Max/Avg ÃÊ±âÈ­
-                mFuncState := 0; // ¼­ºê FSM »óÅÂ ÃÊ±âÈ­
+                mMMA.Clear;
+                mFuncState := 0; // ì„œë¸Œ FSM ì´ˆê¸°í™”
+                mLocalState := 0; // ì¹´ìš´í„° ì´ˆê¸°í™”
+                mTC.Stop;        // íƒ€ì´ë¨¸ ì´ˆê¸°í™”
 
                 UpdateForm(tw_MEMORY_START);
 
-                if mCurModelType.IsIMS then
+                if not mCurModelType.IsIMS then
                 begin
-                    mMemTestState := _MEM_MOVE_FOR_MEM1;
-                    gLog.Panel('%s: MEM1 À§Ä¡·Î ÀÌµ¿ ½ÃÀÛ', [Name]);
-                    UpdateForm(tw_MEM1_ARRANGE);
-                    mMotors[tmSlide].ClearFSM;
-                end
-                else
-                begin
+                    gLog.Panel('%s: ë¹„IMS ì‚¬ì–‘ - ë©”ëª¨ë¦¬ í…ŒìŠ¤íŠ¸ ìŠ¤í‚µ', [Name]);
                     mMemTestState := _MEM_TEST_END;
-                    gLog.Panel('%s: IMS »ç¾çÀÌ ¾Æ´Ï¹Ç·Î ¸Ş¸ğ¸® Å×½ºÆ®¸¦ °Ç³Ê¶İ´Ï´Ù.', [Name]);
+                    Exit;
                 end;
+
+                mMemTestState := _MEM_MOVE_FOR_MEM1;
+                gLog.Panel('%s: ì²« ë²ˆì§¸ ì „ì§„ 2.5ì´ˆ ì‹œì‘ (MEM1 ìœ„ì¹˜)', [Name]);
+                UpdateForm(tw_MEM1_ARRANGE);
+
+                mMtrSlide.ClearFSM;
             end;
 
         _MEM_MOVE_FOR_MEM1:
             begin
-
                 case mMtrSlide.FSMMove(twForw, MEM_MOVE_TIME) of
                     -1:
                         begin
-                            gLog.Error('%s: MEM1 À§Ä¡ ÀÌµ¿ ½ÇÆĞ', [Name]);
+                            gLog.Error('%s: ì²« ë²ˆì§¸ ì „ì§„ (MEM1 ìœ„ì¹˜) ì‹¤íŒ¨', [Name]);
                             mMemTestState := _MEM_ERROR;
                         end;
                     1:
                         begin
-                            mTC.Start(MEM_TEST_DELAY);
+                            gLog.Panel('%s: ì²« ë²ˆì§¸ ì „ì§„ ì™„ë£Œ (MEM1 ìœ„ì¹˜)', [Name]);
                             mMemTestState := _MEM_SAVE_MEM1;
-                            gLog.Panel('%s: MEM1 À§Ä¡ µµ´Ş (2ÃÊ ÀÌµ¿)', [Name]);
-                            mMotors[tmSlide].ClearFSM;
                             UpdateForm(tw_MEM1_SAVE);
                         end;
                 end;
@@ -3833,40 +3742,40 @@ begin
 
         _MEM_SAVE_MEM1:
             begin
-                if not mTC.IsTimeOut then
-                    Exit;
-
-                case mIMSCtrler.FSMSaveMemP1 of
+                case mMtrSlide.IMSCtrler.FSMSaveMemP1 of
                     -1:
                         begin
-                            gLog.Error('%s: MEM1 ÀúÀå ½ÇÆĞ', [Name]);
+                            gLog.Error('%s: MEM1 ì €ì¥ ì‹¤íŒ¨', [Name]);
                             mMemTestState := _MEM_ERROR;
                         end;
                     1:
                         begin
-                            UpdateForm(tw_MEM2_ARRANGE);
-                            gLog.Panel('%s: MEM1 ÀúÀå ¿Ï·á', [Name]);
+                            gLog.Panel('%s: MEM1 ì €ì¥ ì™„ë£Œ', [Name]);
+                            mTC.Start(1000);
                             mMemTestState := _MEM_MOVE_FOR_MEM2;
-                            gLog.Panel('%s: MEM2 À§Ä¡·Î ÀÌµ¿ ½ÃÀÛ', [Name]);
-                            mTC.Start(MEM_TEST_DELAY);
-                            mMtrOper.ClearFSM;
+                            gLog.Panel('%s: ë‘ ë²ˆì§¸ ì „ì§„ 2.5ì´ˆ ì‹œì‘ (MEM2 ìœ„ì¹˜)', [Name]);
+                            UpdateForm(tw_MEM2_ARRANGE);
+                            mMtrSlide.ClearFSM;
                         end;
                 end;
             end;
 
         _MEM_MOVE_FOR_MEM2:
             begin
+                if not mTC.IsTimeOut then
+                begin
+                    Exit;
+                end;
+
                 case mMtrSlide.FSMMove(twForw, MEM_MOVE_TIME) of
                     -1:
                         begin
-                            gLog.Error('%s: MEM2 À§Ä¡ ÀÌµ¿ ½ÇÆĞ', [Name]);
+                            gLog.Error('%s: ë‘ ë²ˆì§¸ ì „ì§„ (MEM2 ìœ„ì¹˜) ì‹¤íŒ¨', [Name]);
                             mMemTestState := _MEM_ERROR;
                         end;
                     1:
                         begin
-                            mTC.Start(MEM_TEST_DELAY);
-                            gLog.Panel('%s: MEM2 À§Ä¡ µµ´Ş (2ÃÊ ÀÌµ¿)', [Name]);
-              // [¼öÁ¤] ÀúÀå ÈÄ ¹Ù·Î MEM1 Å×½ºÆ® »óÅÂ·Î ÀüÈ¯
+                            gLog.Panel('%s: ë‘ ë²ˆì§¸ ì „ì§„ ì™„ë£Œ (MEM2 ìœ„ì¹˜)', [Name]);
                             mMemTestState := _MEM_SAVE_MEM2;
                             UpdateForm(tw_MEM2_SAVE);
                         end;
@@ -3875,85 +3784,92 @@ begin
 
         _MEM_SAVE_MEM2:
             begin
-                if not mTC.IsTimeOut then
-                    Exit;
-
-                case mIMSCtrler.FSMSaveMemP2 of
+                case mMtrSlide.IMSCtrler.FSMSaveMemP2 of
                     -1:
                         begin
-                            gLog.Error('%s: MEM2 ÀúÀå ½ÇÆĞ', [Name]);
+                            gLog.Error('%s: MEM2 ì €ì¥ ì‹¤íŒ¨', [Name]);
                             mMemTestState := _MEM_ERROR;
                         end;
                     1:
                         begin
-                            gLog.Panel('%s: MEM2 ÀúÀå ¿Ï·á', [Name]);
-                            mTC.Start(MEM_TEST_DELAY);
-              // [¼öÁ¤] MEM1 Å×½ºÆ®¸¦ À§ÇÑ »õ·Î¿î »óÅÂ·Î ÀüÈ¯
+                            gLog.Panel('%s: MEM2 ì €ì¥ ì™„ë£Œ', [Name]);
+                            mTC.Start(2000);
                             mMemTestState := _MEM_PLAY_MEM1;
                             UpdateForm(tw_MEM1_PLAY);
+                            mFuncState := 0; // FSMPlayAndCheckMemory ì´ˆê¸°í™”
                         end;
                 end;
             end;
 
-    // [½Å±Ô »óÅÂ] FSMPlayAndCheckMemory ÇÔ¼ö¸¦ »ç¿ëÇÏ¿© MEM1 Å×½ºÆ®
-            _MEM_PLAY_MEM1:
+        _MEM_PLAY_MEM1:
             begin
                 if not mTC.IsTimeOut then
+                begin
                     Exit;
+                end;
 
-                case FSMPlayAndCheckMemory(1) of
-                    -1: // ¿¡·¯ ¹ß»ı
-                        mMemTestState := _MEM_ERROR;
-                    1:  // Å×½ºÆ® ¿Ï·á
+                case mMtrSlide.IMSCtrler.FSMPlayMemP1 of
+                    -1:
                         begin
-              // MEM2 Å×½ºÆ®°¡ ÇÊ¿äÇÑÁö È®ÀÎ
-                            if mCurModelType.IsIMS then
-                            begin
-                                mTC.Start(MEM_TEST_DELAY);
-                                mMemTestState := _MEM_PLAY_MEM2; // MEM2 Å×½ºÆ® »óÅÂ·Î ÀüÈ¯
-                                UpdateForm(tw_MEM2_PLAY);
-                            end
-                            else
-                            begin
-                                mMemTestState := _MEM_TEST_END; // Å×½ºÆ® Á¾·á
-                            end;
+                            gLog.Error('%s: MEM1 í”Œë ˆì´ ì‹¤íŒ¨', [Name]);
+                            mMemTestState := _MEM_ERROR;
                         end;
-          // 0: ÁøÇà Áß, ¾Æ¹«°Íµµ ÇÏÁö ¾ÊÀ½
+                    1:
+                        begin
+                            gLog.Panel('%s: MEM1 í”Œë ˆì´ ë° ê°ì§€ ì™„ë£Œ', [Name]);
+                            mTC.Start(2000);
+                            mMemTestState := _MEM_PLAY_MEM2;
+                            UpdateForm(tw_MEM2_PLAY);
+                            mFuncState := 0;
+                        end;
                 end;
             end;
 
-    // [½Å±Ô »óÅÂ] FSMPlayAndCheckMemory ÇÔ¼ö¸¦ »ç¿ëÇÏ¿© MEM2 Å×½ºÆ®
-            _MEM_PLAY_MEM2:
+        _MEM_PLAY_MEM2:
             begin
-                case FSMPlayAndCheckMemory(2) of
-                    -1: // ¿¡·¯ ¹ß»ı
-                        mMemTestState := _MEM_ERROR;
-                    1:  // Å×½ºÆ® ¿Ï·á
+                if not mTC.IsTimeOut then
+                begin
+                    Exit;
+                end;
+
+
+                case mMtrSlide.IMSCtrler.FSMPlayMemP2 of
+                    -1:
                         begin
-                            mMemTestState := _MEM_TEST_END; // ¸ğµç Å×½ºÆ® Á¾·á
+                            gLog.Error('%s: MEM2 í”Œë ˆì´ ì‹¤íŒ¨', [Name]);
+                            mMemTestState := _MEM_ERROR;
                         end;
-          // 0: ÁøÇà Áß, ¾Æ¹«°Íµµ ÇÏÁö ¾ÊÀ½
+                    1:
+                        begin
+                            gLog.Panel('%s: MEM2 í”Œë ˆì´ ë° ê°ì§€ ì™„ë£Œ', [Name]);
+                            mMemTestState := _MEM_TEST_END;
+                        end;
                 end;
             end;
 
         _MEM_TEST_END:
             begin
-                gLog.Panel('%s: ¸Ş¸ğ¸® Å×½ºÆ® ¿Ï·á', [Name]);
+                gLog.Panel('%s: ë©”ëª¨ë¦¬ í…ŒìŠ¤íŠ¸ ì „ì²´ ì™„ë£Œ', [Name]);
+                mPeriodicCanData.MemoryEnables(False);
                 UpdateForm(tw_MEMORY_END);
-                mPeriodicCanData.MemoryEnables(false);
-                mPeriodicCanData.HVEnables(false);
                 mMemTestState := _MEM_INIT;
-                Result := 1;
+                mFuncState := 0;
+                mLocalState := 0;
+                mTC.Stop;
+                Result := 1; // ì „ì²´ ì™„ë£Œ
             end;
 
         _MEM_ERROR:
             begin
-                gLog.Error('%s: ¸Ş¸ğ¸® Å×½ºÆ® ERROR', [Name]);
-                mPeriodicCanData.MemoryEnables(false);
+                gLog.Error('%s: ë©”ëª¨ë¦¬ í…ŒìŠ¤íŠ¸ ì—ëŸ¬ ë°œìƒ', [Name]);
+                mPeriodicCanData.MemoryEnables(False);
                 mMemTestState := _MEM_INIT;
-                mLstError := '¸Ş¸ğ¸® Å×½ºÆ® ERROR';
-                mLstToDo := 'Á¦Ç° »óÅÂ¸¦ È®ÀÎÇÏ¼¼¿ä';
-                Result := -1;
+                mFuncState := 0;
+                mLocalState := 0;
+                mTC.Stop;
+                mLstError := 'ë©”ëª¨ë¦¬ í…ŒìŠ¤íŠ¸ ì—ëŸ¬';
+                mLstToDo := 'ì œí’ˆ ë° ì¥ë¹„ ìƒíƒœ í™•ì¸';
+                Result := -1; // ì—ëŸ¬
             end;
     end;
 end;
@@ -3975,13 +3891,13 @@ begin
                 case mDTCReader.FSMClear of
                     -1:
                         begin
-                            gLog.Error('DTC »èÁ¦ ÀÀ´ä ¿À·ù', []);
+                            gLog.Error('DTC ì‚­ì œ ì‘ë‹µ ì˜¤ë¥˜', []);
                             mDTCState := 0;
                             Exit(-1);
                         end;
                     1:
                         begin
-                            gLog.Panel('DTC »èÁ¦ Àü¼Û ¿Ï·á');
+                            gLog.Panel('DTC ì‚­ì œ ì „ì†¡ ì™„ë£Œ');
                             mDTCReader.ClearFSM;
                             Sleep(300);
                             Inc(mDTCState);
@@ -4005,14 +3921,14 @@ begin
                             else
                             begin
                                 Inc(mDTCState);
-                                gLog.Panel('DTC Clear - Àç½Ãµµ(%d)', [mRetrycount]);
+                                gLog.Panel('DTC Clear - ì¬ì‹œë„(%d)', [mRetrycount]);
                                 mDelayTC.Start(1000);
                             end;
 
                         end;
                     1:
                         begin
-                            gLog.Panel('DTC Á¦°Å È®ÀÎ OK: %s', [mDTCReader.CurFrame.ToStr]);
+                            gLog.Panel('DTC ì œê±° í™•ì¸ OK: %s', [mDTCReader.CurFrame.ToStr]);
                             mDTCState := 0;
                             Exit(1);
 

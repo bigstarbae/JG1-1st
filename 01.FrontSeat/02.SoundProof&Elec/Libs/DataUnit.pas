@@ -506,10 +506,26 @@ const
     ARY_DATA_LINE_COUNT: array[TFaGRAPH_ORD] of Integer = (4, 4, 4, 4, 4, 4, 4, 4, 4, 4);
     ARY_SPEC_LINE_COUNT: array[TFaGRAPH_ORD] of Integer = (4, 4, 4, 4, 4, 4, 4, 4, 4, 4);
     // 현재 라인 : 2개씩, 모터별 4
-    DataGridORD: array[0..109] of TResultORD = (roIndex, roDate, roTime, roPartName, roCarType, roWayType, roPartNO, roLotNo, roMcNo, roNo,
+    DataGridORD: array[0..110] of TResultORD = (roIndex, roDate, roTime, roPartNo, roPartName, roCarType, roLotNo, roMcNo, roNo,
+
+
+        roRsAbnormalSound,
+
+        // ECU Info
+        roDataEcuPartNo, roDataEcuSwVer, roDataEcuHwVer,
 
         //--------------------------
-        roRsAbnormalSound,
+        // IMS
+        roRsMem1, roRsMem2, roRsMem3, roRsEasyAccess, // 메모리
+
+        // DTC Clear
+        roRsDTCClear,
+
+        // 앵커 PT
+        rospecAncPT, roDatAncPT, roRsAncPT,
+
+         // 버클
+        roSpecBuckleHiLo, roDatBuckle, roRsBuckle,
 
 
         //--------------------------
@@ -598,26 +614,18 @@ const
         roRsLimit,
 
         //--------------------------
-        // IMS
-        roRsMem1, roRsMem2, roRsEasyAccess, // 메모리
-        roRsIMS,
-
-        //--------------------------
         // H/V
         // Drv Htr
-        rospecHeatOnHiLo, roDatOnCurr, rospecHeatOffHiLo, roDatOffCurr, roRsLedHi, roRsLedMid, roRsLedLo, roRsLedOff,
+
+        rospecHeatOnHiLo, roDatOnCurr, rospecHeatOffHi, roDatOffCurr, roRsLedHi, roRsLedMid, roRsLedLo, roRsLedOff,
         // Drv Vnt
-        rospecHeatOnHiLo, roDatOnCurr, rospecHeatOffHiLo, roDatOffCurr, roRsLedHi, roRsLedMid, roRsLedLo, roRsLedOff,
+
+        rospecVentOnHiLo, roDatOnCurr, rospecVentOffHi, roDatOffCurr, roRsLedHi, roRsLedMid, roRsLedLo, roRsLedOff, roRsFlowTest
 
 
-        // 버클
-        roSpecBuckleHiLo, roDatBuckle, roRsBuckle,
+        );
 
-        // 앵커 PT
-        rospecAncPT, roDatAncPT, roRsAncPT,
 
-        // ECU Info
-        roDataEcuPartNo, roDataEcuSwVer, roDataEcuHwVer);
     PopDataORD: array[0..104] of TResultORD = (roIndex, roDate, roTime, roPartNo, roLotNo, roNo, roNone, roNone, roNone, roNone,
 
         // Slide

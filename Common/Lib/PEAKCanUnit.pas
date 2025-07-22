@@ -37,6 +37,16 @@ uses
     BaseDAQ, BaseCAN, PCANBasic, SysUtils, Windows;
     {Messages}
 
+const
+    CLASSIC_S_POINT_80_1_PRESET = 'f_clock_mhz=80,nom_brp=8,nom_tseg1=15,nom_tseg2=4,nom_sjw=3,data_brp=2,data_tseg1=15,data_tseg2=4,data_sjw=4';
+    FD_SAEJ2284_4_PRESET =        'f_clock_mhz=80,nom_brp=40,nom_tseg1=1,nom_tseg2=2,nom_sjw=1,data_brp=10,data_tseg1=1,data_tseg2=2,data_sjw=1';
+    FD_SAEJ2284_5_PRESET =        'f_clock_mhz=80,nom_brp=40,nom_tseg1=1,nom_tseg2=2,nom_sjw=1,data_brp=4,data_tseg1=1,data_tseg2=2,data_sjw=1';
+	FD_S_POINT_80_PRESET_1 =      'f_clock_mhz=80,nom_brp=32,nom_tseg1=3,nom_tseg2=1,nom_sjw=1,data_brp=16,data_tseg1=3,data_tseg2=1,data_sjw=1';
+    FD_S_POINT_80_PRESET_2 =      'f_clock_mhz=80,nom_brp=16,nom_tseg1=7,nom_tseg2=2,nom_sjw=1,data_brp=8,data_tseg1=7,data_tseg2=2,data_sjw=1';
+    FD_S_POINT_80_PRESET_3 =      'f_clock_mhz=80,nom_brp=8,nom_tseg1=15,nom_tseg2=4,nom_sjw=1,data_brp=4,data_tseg1=15,data_tseg2=4,data_sjw=1';
+    FD_S_POINT_80_PRESET_4 =      'f_clock_mhz=80,nom_brp=4,nom_tseg1=31,nom_tseg2=8,nom_sjw=1,data_brp=2,data_tseg1=8,data_tseg2=1,data_sjw=1';
+
+
 type
     TPeakCAN = class(TBaseCAN)
     private
@@ -46,6 +56,7 @@ type
         mOpenStatus, mStatus: TPCANStatus;
         mRCanMsg, mWCanMsg: TPCANMsg;
         mRCanMsgFD, mWCanMsgFD: TPCANMsgFD;
+
     public
         constructor Create();
         destructor Destroy; override;
@@ -65,6 +76,7 @@ type
         function GetFormatedError(error: TPCANStatus): UnicodeString;
         function Reads: boolean; override;
         function Write(const ID: Cardinal; Flags: integer; Data: array of BYTE; Len: integer = 8): boolean; override;
+
 
     end;
 
@@ -148,6 +160,7 @@ end;
 function TPeakCAN.Open(CH, Baudrate: integer): boolean;
 var
     strCH: string;
+
 begin
     Result := False;
 
@@ -163,7 +176,8 @@ begin
 
     if mUseFD then
     begin
-        mStatus := TPCANBasic.InitializeFD(mPcanHandle, PAnsiChar(mPreScaleStr));
+        mStatus := TPCANBasic.InitializeFD(mPcanHandle, PAnsiChar(mPreset.ToStr));
+        gLog.Panel(mPreset.ToStr);
     end
     else
     begin

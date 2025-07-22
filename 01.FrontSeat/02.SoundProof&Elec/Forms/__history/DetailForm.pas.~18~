@@ -1,0 +1,760 @@
+unit DetailForm;
+{$INCLUDE myDefine.INC}
+
+interface
+
+uses
+    Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+    Dialogs, ExtCtrls, FaGraphEx, ComCtrls, ToolWin, ImgList, Buttons, StdCtrls,
+    DataUnit, TableMaker, FAGraphExLegend, SeatMotorType, SeatMtrGrpExtender;
+
+const
+    MAX_TM_COUNT = 5;
+
+type
+    TfrmDetail = class(TForm)
+        OpenDialog1: TOpenDialog;
+        sbBoard: TScrollBox;
+        iPreview: TImage;
+        StatusBar1: TStatusBar;
+        Panel3: TPanel;
+        sbtnPrint: TSpeedButton;
+        sbtnReferPrint: TSpeedButton;
+        Panel1: TPanel;
+        sbtnExit: TSpeedButton;
+        sbtnReferGraph: TSpeedButton;
+        PrinterSetupDialog1: TPrinterSetupDialog;
+        SpeedButton1: TSpeedButton;
+        SaveDialog1: TSaveDialog;
+        pnlTitle: TPanel;
+        fagrpSlide: TFaGraphEx;
+        fagrpTilt: TFaGraphEx;
+        fagrpheight: TFaGraphEx;
+        fagrpLegSupt: TFaGraphEx;
+        fagrpSwivel: TFaGraphEx;
+
+        Timer1: TTimer;
+
+        procedure FormClose(Sender: TObject; var Action: TCloseAction);
+        procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+        procedure FormCreate(Sender: TObject);
+        procedure FormDestroy(Sender: TObject);
+        procedure FormShow(Sender: TObject);
+        procedure sbtnPrintClick(Sender: TObject);
+        procedure sbtnReferPrintClick(Sender: TObject);
+        procedure sbtnExitClick(Sender: TObject);
+        procedure sbtnReferGraphClick(Sender: TObject);
+        procedure ckbDataPosClick(Sender: TObject);
+        procedure SpeedButton1Click(Sender: TObject);
+        procedure Timer1Timer(Sender: TObject);
+        procedure pnlTitleClick(Sender: TObject);
+
+    private
+        { Private declarations }
+        mfName: string;
+        mIndex: integer;
+
+        mDefRowHeight, mGap: Integer;
+        mTM: array[0..MAX_TM_COUNT - 1] of TTableMakerEx;
+
+        mLegends: array[TMotorOrd] of TLegend;
+        mGH: array[TMotorOrd] of TSeatMtrGrpExtender;
+
+        procedure DrawTitle(ACanvas: TCanvas; Rect: TRect; ACaption: string);
+        procedure DrawGraph(ACanvas: TCanvas; Rect: TRect; TM: TTableMakerEx; Graph: TFaGraphEx; Legend: TLegend);
+
+        procedure Preview(PageNo: integer; scale: integer);
+        procedure DrawReport(ACanvas: TCanvas; Rect: TRect);
+        procedure DrawPage(ACanvas: TCanvas; Rect: TRect);
+        function LoadData(AIDx: integer): Boolean;
+        procedure LoadAndDisplays;
+        procedure CreateTbls;
+        procedure InitCell(Cell: TTMCell);
+        procedure InitLegends;
+
+    public
+        { Public declarations }
+
+        function SetFrm(const afName: string; Index: integer): Boolean;
+        procedure PrintOut;
+
+    end;
+
+var
+    frmDetail: TfrmDetail;
+
+implementation
+
+uses
+    SeatMotor, Printers, myUtils, DataBox, Graphconfigform, DrawBmp, NotifyForm,
+    SysEnv, DataUnitOrd, Log, UserTool, KiiFaGraphDB, DataUnitHelper, URect,
+    Global, Range, FAGraphExHelper, LangTran;
+
+var
+    lpData: TDataBox;
+    lpBmp: TDrawBmp;
+    lpFont: integer;
+{$R *.dfm}
+
+function GetPrintImage(ADir, AFile: string): string;
+
+    function GetUsrFileName(ADir, AFile, ATag: string): string;
+    var
+        i: integer;
+    begin
+        for i := 1 to 999 do
+        begin
+            Result := Format('%s%s(%s%3.3d)%s', [ADir, Copy(ExtractFileName(AFile), 1, Pos('.', AFile) - 1), ATag, i, ExtractFileExt(AFile)]);
+
+            if not FileExists(Result) then
+                Exit;
+        end;
+        Result := '';
+    end;
+
+var
+    i: integer;
+    sTm: string;
+begin
+    if ADir[Length(ADir)] <> '\' then
+        ADir := ADir + '\';
+
+    sTm := ADir + AFile;
+
+    if not FileExists(sTm) then
+    begin
+        Result := sTm;
+        Exit;
+    end;
+
+    Result := GetUsrFileName(ADir, AFile, '');
+    if Result <> '' then
+        Exit;
+    // A..Z
+    for i := 65 to 90 do
+    begin
+        Result := GetUsrFileName(ADir, AFile, Char(i));
+        if Result <> '' then
+            Exit;
+    end;
+    // a..z
+    for i := 97 to 122 do
+    begin
+        Result := GetUsrFileName(ADir, AFile, Char(i));
+        if Result <> '' then
+            Exit;
+    end;
+
+    Result := ADir + AFile;
+end;
+
+procedure TfrmDetail.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+    Action := caFree;
+end;
+
+procedure TfrmDetail.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+begin
+    {
+      with TfrmWait.Create(Application) do
+      begin
+      Execute('PwrSeatTester.exe', 50.0) ;
+      end ;
+      }
+end;
+
+procedure TfrmDetail.FormCreate(Sender: TObject);
+var
+    Mtr: TMotorOrd;
+begin
+    lpData := TDataBox.Create(22);
+    lpData.InitData();
+
+    mGH[tmSlide] := TSeatMtrGrpExtender.Create(fagrpSlide);
+    mGH[tmTilt] := TSeatMtrGrpExtender.Create(fagrpTilt);
+    mGH[tmHeight] := TSeatMtrGrpExtender.Create(fagrpheight);
+    mGH[tmLegSupt] := TSeatMtrGrpExtender.Create(fagrpLegSupt);
+    mGH[tmSwivel] := TSeatMtrGrpExtender.Create(fagrpSwivel);
+
+    for Mtr := Low(TMotorOrd) to MtrOrdHi do
+    begin
+        mLegends[Mtr] := TLegend.Create(Self, mGH[Mtr].Graph);
+    end;
+
+end;
+
+procedure TfrmDetail.FormDestroy(Sender: TObject);
+var
+    i: integer;
+    Mtr: TMotorOrd;
+begin
+    for i := 0 to MAX_TM_COUNT - 1 do
+    begin
+        if Assigned(mTM[i]) then
+            FreeAndNil(mTM[i]);
+    end;
+
+    if Assigned(lpData) then
+        FreeAndNil(lpData);
+    lpData := nil;
+
+    for Mtr := Low(TMotorOrd) to MtrOrdHi do
+    begin
+        mLegends[Mtr].Free;
+        mGH[Mtr].Free;
+    end;
+
+end;
+
+procedure TfrmDetail.FormShow(Sender: TObject);
+begin
+    pnlTitle.Caption := PROJECT_NAME + ' REPORT';
+
+    iPreview.Left := 35;
+    fagrpSlide.Tag := ord(faSlide);
+    { // TO DO
+    if lpData.GetMcNo = 0 then
+    begin
+
+        fagrpRecl.Tag := ord(faRecl1);
+        fagrpLSupt.Tag := ord(faLSupt1);
+        fagrpBolster.Tag := ord(faBolster1);
+    end
+    else
+    begin
+        fagrpRecl.Tag := ord(faRecl2);
+        fagrpLSupt.Tag := ord(faLSupt2);
+        fagrpBolster.Tag := ord(faBolster2);
+    end;
+    }
+    sbtnPrint.Enabled := Printer.Printers.Count > 0;
+    sbtnReferPrint.Enabled := sbtnPrint.Enabled;
+
+    WindowState := wsMaximized;
+    LoadAndDisplays();
+    // Timer1.Enabled:= true ;
+
+    TLangTran.ChangeCaption(self);
+end;
+
+procedure TfrmDetail.CreateTbls;
+var
+    CellStr: string;
+begin
+
+    CellStr := '작업정보, #L,       #L,         #L,        #L,          전체판정,' +
+               '작업일자, 작업시간, CAR TYPE,   PART NO,    LOT NO,     @roNO,' +
+               '$roDate,  $roTime,  $roCarType, $roPartNo,  $roLotNo,   #T';
+
+    mTM[0] := TTableMakerEx.Create(6, 3, CellStr, InitCell);
+    mTM[0].SelectCell(0, 0, 5, 0).SetBkColor(clBtnFace);
+    mTM[0].Cells[5, 1].mFontHeight := 40;
+    {
+      Prefix @(roRs): 판정, $: 값
+      }
+
+    CellStr := 'ECU,           PART NO,            SW VER,            HW VER,           AnchorPT,       Buckle,             MEM1,       MEM2,       MEM3,      EASY ACCESS,     DTC CLEAR,' +
+               '기준,          $roSpecEcuPartNo,   $roSpecEcuSwVer,   $roSpecEcuHwVer,  $roSpecAncPT,   $roSpecBuckleHiLo,  #T,         #T,         #T,        #T,              #T,' +
+               '측정값,        $roDataEcuPartNo,   $roDataEcuSwVer,   $roDataEcuHwVer,  $roDatAncPT,    $roDatBuckle,       $roRsMem1,  $roRsMem2,  $roRsMem3, $roRsEasyAccess, $roRsDTCClear';
+    mTM[1] := TTableMakerEx.Create(11, 3, CellStr, InitCell);
+    mTM[1].SelectCell(0, 0, 9, 0).SetBkColor(clBtnFace);
+    mTM[1].SetColWidthsRatio([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+
+
+    CellStr := 'RECLINER,     속도,               #L,               초기 소음,            #L,                  작동 소음,           #L,                 전류,              #L,' + '#T,           기준,               측정값,           기준,                 측정값,              기준,                측정값,             기준,              측정값,' + '전진,         $rospecFwSpeedHiLo, @roDataFwSpeed,   $rospecInitNoiseHi,   @roDataFwInitNoise,  $rospecRunNoiseHi,   @roDataFwRunNoise,  $rospecCurrHiLo,   @roDataFwCurr,' + '후진,         $rospecBwSpeedHiLo, @roDataBwSpeed,   #T,                   @roDataBwInitNoise,  #T,                  @roDataBwRunNoise,  #T,                @roDataBwCurr';
+
+  //  lpData.GetResultToATxt(Ord(roRecl_CTRL), False);
+    mTM[2] := TTableMakerEx.Create(9, 4, CellStr, InitCell);
+    mTM[2].SelectCell(0, 0, 9, 1).SetBkColor(clBtnFace);
+    mTM[2].SetColWidthsRatio([1, 1, 1, 1, 1, 1, 1, 1, 1]);
+//
+    CellStr := 'L/SUPT,       초기 소음,            #L,                  작동 소음,           #L,                 전류,              #L,' + '#T,           기준,                 측정값,              기준,                측정값,             기준,              측정값,' + '전진,         $rospecInitNoiseHi,   @roDataFwInitNoise,  $rospecRunNoiseHi,   @roDataFwRunNoise,  $rospecCurrHiLo,   @roDataFwCurr';
+  //  lpData.GetResultToATxt(Ord(roLSupt_CTRL), False);
+    mTM[3] := TTableMakerEx.Create(7, 3, CellStr, InitCell);
+    mTM[3].SelectCell(0, 0, 7, 1).SetBkColor(clBtnFace);
+    mTM[3].SetColWidthsRatio([1, 1, 1, 1, 1, 1, 1]);
+//
+    CellStr := 'BOLSTER,      초기 소음,            #L,                  작동 소음,           #L,                 전류,              #L,' + '#T,           기준,                 측정값,              기준,                측정값,             기준,              측정값,' + '전진,         $rospecInitNoiseHi,   @roDataFwInitNoise,  $rospecRunNoiseHi,   @roDataFwRunNoise,  $rospecCurrHiLo,   @roDataFwCurr';
+  //  lpData.GetResultToATxt(Ord(roBolster_CTRL), False);
+    mTM[4] := TTableMakerEx.Create(7, 3, CellStr, InitCell);
+    mTM[4].SelectCell(0, 0, 7, 1).SetBkColor(clBtnFace);
+    mTM[4].SetColWidthsRatio([1, 1, 1, 1, 1, 1, 1]);
+
+end;
+
+procedure TfrmDetail.InitCell(Cell: TTMCell);
+var
+    RsOrd: TResultOrd;
+    Prefix, RsOrdStr: string;
+begin
+
+    if Length(Cell.mText) = 0 then
+        Exit;
+
+    Prefix := Cell.mText[1];
+    if (Prefix = '$') or (Prefix = '@') then
+    begin
+        RsOrdStr := Copy(Cell.mText, 2, Length(Cell.mText) - 1);
+
+        RsOrd := GetResultOrdByName(RsOrdStr);
+        if RsOrd <> roNone then
+        begin
+            Cell.mText := lpData.GetResultToATxt(ord(RsOrd), true);
+
+            if IsHan(Cell.mText) then
+                Cell.mText := _TR(Cell.mText);
+
+            if (Pos('roRs', Cell.mText) > 0) or (Prefix = '@') then
+            begin
+                if not lpData.GetResult(RsOrd) then
+                begin
+                    Cell.mBKColor := COLOR_NG_LIGHT; //COLOR_NG;
+                end;
+            end;
+        end;
+    end;
+
+end;
+
+procedure TfrmDetail.InitLegends;
+var
+    i: TMotorOrd;
+    j: integer;
+
+    procedure SetCaption(UpDn: boolean);
+    begin
+
+        if UpDn then
+        begin
+            mLegends[i].Items[0].mCaption := _TR('상승소음');
+            mLegends[i].Items[1].mCaption := _TR('하강소음');
+
+            mLegends[i].Items[2].mCaption := _TR('상승전류');
+            mLegends[i].Items[3].mCaption := _TR('하강전류');
+
+        end
+        else
+        begin
+            mLegends[i].Items[0].mCaption := _TR('전진소음');
+            mLegends[i].Items[1].mCaption := _TR('후진소음');
+
+            mLegends[i].Items[2].mCaption := _TR('전진전류');
+            mLegends[i].Items[3].mCaption := _TR('후진전류');
+        end;
+
+    end;
+
+begin
+
+    for i := Low(TMotorOrd) to MtrOrdHi do
+    begin
+        for j := 0 to mGH[i].Graph.Series.Count - 1 do
+        begin
+            SetCaption(i = tmSlide);
+            mLegends[i].Items[j].mColor := mGH[i].Graph.Series.Items[j].LineColor;
+            mLegends[i].Items[j].mVisible := mGH[i].Graph.Series.Items[j].Visible;
+        end;
+    end;
+
+end;
+
+procedure TfrmDetail.Preview(PageNo: integer; scale: integer);
+var
+    DevWidth, DevHeight: integer;
+    ViewExt, WindowExt: TSize;
+    Paper: TRect;
+    PaperSize: TPoint;
+    tWidth: integer;
+    tHeight: integer;
+begin
+    tWidth := iPreview.Width;
+    tHeight := iPreview.Height;
+
+    Screen.Cursor := crHourGlass;
+    try
+        iPreview.Canvas.Pen.Color := clBlack;
+        iPreview.Canvas.Brush.Color := clWhite;
+        iPreview.Canvas.Pen.Color := clBlack;
+        iPreview.Canvas.FillRect(iPreview.ClientRect);
+
+        SaveDC(iPreview.Canvas.Handle);
+        /// /poPortrait, poLandscape  A4 210 * 297
+
+        if (Printer.Printers.Count > 0) and IsDefaultPrinterSetup and Printer.Printing
+        { and (GetDefaultPrint <> GetUserPrint) } then
+        begin
+            Printer.Orientation := poLandscape;
+            DevWidth := GetDeviceCaps(Printer.Handle, HORZSIZE);
+            DevHeight := GetDeviceCaps(Printer.Handle, VERTSIZE);
+        end
+        else
+        begin
+            DevWidth := 287;
+            DevHeight := 203;
+        end;
+
+        Paper := Rect(0, 0, tWidth, tHeight);
+        DrawReport(iPreview.Canvas, Paper);
+    finally
+        RestoreDC(iPreview.Canvas.Handle, -1);
+
+        Screen.Cursor := crDefault;
+    end;
+end;
+
+function TfrmDetail.SetFrm(const afName: string; Index: integer): Boolean;
+var
+    Mtr: TMotorOrd;
+begin
+    Result := False;
+
+    mfName := afName;
+    mIndex := Index;
+
+    if not LoadData(mIndex) then
+    begin
+        MessageDlg(_TR('자료를 찾을 수 없습니다.') + #13 + _TR('종료 후 다시 작업하세요'), mtWarning, [mbOK], 0);
+        Exit;
+    end;
+
+    with lpData do
+    begin
+
+        for Mtr := Low(TMotorOrd) to MtrOrdHi do
+        begin
+            mGH[Mtr].Param.Create(lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rTime, lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rCurr, lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rInitNoiseTime, lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rInitNoise, lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rRunNoise, 0);
+        end;
+    end;
+
+    Result := True;
+end;
+
+procedure TfrmDetail.DrawTitle(ACanvas: TCanvas; Rect: TRect; ACaption: string);
+
+    procedure TextOutCenter(ACanvas: TCanvas; x, y: integer; const str: string);
+    var
+        ta: word;
+    begin
+        ta := SetTextAlign(ACanvas.Handle, TA_CENTER or TA_TOP);
+        ACanvas.TextOut(x, y - ACanvas.TextHeight(str) div 2, str);
+        SetTextAlign(ACanvas.Handle, ta);
+    end;
+
+var
+    tmp: integer;
+begin
+    ACanvas.Font.Name := _TR('굴림');
+    ACanvas.Font.Height := Trunc((Rect.Bottom - Rect.Top) * 0.45);
+
+    ACanvas.Brush.Color := clWhite;
+    tmp := ACanvas.Pen.Width;
+    ACanvas.Pen.Width := 3;
+    ACanvas.Rectangle(Rect);
+    ACanvas.Pen.Width := tmp;
+
+    TextOutCenter(ACanvas, Rect.Left + (Rect.Right - Rect.Left) div 2, Rect.Top + (Rect.Bottom - Rect.Top) div 2, ACaption);
+
+    ACanvas.Font.Height := Trunc(Rect.Height * 0.3);
+    // SetTextAlign(aCanvas.Handle, TA_CENTER or TA_TOP);
+    ACanvas.TextOut(Rect.Left + Trunc((Rect.Right - Rect.Left) * 5 / 6), Rect.Bottom - Trunc(ACanvas.TextHeight('h') * 1.3), _TR('출력일자: ') + FormatDateTime('ddddd', Now()));
+
+end;
+
+function GetMyTxtToPrintTxt(AValue, AUnit: string): string;
+begin
+    if (AValue <> '--') and (AValue <> '') then
+    begin
+        Result := AValue + ' ' + AUnit;
+    end;
+end;
+
+function PosToRect(Left, Top, Right, Bottom: integer): TRect;
+begin
+    Result.Left := Left;
+    Result.Top := Top;
+    Result.Right := Result.Left + Right;
+    Result.Bottom := Result.Top + Bottom;
+end;
+
+procedure TfrmDetail.DrawGraph(ACanvas: TCanvas; Rect: TRect; TM: TTableMakerEx; Graph: TFaGraphEx; Legend: TLegend);
+var
+    BndRect: TRect;
+    XPos: Integer;
+begin
+
+    BndRect := Rect;
+    SetRectHeight(BndRect, mDefRowHeight * TM.RowCount);
+    TM.Draw(ACanvas, BndRect);
+
+    BndRect := Rect;
+    BndRect.Top := TM.BoundsRect.Bottom + mDefRowHeight;
+
+    BndRect.Inflate(-Trunc(mGap * 7), 0);
+
+    Graph.Print(ACanvas, BndRect, not Printer.Printing, true);
+
+    Graph.GetX(0, Graph.Axis.Items[0].Max, XPos);
+
+    BndRect := Rect;
+    BndRect.Top := TM.BoundsRect.Bottom + mDefRowHeight;
+    BndRect.Bottom := BndRect.Top + Trunc(mDefRowHeight * 1.5);
+    BndRect.Left := XPos - (Rect.Width div 4);
+    SetRectWidth(BndRect, Rect.Width div 4);
+
+    Legend.Draw(ACanvas, BndRect);
+end;
+
+procedure TfrmDetail.DrawReport(ACanvas: TCanvas; Rect: TRect);
+var
+    GrpH: Integer;
+    BndRect: TRect;
+begin
+    BndRect := Rect;
+
+    if not Assigned(mTM[0]) then
+    begin
+        CreateTbls;
+    end;
+
+    if mGap = 0 then
+    begin
+        mDefRowHeight := Rect.Height div 46;
+        mGap := mDefRowHeight div 6;
+    end;
+
+    BndRect.Bottom := BndRect.Top + Trunc(mDefRowHeight * 2);
+    DrawTitle(ACanvas, BndRect, pnlTitle.Caption);
+
+    with ACanvas do
+    begin
+        Font.Name := '맑은 고딕';
+        Font.Style := [];
+        Font.Color := clBlack;
+        Brush.Color := clWhite;
+        Pen.Color := clBlack;
+
+        if Printer.Printing then
+            Font.Size := Trunc(mDefRowHeight * 0.2)
+        else
+            Font.Size := Trunc(mDefRowHeight * 0.4);
+    end;
+
+    BndRect.Top := BndRect.Bottom + mGap;
+    BndRect.Bottom := BndRect.Top + Trunc(mDefRowHeight * 3);
+    mTM[0].Draw(ACanvas, BndRect);
+
+    BndRect.Top := BndRect.Bottom + mGap;
+    BndRect.Bottom := BndRect.Top + Trunc(mDefRowHeight * 3);
+    mTM[1].Draw(ACanvas, BndRect);
+
+    BndRect := Rect;
+    BndRect.Top := mTM[1].BoundsRect.Bottom + mGap;
+    BndRect.Bottom := BndRect.Bottom - mDefRowHeight;
+    GrpH := BndRect.Height div 3;
+    SetRectHeight(BndRect, GrpH);
+    //
+    DrawGraph(ACanvas, BndRect, mTM[2], fagrpSlide, mLegends[tmSlide]);
+
+    BndRect.Offset(0, GrpH);
+    DrawGraph(ACanvas, BndRect, mTM[3], fagrpTilt, mLegends[tmTilt]);
+
+    BndRect.Offset(0, GrpH);
+    DrawGraph(ACanvas, BndRect, mTM[4], fagrpheight, mLegends[tmHeight]);
+
+    BndRect.Top := BndRect.Bottom + mGap;
+    BndRect.Bottom := BndRect.Top + mDefRowHeight;
+    DrawPage(ACanvas, BndRect);
+end;
+
+function InitUsrPrint(Print: TPrinter; StartPage: Boolean; Title: string; Orientation: TPrinterOrientation): TRect;
+var
+    pCanvas: TCanvas;
+    DevWidth, DevHeight: integer;
+    ViewExt: Size;
+    Paper: TRect;
+begin
+    pCanvas := Print.Canvas;
+
+    if (StartPage) then
+    begin
+        Print.Orientation := Orientation;
+        Print.Title := Title;
+        Print.BeginDoc();
+    end
+    else
+    begin
+        Print.NewPage();
+    end;
+
+    DevWidth := GetDeviceCaps(Print.Handle, HORZSIZE);
+    DevHeight := GetDeviceCaps(Print.Handle, VERTSIZE);
+
+    Paper := Rect(0, 0, DevWidth * 10, DevHeight * 10); // 아래 LoMETRIC모드(0.1mm)로 변환하므로,  10배 해준다.
+    InflateRect(Paper, -10, -10);
+
+    SetMapMode(Print.Handle, MM_LOMETRIC); // 10 ---- 1mm
+    GetViewportExtEx(Print.Handle, ViewExt);
+    SetMapMode(Print.Handle, MM_ISOTROPIC);
+    SetViewportExtEx(Print.Handle, ViewExt.cx, -ViewExt.cy, @ViewExt);
+
+    pCanvas.Brush.Color := clWhite;
+    pCanvas.Pen.Color := clBlack;
+
+    Result := Paper;
+end;
+
+procedure TfrmDetail.PrintOut;
+var
+    Prt: TPrinter;
+    Pages: TRect;
+begin
+    Screen.Cursor := crHourGlass;
+    Prt := Printer;
+    Pages := InitUsrPrint(Prt, true, Caption, poLandscape);
+    try
+        DrawReport(Prt.Canvas, Pages);
+    finally
+        Prt.EndDoc();
+    end;
+    Screen.Cursor := crDefault;
+end;
+
+procedure TfrmDetail.sbtnPrintClick(Sender: TObject);
+begin
+    if not IsDefaultPrinterSetup then
+    begin
+        MessageDlg(_TR('기본 프린트가 없습니다.') + #13 + _TR('[제어판]-[프린트]에서 확인하신 후 다시 시도하세요.'), mtWarning, [mbOK], 0);
+        Exit;
+    end;
+    PrintOut;
+end;
+
+procedure TfrmDetail.sbtnReferPrintClick(Sender: TObject);
+begin
+    with PrinterSetupDialog1 do
+        Execute;
+end;
+
+procedure TfrmDetail.sbtnExitClick(Sender: TObject);
+begin
+    Close;
+end;
+
+procedure TfrmDetail.sbtnReferGraphClick(Sender: TObject);
+begin
+    with frmgrpConfig do
+    begin
+        BorderStyle := bsSingle;
+        SetFrm(fagrpSlide.Tag);
+        ShowModal;
+    end;
+
+    UsrGraphInitial(fagrpSlide, gtNormal, False);
+    UsrGraphInitial(fagrpTilt, gtNormal, False);
+    UsrGraphInitial(fagrpheight, gtNormal, False);
+
+    Preview(0, 0);
+end;
+
+procedure TfrmDetail.DrawPage(ACanvas: TCanvas; Rect: TRect);
+begin
+    ACanvas.Font.Color := clBlack;
+//    ACanvas.Font.Size := 8;
+    ACanvas.Font.Style := [];
+
+    ACanvas.TextOut(Rect.Left + (Rect.Right - Rect.Left) div 2, Rect.Bottom + 20, '1/1');
+    ACanvas.TextOut(Rect.Right - ACanvas.TextWidth('H'), Rect.Bottom + 20, _CO_SYMBOL);
+end;
+
+procedure TfrmDetail.ckbDataPosClick(Sender: TObject);
+begin
+    Preview(0, 0);
+end;
+
+procedure TfrmDetail.SpeedButton1Click(Sender: TObject);
+begin
+    with SaveDialog1 do
+    begin
+        InitialDir := GetDeskTopDirectory;
+        Filter := 'bmp Files(*.bmp)|*.bmp';
+        FileName := GetPrintImage(InitialDir, 'Data.bmp');
+        if Execute then
+            iPreview.Picture.SaveToFile(FileName);
+    end;
+end;
+
+procedure TfrmDetail.LoadAndDisplays;
+var
+    KiiDB: TKiiGraphDB;
+begin
+    UsrGraphInitial(fagrpSlide, gtNormal, true);
+    UsrGraphInitial(fagrpTilt, gtNormal, true);
+    UsrGraphInitial(fagrpheight, gtNormal, true);
+
+    KiiDB := TKiiGraphDB.Create(stHour, GetUsrDir(udRS, Now, false));
+    try
+        KiiDB.Load(lpData.GetGraphTime, fagrpSlide.Tag, fagrpSlide, fagrpSlide.Series.Count * 2);
+        KiiDB.Load(lpData.GetGraphTime, fagrpTilt.Tag, fagrpTilt, fagrpTilt.Series.Count * 2);
+        KiiDB.Load(lpData.GetGraphTime, fagrpheight.Tag, fagrpheight, fagrpheight.Series.Count * 2);
+
+    finally
+        KiiDB.Free;
+    end;
+
+    mGH[tmSlide].ShowCurrSpec := lpData.IsTested(tsCurr) and gSysEnv.rSoundProof.rUseCurr;
+    mGH[tmTilt].ShowCurrSpec := lpData.IsTested(tsCurr) and gSysEnv.rSoundProof.rUseCurr;
+    mGH[tmHeight].ShowCurrSpec := lpData.IsTested(tsCurr) and gSysEnv.rSoundProof.rUseCurr;
+
+    mGH[tmSlide].ShowNoiseSpec := lpData.IsTested(tsNoise);
+    mGH[tmTilt].ShowNoiseSpec := lpData.IsTested(tsNoise);
+    mGH[tmHeight].ShowNoiseSpec := lpData.IsTested(tsNoise);
+
+    mGH[tmTilt].Graph.Series.Items[1].Visible := False; // 후진 소음
+    mGH[tmTilt].Graph.Series.Items[3].Visible := False; // 후진 전류
+
+    mGH[tmHeight].Graph.Series.Items[1].Visible := False; // 후진 소음
+    mGH[tmHeight].Graph.Series.Items[3].Visible := False; // 후진 전류
+
+    InitLegends;
+
+    Preview(0, 1);
+end;
+
+procedure TfrmDetail.Timer1Timer(Sender: TObject);
+begin
+    Timer1.Enabled := false;
+    LoadAndDisplays;
+end;
+
+function TfrmDetail.LoadData(AIDx: integer): Boolean;
+var
+    fh: integer;
+    Buf: TResult;
+begin
+    Result := false;
+
+    fh := FileOpen(mfName, fmOpenRead);
+    if fh < 0 then
+        Exit;
+
+    try
+        FileSeek(fh, sizeof(TResult) * (AIDx - 1), 0);
+        Result := FileRead(fh, Buf, sizeof(TResult)) = sizeof(TResult);
+    finally
+        FileClose(fh);
+    end;
+
+    if not Result then
+        FillChar(Buf, sizeof(TResult), 0);
+
+    lpData.InitData();
+    lpData.SetResult(Buf);
+end;
+
+procedure TfrmDetail.pnlTitleClick(Sender: TObject);
+begin
+    LoadAndDisplays();
+end;
+
+end.
+

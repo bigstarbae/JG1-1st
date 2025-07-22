@@ -1,0 +1,135 @@
+unit MotorJogOperator;
+
+interface
+uses
+    Sysutils, Classes, BaseDIO, SeatMotor, Log, SeatMotorType, Math;
+
+type
+
+    // 모터 구동 DI
+    TMtrJogRunReqEvent = function(MtrIdx, ChIdx: Integer; Dir: TMotorDir): Boolean of object;    // 조그 구동전 동작 유무
+    TMtrJogChStatus = procedure(MtrIdx, ChIdx: Integer; IsON: Boolean) of Object;
+
+    TMotorJogOperator = packed record
+    private
+        mState: array of Boolean;
+        mMtrs: array of TSeatMotor;
+        mChs: array of Integer;
+        mIdx: Integer;
+
+        mOnJogRunReq: TMtrJogRunReqEvent;
+        mOnMtrJogChStatus: TMtrJogChStatus;
+
+        procedure RunAsCh(Ch: Integer; DIO: TBaseDIO);
+    public
+
+        constructor Create(StartCh: Integer; Mtrs: array of TSeatMotor; MtrJogChStatus: TMtrJogChStatus = nil);
+
+        procedure Init(StartCh: Integer; Mtrs: array of TSeatMotor; MtrJogChStatus: TMtrJogChStatus = nil);
+        procedure Run(DIO: TBaseDIO);
+
+        property OnJogRunReq: TMtrJogRunReqEvent  read mOnJogRunReq write mOnJogRunReq;
+
+    end;
+
+implementation
+
+{ TMotorJogOperator }
+
+constructor TMotorJogOperator.Create(StartCh: Integer; Mtrs: array of TSeatMotor; MtrJogChStatus: TMtrJogChStatus);
+begin
+    Init(StartCh, Mtrs, MtrJogChStatus);
+end;
+
+procedure TMotorJogOperator.Init(StartCh: Integer; Mtrs: array of TSeatMotor; MtrJogChStatus: TMtrJogChStatus);
+var
+    i, ChCount: Integer;
+begin
+
+    ChCount := Length(Mtrs) * 2;
+
+    SetLength(mChs, ChCount);
+    SetLength(mState, ChCount);
+    SetLength(mMtrs, ChCount);
+
+    for i := 0 to ChCount - 1 do
+    begin
+        mChs[i] := StartCh + i;
+        mMtrs[i] := Mtrs[i div 2];
+    end;
+
+    mIdx := 0;
+
+    mOnMtrJogChStatus :=  MtrJogChStatus;
+
+end;
+
+procedure TMotorJogOperator.Run(DIO: TBaseDIO);
+begin
+    RunAsCh(mChs[mIdx], DIO);
+
+    Inc(mIdx);
+
+    mIdx := mIdx mod Length(mChs);
+end;
+
+procedure TMotorJogOperator.RunAsCh(Ch: Integer; DIO: TBaseDIO);
+begin
+    if mState[Ch - mChs[0]] <> DIO.IsIO(Ch) then
+    begin
+        mState[Ch - mChs[0]] := DIO.IsIO(Ch);
+
+         gLog.Panel('JogRunReq 호출 전: MtrIdx=%d, ChIdx=%d, Dir=%s', [mIdx div 2, Ch - mChs[0], IfThen((mIdx mod 2)=0, 'twForw', 'twBack')]);
+        if mState[Ch - mChs[0]] then
+        begin
+           // gLog.Panel('CH : %d, mChs : %d, mIdx : %d',[Ch, mChs[0], mIdx]);
+            if (mIdx mod 2) = 0 then
+            begin
+                if Assigned(mOnJogRunReq) then
+                begin
+                    if not mOnJogRunReq(mIdx div 2, Ch - mChs[0], twForw) then
+                        Exit;
+                end;
+                if mMtrs[mIdx].Use then
+                begin
+                    mMtrs[mIdx].MoveFw;
+                    //mMtrs[mIdx].AsyncMove(twForw);
+                end;
+            end
+            else
+            begin
+                if Assigned(mOnJogRunReq) then
+                begin
+                    if not mOnJogRunReq(mIdx div 2, Ch - mChs[0], twBack) then
+                        Exit;
+                end;
+
+                if mMtrs[mIdx].Use then
+                begin
+                    mMtrs[mIdx].MoveBw;
+                    //mMtrs[mIdx].AsyncMove(twBack);
+                end;
+
+            end;
+
+
+            if Assigned(mOnMtrJogChStatus) then
+                mOnMtrJogChStatus(mIdx div 2, Ch - mChs[0], True);
+        end
+        else
+        begin
+            if mMtrs[mIdx].Use then
+            begin
+                mMtrs[mIdx].Stop;
+                //mMtrs[mIdx].AsyncStop(mMtrs[mIdx].Dir);
+            end;
+
+            if Assigned(mOnMtrJogChStatus) then
+                mOnMtrJogChStatus(mIdx div 2, Ch - mChs[0], False);
+        end;
+
+    end;
+end;
+
+
+end.

@@ -216,7 +216,6 @@ end;
 
 function TSeatMtrGrpExtender._AddRef: Integer;
 begin
-
     Exit(-1);           // Dummy로 사용시
     {
     Inc(mRefCount);

@@ -34,6 +34,7 @@ type
                     _WS_SAVE_DATA,
                     _WS_WAIT_POP_SEND,
                     _WS_POP_SEND_WAIT,
+                    _WS_STOP_PWR,
                     _WS_END_OF_TEST,
                     _WS_ERROR,
                     _WS_OUTPOS_ER,

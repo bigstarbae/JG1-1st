@@ -1,0 +1,36 @@
+program DataViewer;
+
+
+
+
+
+uses
+  Forms,
+  DataUnit in '..\Libs\DataUnit.pas',
+  DataBox in '..\Libs\DataBox.pas',
+  Modelunit in '..\Libs\Modelunit.pas',
+  RetrieveEx in '..\Libs\RetrieveEx.pas',
+  RetrieveUnit in '..\Libs\RetrieveUnit.pas',
+  ModelType in '..\..\Common\Lib\ModelType.pas',
+  SeatType in '..\..\Common\Lib\SeatType.pas',
+  DataUnitHelper in '..\Libs\DataUnitHelper.pas',
+  LangTran in '..\..\Common\Lib\LangTran.pas',
+  GridHead in '..\..\Common\Lib\GridHead.pas',
+  TableMaker in '..\..\Common\Lib\TableMaker.pas',
+  SeatMtrGrpExtender in '..\Libs\SeatMtrGrpExtender.pas',
+  SubDataBox4Mtr in '..\Libs\SubDataBox4Mtr.pas',
+  UDSDef in '..\..\Common\Libs\UDSDef.pas',
+  SeatMotorType in '..\..\Common\Libs\SeatMotorType.pas',
+  RetrieveForm in '..\Forms\RetrieveForm.pas' {frmRetrieve},
+  DetailForm in '..\Forms\DetailForm.pas' {frmDetail},
+  SysEnv in '..\Libs\SysEnv.pas',
+  DataUnitOrd in '..\Libs\DataUnitOrd.pas';
+
+{$R *.res}
+
+begin
+  Application.Initialize;
+  Application.Title := '검사 결과조회';
+  Application.CreateForm(TfrmRetrieve, frmRetrieve);
+  Application.Run;
+end.

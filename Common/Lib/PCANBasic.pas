@@ -25,13 +25,6 @@ Const
     MAX_LENGTH_HARDWARE_NAME = 33;     // Maximum length of the name of a device: 32 characters + terminator
     MAX_LENGTH_VERSION_STRING = 18;     // Maximum length of a version string: 17 characters + terminator
 
-    CLASSIC_S_POINT_80_1_PRESET = 'f_clock_mhz=80,nom_brp=2,nom_tseg1=63,nom_tseg2=16,nom_sjw=2,data_brp=2,data_tseg1=15,data_tseg2=4,data_sjw=4';
-    FD_SAEJ2284_4_PRESET =        'f_clock_mhz=80,nom_brp=40,nom_tseg1=1,nom_tseg2=2,nom_sjw=1,data_brp=10,data_tseg1=1,data_tseg2=2,data_sjw=1';
-    FD_SAEJ2284_5_PRESET =        'f_clock_mhz=80,nom_brp=40,nom_tseg1=1,nom_tseg2=2,nom_sjw=1,data_brp=4,data_tseg1=1,data_tseg2=2,data_sjw=1';
-	FD_S_POINT_80_PRESET_1 =      'f_clock_mhz=80,nom_brp=32,nom_tseg1=3,nom_tseg2=1,nom_sjw=1,data_brp=16,data_tseg1=3,data_tseg2=1,data_sjw=1';
-    FD_S_POINT_80_PRESET_2 =      'f_clock_mhz=80,nom_brp=16,nom_tseg1=7,nom_tseg2=2,nom_sjw=1,data_brp=8,data_tseg1=7,data_tseg2=2,data_sjw=1';
-    FD_S_POINT_80_PRESET_3 =      'f_clock_mhz=80,nom_brp=8,nom_tseg1=15,nom_tseg2=4,nom_sjw=1,data_brp=4,data_tseg1=15,data_tseg2=4,data_sjw=1';
-    FD_S_POINT_80_PRESET_4 =      'f_clock_mhz=80,nom_brp=4,nom_tseg1=31,nom_tseg2=8,nom_sjw=1,data_brp=2,data_tseg1=8,data_tseg2=1,data_sjw=1';
 type
     TPCANHandle = Word;
     TPCANBitrateFD = PAnsiChar;

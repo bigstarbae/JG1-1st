@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<ProjectSortOrder AutoSort="0" SortType="0">
+    <File Path="..\..\02.SoundProof&amp;Elec"/>
+    <File Path="..\Forms"/>
+    <File Path="..\Forms\DetailForm.pas"/>
+    <File Path="..\Forms\DetailForm.dfm"/>
+    <File Path="..\Forms\RetrieveForm.pas"/>
+    <File Path="..\Forms\RetrieveForm.dfm"/>
+    <File Path="..\Libs"/>
+    <File Path="..\Libs\DataBox.pas"/>
+    <File Path="..\Libs\DataUnitOrd.pas"/>
+    <File Path="..\Libs\Modelunit.pas"/>
+    <File Path="..\Libs\RetrieveEx.pas"/>
+    <File Path="..\Libs\SeatMtrGrpExtender.pas"/>
+    <File Path="..\Libs\SubDataBox4Mtr.pas"/>
+    <File Path="..\Libs\SysEnv.pas"/>
+    <File Path="..\Libs\DataUnit.pas"/>
+    <File Path="..\Libs\RetrieveUnit.pas"/>
+    <File Path="..\..\..\01.FrontSeat"/>
+    <File Path="..\..\Common"/>
+    <File Path="..\..\Common\Lib"/>
+    <File Path="..\..\Common\Lib\GridHead.pas"/>
+    <File Path="..\..\Common\Lib\LangTran.pas"/>
+    <File Path="..\..\Common\Libs"/>
+    <File Path="..\..\Common\Libs\SeatMotorType.pas"/>
+    <File Path="..\..\Common\Libs\SeatType.pas"/>
+    <File Path="..\..\Common\Libs\UDSDef.pas"/>
+    <File Path="..\..\Common\Libs\ModelType.pas"/>
+    <File Path="..\..\Common\Libs\DataUnitHelper.pas"/>
+    <File Path="..\..\..\..\Src"/>
+    <File Path="..\..\..\Common"/>
+    <File Path="..\..\..\Common\Lib"/>
+    <File Path="..\..\..\Common\Lib\TableMaker.pas"/>
+    <File Path="myDefine.INC"/>
+  </ProjectSortOrder>
+	<Transactions>
+    <Transaction>2025-07-21 11:46:51.690.pas,D:\Project\1_DaeWon\2502. HI RJ1 JG Line(경주)\Src\01.FrontSeat\02.SoundProof&amp;Elec\Libs\DataUnit.pas=</Transaction>
+  </Transactions>
+</BorlandProject>

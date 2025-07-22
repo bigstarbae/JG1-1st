@@ -59,6 +59,7 @@ object frmPowerSuppy: TfrmPowerSuppy
     ParentCtl3D = False
     ParentFont = False
     TabOrder = 0
+    ExplicitLeft = -1
   end
   object Panel6: TPanel
     Left = 0

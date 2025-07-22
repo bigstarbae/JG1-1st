@@ -988,7 +988,7 @@ begin
     mDIO := DIO;
     mMemSetCh := MemSetCh;
     mMemP1Ch := MemP1Ch;
-    MemP2Ch := MemP2Ch;
+    mMemP2Ch := MemP2Ch;
 end;
 
 destructor TDIOMemoryCtrler.Destroy;
@@ -1007,19 +1007,22 @@ end;
 
 function TDIOMemoryCtrler.SetMemP1(Value: boolean): boolean;
 begin
-    mDIO.SetIO(mMemP2Ch, Value);
+    mDIO.SetIO(mMemP1Ch, Value);
+    gLog.Panel('Mem2 : %d' , [mMemP1Ch]);
 
 end;
 
 function TDIOMemoryCtrler.SetMemP2(Value: boolean): boolean;
 begin
     mDIO.SetIO(mMemP2Ch, Value);
+    gLog.Panel('Mem2 : %d' , [mMemP2Ch]);
 
 end;
 
 function TDIOMemoryCtrler.StartMemSet(Value: boolean): boolean;
 begin
     mDIO.SetIO(mMemSetCh, Value);
+    gLog.Panel('Mem2 : %d' , [mMemSetCh]);
 
 end;
 

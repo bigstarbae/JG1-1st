@@ -5,11 +5,11 @@ interface
 
 uses
     Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-    Dialogs, ExtCtrls, FaGraphEx, ComCtrls, ToolWin, ImgList, Buttons,
-    StdCtrls, DataUnit, TableMaker, FAGraphExLegend, SeatMotorType, SeatMtrGrpExtender;
+    Dialogs, ExtCtrls, FaGraphEx, ComCtrls, ToolWin, ImgList, Buttons, StdCtrls,
+    DataUnit, TableMaker, FAGraphExLegend, SeatMotorType, SeatMtrGrpExtender;
 
 const
-    MAX_TM_COUNT = 5;
+    MAX_TM_COUNT = 6;
 
 type
     TfrmDetail = class(TForm)
@@ -27,10 +27,14 @@ type
         SpeedButton1: TSpeedButton;
         SaveDialog1: TSaveDialog;
         pnlTitle: TPanel;
-        fagrpRecl: TFaGraphEx;
-        fagrpLSupt: TFaGraphEx;
+        fagrpSlide: TFaGraphEx;
+        fagrpTilt: TFaGraphEx;
+        fagrpheight: TFaGraphEx;
+        fagrpLegSupt: TFaGraphEx;
+        fagrpSwivel: TFaGraphEx;
+
         Timer1: TTimer;
-        fagrpBolster: TFaGraphEx;
+
         procedure FormClose(Sender: TObject; var Action: TCloseAction);
         procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
         procedure FormCreate(Sender: TObject);
@@ -51,10 +55,10 @@ type
         mIndex: integer;
 
         mDefRowHeight, mGap: Integer;
-        mTM: array [0 .. MAX_TM_COUNT - 1] of TTableMakerEx;
+        mTM: array[0..MAX_TM_COUNT - 1] of TTableMakerEx;
 
         mLegends: array[TMotorOrd] of TLegend;
-        mGH: array [TMotorOrd] of TSeatMtrGrpExtender;
+        mGH: array[TMotorOrd] of TSeatMtrGrpExtender;
 
         procedure DrawTitle(ACanvas: TCanvas; Rect: TRect; ACaption: string);
         procedure DrawGraph(ACanvas: TCanvas; Rect: TRect; TM: TTableMakerEx; Graph: TFaGraphEx; Legend: TLegend);
@@ -82,9 +86,9 @@ var
 implementation
 
 uses
-    SeatMotor,
-    Printers, myUtils, DataBox, Graphconfigform, DrawBmp, NotifyForm, SysEnv, DataUnitOrd,
-    Log, UserTool, KiiFaGraphDB, DataUnitHelper, URect, Global, Range, FAGraphExHelper, LangTran;
+    SeatMotor, Printers, myUtils, DataBox, Graphconfigform, DrawBmp, NotifyForm,
+    SysEnv, DataUnitOrd, Log, UserTool, KiiFaGraphDB, DataUnitHelper, URect,
+    Global, Range, FAGraphExHelper, LangTran;
 
 var
     lpData: TDataBox;
@@ -93,14 +97,14 @@ var
 {$R *.dfm}
 
 function GetPrintImage(ADir, AFile: string): string;
+
     function GetUsrFileName(ADir, AFile, ATag: string): string;
     var
         i: integer;
     begin
         for i := 1 to 999 do
         begin
-            Result := Format('%s%s(%s%3.3d)%s', [ADir, Copy(ExtractFileName(AFile), 1, Pos('.', AFile) - 1), ATag, i,
-                ExtractFileExt(AFile)]);
+            Result := Format('%s%s(%s%3.3d)%s', [ADir, Copy(ExtractFileName(AFile), 1, Pos('.', AFile) - 1), ATag, i, ExtractFileExt(AFile)]);
 
             if not FileExists(Result) then
                 Exit;
@@ -161,16 +165,17 @@ end;
 
 procedure TfrmDetail.FormCreate(Sender: TObject);
 var
-  Mtr: TMotorOrd;
+    Mtr: TMotorOrd;
 begin
     lpData := TDataBox.Create(22);
     lpData.InitData();
 
-    {
-    mGH[tmSlide] := TSeatMtrGrpExtender.Create(fagrpRecl);
-    mGH[tmTilt] := TSeatMtrGrpExtender.Create(fagrpLSupt);
-    mGH[tmHeight] := TSeatMtrGrpExtender.Create(fagrpBolster);
-    }
+    mGH[tmSlide] := TSeatMtrGrpExtender.Create(fagrpSlide);
+    mGH[tmTilt] := TSeatMtrGrpExtender.Create(fagrpTilt);
+    mGH[tmHeight] := TSeatMtrGrpExtender.Create(fagrpheight);
+    mGH[tmLegSupt] := TSeatMtrGrpExtender.Create(fagrpLegSupt);
+    mGH[tmSwivel] := TSeatMtrGrpExtender.Create(fagrpSwivel);
+
     for Mtr := Low(TMotorOrd) to MtrOrdHi do
     begin
         mLegends[Mtr] := TLegend.Create(Self, mGH[Mtr].Graph);
@@ -206,6 +211,7 @@ begin
     pnlTitle.Caption := PROJECT_NAME + ' REPORT';
 
     iPreview.Left := 35;
+    fagrpSlide.Tag := ord(faSlide);
     { // TO DO
     if lpData.GetMcNo = 0 then
     begin
@@ -236,12 +242,9 @@ var
     CellStr: string;
 begin
 
-
     CellStr := '작업정보, #L,       #L,         #L,        #L,          전체판정,' +
                '작업일자, 작업시간, CAR TYPE,   PART NO,    LOT NO,     @roNO,' +
                '$roDate,  $roTime,  $roCarType, $roPartNo,  $roLotNo,   #T';
-
-
 
     mTM[0] := TTableMakerEx.Create(6, 3, CellStr, InitCell);
     mTM[0].SelectCell(0, 0, 5, 0).SetBkColor(clBtnFace);
@@ -250,44 +253,41 @@ begin
       Prefix @(roRs): 판정, $: 값
       }
 
-    CellStr :=
-        '각도 측정,         전방,             후방,             납품,               ,          ECU,           PART NO,            SW VER,            HW VER,' +
-        '기준,              $roSpecFmAngle,   $roSpecRmAngle,   $roSpecDpAngle,   #T,          기준,          $roSpecEcuPartNo,   $roSpecEcuSwVer,   $roSpecEcuHwVer,' +
-        '측정값,            @roDataFmAngle,   @roDataRmAngle,   @roDataDpAngle,   #T,          측정값,        $roDataEcuPartNo,   $roDataEcuSwVer,   $roDataEcuHwVer';
-    mTM[1] := TTableMakerEx.Create(9, 3, CellStr, InitCell);
+    CellStr := 'ECU,           PART NO,            SW VER,            HW VER,           AnchorPT,       Buckle,             MEM1,       MEM2,       MEM3,      EASY ACCESS,     DTC CLEAR,' +
+               '기준,          $roSpecEcuPartNo,   $roSpecEcuSwVer,   $roSpecEcuHwVer,  $roSpecAncPT,   $roSpecBuckleHiLo,  #T,         #T,         #T,        #T,              #T,' +
+               '측정값,        $roDataEcuPartNo,   $roDataEcuSwVer,   $roDataEcuHwVer,  $roDatAncPT,    $roDatBuckle,       $roRsMem1,  $roRsMem2,  $roRsMem3, $roRsEasyAccess, $roRsDTCClear';
+    mTM[1] := TTableMakerEx.Create(11, 3, CellStr, InitCell);
     mTM[1].SelectCell(0, 0, 9, 0).SetBkColor(clBtnFace);
-    mTM[1].SetColWidthsRatio([1, 1, 1, 1, 1,    1, 1, 1, 1]);
+    mTM[1].SetColWidthsRatio([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
 
-    CellStr :=
-        'RECLINER,     속도,               #L,               초기 소음,            #L,                  작동 소음,           #L,                 전류,              #L,' +
-        '#T,           기준,               측정값,           기준,                 측정값,              기준,                측정값,             기준,              측정값,' +
-        '전진,         $rospecFwSpeedHiLo, @roDataFwSpeed,   $rospecInitNoiseHi,   @roDataFwInitNoise,  $rospecRunNoiseHi,   @roDataFwRunNoise,  $rospecCurrHiLo,   @roDataFwCurr,' +
-        '후진,         $rospecBwSpeedHiLo, @roDataBwSpeed,   #T,                   @roDataBwInitNoise,  #T,                  @roDataBwRunNoise,  #T,                @roDataBwCurr';
+    CellStr := 'HEAT,              ,     Spec,              Value,         LED,        #L,          #L,          #L,          Vent,              ,     Spec,              Value,         LED,        #L,          #L,          #L,' +
+               '#T,                ON,   $rospecHeatOnHiLo, $roDatOnCurr,  3,          2,           1,           Off,         #T,                ON,   $rospecVentOnHiLo, $roDatOnCurr,  3,          2,           1,          Off,' +
+               '#T,                OFF,  $rospecHeatOffHi,  $roDatOffCurr, $roRsLedHi, $roRsLedMid, $roRsLedLo,  $roRsLedOff, #T,                OFF,  $rospecVentOffHi,  $roDatOffCurr, $roRsLedHi, $roRsLedMid, $roRsLedLo, $roRsLedOff';
+    mTM[2] := TTableMakerEx.Create(16, 3, CellStr, InitCell);
+    mTM[2].SelectCell(0, 0, 9, 0).SetBkColor(clBtnFace);
+    mTM[2].SetColWidthsRatio([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+
+
+
+
+    CellStr := 'RECLINER,     속도,               #L,               초기 소음,            #L,                  작동 소음,           #L,                 전류,              #L,' + '#T,           기준,               측정값,           기준,                 측정값,              기준,                측정값,             기준,              측정값,' + '전진,         $rospecFwSpeedHiLo, @roDataFwSpeed,   $rospecInitNoiseHi,   @roDataFwInitNoise,  $rospecRunNoiseHi,   @roDataFwRunNoise,  $rospecCurrHiLo,   @roDataFwCurr,' + '후진,         $rospecBwSpeedHiLo, @roDataBwSpeed,   #T,                   @roDataBwInitNoise,  #T,                  @roDataBwRunNoise,  #T,                @roDataBwCurr';
 
   //  lpData.GetResultToATxt(Ord(roRecl_CTRL), False);
-    mTM[2] := TTableMakerEx.Create(9, 4, CellStr, InitCell);
-    mTM[2].SelectCell(0, 0, 9, 1).SetBkColor(clBtnFace);
-    mTM[2].SetColWidthsRatio([1, 1, 1, 1, 1,    1, 1, 1, 1]);
-
-    CellStr :=
-        'L/SUPT,       초기 소음,            #L,                  작동 소음,           #L,                 전류,              #L,' +
-        '#T,           기준,                 측정값,              기준,                측정값,             기준,              측정값,' +
-        '전진,         $rospecInitNoiseHi,   @roDataFwInitNoise,  $rospecRunNoiseHi,   @roDataFwRunNoise,  $rospecCurrHiLo,   @roDataFwCurr';
+    mTM[3] := TTableMakerEx.Create(9, 4, CellStr, InitCell);
+    mTM[3].SelectCell(0, 0, 9, 1).SetBkColor(clBtnFace);
+    mTM[3].SetColWidthsRatio([1, 1, 1, 1, 1, 1, 1, 1, 1]);
+//
+    CellStr := 'L/SUPT,       초기 소음,            #L,                  작동 소음,           #L,                 전류,              #L,' + '#T,           기준,                 측정값,              기준,                측정값,             기준,              측정값,' + '전진,         $rospecInitNoiseHi,   @roDataFwInitNoise,  $rospecRunNoiseHi,   @roDataFwRunNoise,  $rospecCurrHiLo,   @roDataFwCurr';
   //  lpData.GetResultToATxt(Ord(roLSupt_CTRL), False);
-    mTM[3] := TTableMakerEx.Create(7, 3, CellStr, InitCell);
-    mTM[3].SelectCell(0, 0, 7, 1).SetBkColor(clBtnFace);
-    mTM[3].SetColWidthsRatio([1, 1, 1, 1, 1,    1, 1]);
-
-    CellStr :=
-        'BOLSTER,      초기 소음,            #L,                  작동 소음,           #L,                 전류,              #L,' +
-        '#T,           기준,                 측정값,              기준,                측정값,             기준,              측정값,' +
-        '전진,         $rospecInitNoiseHi,   @roDataFwInitNoise,  $rospecRunNoiseHi,   @roDataFwRunNoise,  $rospecCurrHiLo,   @roDataFwCurr';
-  //  lpData.GetResultToATxt(Ord(roBolster_CTRL), False);
     mTM[4] := TTableMakerEx.Create(7, 3, CellStr, InitCell);
     mTM[4].SelectCell(0, 0, 7, 1).SetBkColor(clBtnFace);
-    mTM[4].SetColWidthsRatio([1, 1, 1, 1, 1,    1, 1]);
-
-
+    mTM[4].SetColWidthsRatio([1, 1, 1, 1, 1, 1, 1]);
+//
+    CellStr := 'BOLSTER,      초기 소음,            #L,                  작동 소음,           #L,                 전류,              #L,' + '#T,           기준,                 측정값,              기준,                측정값,             기준,              측정값,' + '전진,         $rospecInitNoiseHi,   @roDataFwInitNoise,  $rospecRunNoiseHi,   @roDataFwRunNoise,  $rospecCurrHiLo,   @roDataFwCurr';
+  //  lpData.GetResultToATxt(Ord(roBolster_CTRL), False);
+    mTM[5] := TTableMakerEx.Create(7, 3, CellStr, InitCell);
+    mTM[5].SelectCell(0, 0, 7, 1).SetBkColor(clBtnFace);
+    mTM[5].SetColWidthsRatio([1, 1, 1, 1, 1, 1, 1]);
 
 end;
 
@@ -325,11 +325,11 @@ begin
 
 end;
 
-
 procedure TfrmDetail.InitLegends;
 var
     i: TMotorOrd;
     j: integer;
+
     procedure SetCaption(UpDn: boolean);
     begin
 
@@ -367,14 +367,12 @@ begin
 
 end;
 
-
 procedure TfrmDetail.Preview(PageNo: integer; scale: integer);
 var
     DevWidth, DevHeight: integer;
     ViewExt, WindowExt: TSize;
     Paper: TRect;
     PaperSize: TPoint;
-
     tWidth: integer;
     tHeight: integer;
 begin
@@ -424,24 +422,16 @@ begin
 
     if not LoadData(mIndex) then
     begin
-        MessageDlg(_TR('자료를 찾을 수 없습니다.') + #13 +  _TR('종료 후 다시 작업하세요'), mtWarning, [mbOK], 0);
+        MessageDlg(_TR('자료를 찾을 수 없습니다.') + #13 + _TR('종료 후 다시 작업하세요'), mtWarning, [mbOK], 0);
         Exit;
     end;
-
 
     with lpData do
     begin
 
         for Mtr := Low(TMotorOrd) to MtrOrdHi do
         begin
-            mGH[Mtr].Param.Create(
-                lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rTime,
-                lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rCurr,
-                lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rInitNoiseTime,
-                lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rInitNoise,
-                lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rRunNoise,
-                0
-            );
+            mGH[Mtr].Param.Create(lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rTime, lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rCurr, lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rInitNoiseTime, lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rInitNoise, lpData.RsBuf.rModel.rSpecs.rMotors[Mtr].rRunNoise, 0);
         end;
     end;
 
@@ -449,6 +439,7 @@ begin
 end;
 
 procedure TfrmDetail.DrawTitle(ACanvas: TCanvas; Rect: TRect; ACaption: string);
+
     procedure TextOutCenter(ACanvas: TCanvas; x, y: integer; const str: string);
     var
         ta: word;
@@ -474,8 +465,7 @@ begin
 
     ACanvas.Font.Height := Trunc(Rect.Height * 0.3);
     // SetTextAlign(aCanvas.Handle, TA_CENTER or TA_TOP);
-    ACanvas.TextOut(Rect.Left + Trunc((Rect.Right - Rect.Left) * 5 / 6), Rect.Bottom - Trunc(ACanvas.TextHeight('h') * 1.3),
-        _TR('출력일자: ') + FormatDateTime('ddddd', Now()));
+    ACanvas.TextOut(Rect.Left + Trunc((Rect.Right - Rect.Left) * 5 / 6), Rect.Bottom - Trunc(ACanvas.TextHeight('h') * 1.3), _TR('출력일자: ') + FormatDateTime('ddddd', Now()));
 
 end;
 
@@ -494,7 +484,6 @@ begin
     Result.Right := Result.Left + Right;
     Result.Bottom := Result.Top + Bottom;
 end;
-
 
 procedure TfrmDetail.DrawGraph(ACanvas: TCanvas; Rect: TRect; TM: TTableMakerEx; Graph: TFaGraphEx; Legend: TLegend);
 var
@@ -531,7 +520,6 @@ var
 begin
     BndRect := Rect;
 
-
     if not Assigned(mTM[0]) then
     begin
         CreateTbls;
@@ -543,10 +531,8 @@ begin
         mGap := mDefRowHeight div 6;
     end;
 
-
     BndRect.Bottom := BndRect.Top + Trunc(mDefRowHeight * 2);
     DrawTitle(ACanvas, BndRect, pnlTitle.Caption);
-
 
     with ACanvas do
     begin
@@ -566,7 +552,6 @@ begin
     BndRect.Bottom := BndRect.Top + Trunc(mDefRowHeight * 3);
     mTM[0].Draw(ACanvas, BndRect);
 
-
     BndRect.Top := BndRect.Bottom + mGap;
     BndRect.Bottom := BndRect.Top + Trunc(mDefRowHeight * 3);
     mTM[1].Draw(ACanvas, BndRect);
@@ -577,13 +562,13 @@ begin
     GrpH := BndRect.Height div 3;
     SetRectHeight(BndRect, GrpH);
     //
-    DrawGraph(ACanvas, BndRect, mTM[2], fagrpRecl, mLegends[tmSlide]);
+    DrawGraph(ACanvas, BndRect, mTM[2], fagrpSlide, mLegends[tmSlide]);
 
     BndRect.Offset(0, GrpH);
-    DrawGraph(ACanvas, BndRect, mTM[3], fagrpLSupt, mLegends[tmTilt]);
+    DrawGraph(ACanvas, BndRect, mTM[3], fagrpTilt, mLegends[tmTilt]);
 
     BndRect.Offset(0, GrpH);
-    DrawGraph(ACanvas, BndRect, mTM[4], fagrpBolster, mLegends[tmHeight]);
+    DrawGraph(ACanvas, BndRect, mTM[4], fagrpheight, mLegends[tmHeight]);
 
     BndRect.Top := BndRect.Bottom + mGap;
     BndRect.Bottom := BndRect.Top + mDefRowHeight;
@@ -647,7 +632,7 @@ procedure TfrmDetail.sbtnPrintClick(Sender: TObject);
 begin
     if not IsDefaultPrinterSetup then
     begin
-        MessageDlg(_TR('기본 프린트가 없습니다.') + #13 +  _TR('[제어판]-[프린트]에서 확인하신 후 다시 시도하세요.'), mtWarning, [mbOK], 0);
+        MessageDlg(_TR('기본 프린트가 없습니다.') + #13 + _TR('[제어판]-[프린트]에서 확인하신 후 다시 시도하세요.'), mtWarning, [mbOK], 0);
         Exit;
     end;
     PrintOut;
@@ -669,13 +654,13 @@ begin
     with frmgrpConfig do
     begin
         BorderStyle := bsSingle;
-        SetFrm(fagrpRecl.Tag);
+        SetFrm(fagrpSlide.Tag);
         ShowModal;
     end;
 
-    UsrGraphInitial(fagrpRecl, gtNormal, False);
-    UsrGraphInitial(fagrpLSupt, gtNormal, False);
-    UsrGraphInitial(fagrpBolster, gtNormal, False);
+    UsrGraphInitial(fagrpSlide, gtNormal, False);
+    UsrGraphInitial(fagrpTilt, gtNormal, False);
+    UsrGraphInitial(fagrpheight, gtNormal, False);
 
     Preview(0, 0);
 end;
@@ -689,8 +674,6 @@ begin
     ACanvas.TextOut(Rect.Left + (Rect.Right - Rect.Left) div 2, Rect.Bottom + 20, '1/1');
     ACanvas.TextOut(Rect.Right - ACanvas.TextWidth('H'), Rect.Bottom + 20, _CO_SYMBOL);
 end;
-
-
 
 procedure TfrmDetail.ckbDataPosClick(Sender: TObject);
 begin
@@ -713,31 +696,27 @@ procedure TfrmDetail.LoadAndDisplays;
 var
     KiiDB: TKiiGraphDB;
 begin
-    UsrGraphInitial(fagrpRecl, gtNormal, true);
-    UsrGraphInitial(fagrpLSupt, gtNormal, true);
-    UsrGraphInitial(fagrpBolster, gtNormal, true);
-
+    UsrGraphInitial(fagrpSlide, gtNormal, true);
+    UsrGraphInitial(fagrpTilt, gtNormal, true);
+    UsrGraphInitial(fagrpheight, gtNormal, true);
 
     KiiDB := TKiiGraphDB.Create(stHour, GetUsrDir(udRS, Now, false));
     try
-        KiiDB.Load(lpData.GetGraphTime, fagrpRecl.Tag, fagrpRecl, fagrpRecl.Series.Count * 2);
-        KiiDB.Load(lpData.GetGraphTime, fagrpLSupt.Tag, fagrpLSupt, fagrpLSupt.Series.Count * 2);
-        KiiDB.Load(lpData.GetGraphTime, fagrpBolster.Tag, fagrpBolster, fagrpBolster.Series.Count * 2);
+        KiiDB.Load(lpData.GetGraphTime, fagrpSlide.Tag, fagrpSlide, fagrpSlide.Series.Count * 2);
+        KiiDB.Load(lpData.GetGraphTime, fagrpTilt.Tag, fagrpTilt, fagrpTilt.Series.Count * 2);
+        KiiDB.Load(lpData.GetGraphTime, fagrpheight.Tag, fagrpheight, fagrpheight.Series.Count * 2);
 
     finally
         KiiDB.Free;
     end;
 
-
     mGH[tmSlide].ShowCurrSpec := lpData.IsTested(tsCurr) and gSysEnv.rSoundProof.rUseCurr;
     mGH[tmTilt].ShowCurrSpec := lpData.IsTested(tsCurr) and gSysEnv.rSoundProof.rUseCurr;
     mGH[tmHeight].ShowCurrSpec := lpData.IsTested(tsCurr) and gSysEnv.rSoundProof.rUseCurr;
 
-
     mGH[tmSlide].ShowNoiseSpec := lpData.IsTested(tsNoise);
     mGH[tmTilt].ShowNoiseSpec := lpData.IsTested(tsNoise);
     mGH[tmHeight].ShowNoiseSpec := lpData.IsTested(tsNoise);
-
 
     mGH[tmTilt].Graph.Series.Items[1].Visible := False; // 후진 소음
     mGH[tmTilt].Graph.Series.Items[3].Visible := False; // 후진 전류
@@ -787,3 +766,4 @@ begin
 end;
 
 end.
+

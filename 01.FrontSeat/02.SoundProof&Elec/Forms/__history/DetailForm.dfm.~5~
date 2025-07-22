@@ -1,0 +1,941 @@
+object frmDetail: TfrmDetail
+  Left = 118
+  Top = 79
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
+  Caption = 'Report'
+  ClientHeight = 746
+  ClientWidth = 1025
+  Color = clBtnFace
+  Constraints.MaxHeight = 1025
+  Constraints.MaxWidth = 1281
+  Font.Charset = HANGEUL_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -13
+  Font.Name = #44404#47548
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poScreenCenter
+  OnClose = FormClose
+  OnCloseQuery = FormCloseQuery
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnShow = FormShow
+  PixelsPerInch = 96
+  TextHeight = 13
+  object sbBoard: TScrollBox
+    Left = 0
+    Top = 80
+    Width = 1025
+    Height = 644
+    Align = alClient
+    BevelInner = bvNone
+    BevelOuter = bvNone
+    BorderStyle = bsNone
+    TabOrder = 2
+    object iPreview: TImage
+      Left = 0
+      Top = 0
+      Width = 1025
+      Height = 644
+      Cursor = crHandPoint
+      Align = alClient
+      AutoSize = True
+      ExplicitTop = 3
+    end
+    object fagrpSlide: TFaGraphEx
+      Left = 2
+      Top = 194
+      Width = 353
+      Height = 149
+      Axis = <
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 250.000000000000000000
+          Step = 50.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '(sec)'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = False
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaBottom
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 20.000000000000000000
+          Step = 5.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '( A )'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = True
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaLeft
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 10.000000000000000000
+          Step = 1.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '(dB)'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = True
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaRight
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end>
+      Series = <
+        item
+          AxisX = 0
+          AxisY = 2
+          PointWidth = 4
+          ShareX = 0
+          ShareY = 1
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 2
+          PointWidth = 4
+          ShareX = 2
+          ShareY = 3
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clBlue
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 1
+          PointWidth = 4
+          ShareX = 4
+          ShareY = 5
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 1
+          PointWidth = 4
+          ShareX = 6
+          ShareY = 7
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end>
+      MaxDatas = 1000000
+      GridDraw = [ggVert, ggHori]
+      GridDrawSide = [gsSide_1, gsSide_2, gsSide_3, gsSide_4]
+      GridDrawSub = False
+      GridColor = clSilver
+      GridStyle = psDot
+      BoardColor = clWhite
+      GraphType = gtNormal
+      OutnerFrame = True
+      OutnerFrameColor = clBlack
+      Space.Left = 0
+      Space.Right = 16
+      Space.Top = 8
+      Space.Bottom = -8
+      Zoom = False
+      ZoomSerie = -1
+      ViewCrossBar = False
+      ViewCrossBarDraw = [ggVert, ggHori]
+      UpdateDelayTime = 0.100000000000000000
+      UpdateDelayEnabled = False
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = #44404#47548
+      Font.Style = []
+      ParentFont = False
+      Visible = False
+    end
+    object fagrpTilt: TFaGraphEx
+      Left = 357
+      Top = 206
+      Width = 353
+      Height = 149
+      Axis = <
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 250.000000000000000000
+          Step = 50.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '(sec)'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = False
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaBottom
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 20.000000000000000000
+          Step = 5.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '( A )'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = True
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaLeft
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 10.000000000000000000
+          Step = 1.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '(dB)'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = True
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaRight
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end>
+      Series = <
+        item
+          AxisX = 0
+          AxisY = 2
+          PointWidth = 4
+          ShareX = 0
+          ShareY = 1
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 2
+          PointWidth = 4
+          ShareX = 2
+          ShareY = 3
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clBlue
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 1
+          PointWidth = 4
+          ShareX = 4
+          ShareY = 5
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 1
+          PointWidth = 4
+          ShareX = 6
+          ShareY = 7
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end>
+      MaxDatas = 1000000
+      GridDraw = [ggVert, ggHori]
+      GridDrawSide = [gsSide_1, gsSide_2, gsSide_3, gsSide_4]
+      GridDrawSub = False
+      GridColor = clSilver
+      GridStyle = psDot
+      BoardColor = clWhite
+      GraphType = gtNormal
+      OutnerFrame = True
+      OutnerFrameColor = clBlack
+      Space.Left = 0
+      Space.Right = 16
+      Space.Top = 8
+      Space.Bottom = -8
+      Zoom = False
+      ZoomSerie = -1
+      ViewCrossBar = False
+      ViewCrossBarDraw = [ggVert, ggHori]
+      UpdateDelayTime = 0.100000000000000000
+      UpdateDelayEnabled = False
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = #44404#47548
+      Font.Style = []
+      ParentFont = False
+      Visible = False
+    end
+    object fagrpheight: TFaGraphEx
+      Left = 26
+      Top = 386
+      Width = 353
+      Height = 149
+      Axis = <
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 250.000000000000000000
+          Step = 50.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '(sec)'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = False
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaBottom
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 20.000000000000000000
+          Step = 5.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '( A )'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = True
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaLeft
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 10.000000000000000000
+          Step = 1.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '(dB)'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = True
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaRight
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end>
+      Series = <
+        item
+          AxisX = 0
+          AxisY = 2
+          PointWidth = 4
+          ShareX = 0
+          ShareY = 1
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 2
+          PointWidth = 4
+          ShareX = 2
+          ShareY = 3
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clBlue
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 1
+          PointWidth = 4
+          ShareX = 4
+          ShareY = 5
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 1
+          PointWidth = 4
+          ShareX = 6
+          ShareY = 7
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end>
+      MaxDatas = 1000000
+      GridDraw = [ggVert, ggHori]
+      GridDrawSide = [gsSide_1, gsSide_2, gsSide_3, gsSide_4]
+      GridDrawSub = False
+      GridColor = clSilver
+      GridStyle = psDot
+      BoardColor = clWhite
+      GraphType = gtNormal
+      OutnerFrame = True
+      OutnerFrameColor = clBlack
+      Space.Left = 0
+      Space.Right = 16
+      Space.Top = 8
+      Space.Bottom = -8
+      Zoom = False
+      ZoomSerie = -1
+      ViewCrossBar = False
+      ViewCrossBarDraw = [ggVert, ggHori]
+      UpdateDelayTime = 0.100000000000000000
+      UpdateDelayEnabled = False
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = #44404#47548
+      Font.Style = []
+      ParentFont = False
+      Visible = False
+    end
+    object fagrpLegSupt: TFaGraphEx
+      Left = 360
+      Top = 382
+      Width = 353
+      Height = 149
+      Axis = <
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 250.000000000000000000
+          Step = 50.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '(sec)'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = False
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaBottom
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 20.000000000000000000
+          Step = 5.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '( A )'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = True
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaLeft
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 10.000000000000000000
+          Step = 1.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '(dB)'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = True
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaRight
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end>
+      Series = <
+        item
+          AxisX = 0
+          AxisY = 2
+          PointWidth = 4
+          ShareX = 0
+          ShareY = 1
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 2
+          PointWidth = 4
+          ShareX = 2
+          ShareY = 3
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clBlue
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 1
+          PointWidth = 4
+          ShareX = 4
+          ShareY = 5
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 1
+          PointWidth = 4
+          ShareX = 6
+          ShareY = 7
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end>
+      MaxDatas = 1000000
+      GridDraw = [ggVert, ggHori]
+      GridDrawSide = [gsSide_1, gsSide_2, gsSide_3, gsSide_4]
+      GridDrawSub = False
+      GridColor = clSilver
+      GridStyle = psDot
+      BoardColor = clWhite
+      GraphType = gtNormal
+      OutnerFrame = True
+      OutnerFrameColor = clBlack
+      Space.Left = 0
+      Space.Right = 16
+      Space.Top = 8
+      Space.Bottom = -8
+      Zoom = False
+      ZoomSerie = -1
+      ViewCrossBar = False
+      ViewCrossBarDraw = [ggVert, ggHori]
+      UpdateDelayTime = 0.100000000000000000
+      UpdateDelayEnabled = False
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = #44404#47548
+      Font.Style = []
+      ParentFont = False
+      Visible = False
+    end
+    object fagrpSwivel: TFaGraphEx
+      Left = 670
+      Top = 397
+      Width = 353
+      Height = 149
+      Axis = <
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 250.000000000000000000
+          Step = 50.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '(sec)'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = False
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaBottom
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 20.000000000000000000
+          Step = 5.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '( A )'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = True
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaLeft
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end
+        item
+          DrawMin = -32768.000000000000000000
+          DrawMax = 32768.000000000000000000
+          Climping = False
+          Max = 10.000000000000000000
+          Step = 1.000000000000000000
+          SubTickCount = 10
+          Decimal = 0
+          Caption = '(dB)'
+          Showing = True
+          ShowTick = True
+          ShowSubTick = False
+          ShowLabel = True
+          ShowCaption = True
+          ShowLabelCenter = False
+          ShowFrame = True
+          ShowSign = False
+          ShowSignMinus = True
+          Scale = asNormal
+          Align = aaRight
+          TickColor = clBlack
+          CaptionColor = clBlack
+        end>
+      Series = <
+        item
+          AxisX = 0
+          AxisY = 2
+          PointWidth = 4
+          ShareX = 0
+          ShareY = 1
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 2
+          PointWidth = 4
+          ShareX = 2
+          ShareY = 3
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clBlue
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 1
+          PointWidth = 4
+          ShareX = 4
+          ShareY = 5
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end
+        item
+          AxisX = 0
+          AxisY = 1
+          PointWidth = 4
+          ShareX = 6
+          ShareY = 7
+          Styles = gsLine
+          Points = gpNone
+          LineColor = clRed
+          PointColor = clRed
+        end>
+      MaxDatas = 1000000
+      GridDraw = [ggVert, ggHori]
+      GridDrawSide = [gsSide_1, gsSide_2, gsSide_3, gsSide_4]
+      GridDrawSub = False
+      GridColor = clSilver
+      GridStyle = psDot
+      BoardColor = clWhite
+      GraphType = gtNormal
+      OutnerFrame = True
+      OutnerFrameColor = clBlack
+      Space.Left = 0
+      Space.Right = 16
+      Space.Top = 8
+      Space.Bottom = -8
+      Zoom = False
+      ZoomSerie = -1
+      ViewCrossBar = False
+      ViewCrossBarDraw = [ggVert, ggHori]
+      UpdateDelayTime = 0.100000000000000000
+      UpdateDelayEnabled = False
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = #44404#47548
+      Font.Style = []
+      ParentFont = False
+      Visible = False
+    end
+  end
+  object StatusBar1: TStatusBar
+    Left = 0
+    Top = 724
+    Width = 1025
+    Height = 22
+    Panels = <>
+  end
+  object Panel3: TPanel
+    Left = 0
+    Top = 46
+    Width = 1025
+    Height = 34
+    Align = alTop
+    BevelOuter = bvNone
+    Color = clBlack
+    ParentBackground = False
+    TabOrder = 1
+    object sbtnPrint: TSpeedButton
+      Tag = 9
+      Left = 7
+      Top = 2
+      Width = 135
+      Height = 30
+      Caption = #51064#49604'(&P)'
+      Flat = True
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      NumGlyphs = 2
+      ParentFont = False
+      Spacing = 8
+      OnClick = sbtnPrintClick
+    end
+    object sbtnReferPrint: TSpeedButton
+      Tag = 16
+      Left = 147
+      Top = 2
+      Width = 167
+      Height = 30
+      Caption = #54532#47536#53944#49444#51221'(&R)'
+      Flat = True
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      NumGlyphs = 2
+      ParentFont = False
+      Spacing = 8
+      OnClick = sbtnReferPrintClick
+    end
+    object sbtnReferGraph: TSpeedButton
+      Tag = 16
+      Left = 334
+      Top = 2
+      Width = 167
+      Height = 30
+      Caption = #44536#47000#54532#49444#51221'(&G)'
+      Flat = True
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      NumGlyphs = 2
+      ParentFont = False
+      Spacing = 8
+      OnClick = sbtnReferGraphClick
+    end
+    object SpeedButton1: TSpeedButton
+      Left = 506
+      Top = 2
+      Width = 167
+      Height = 30
+      Caption = #54028#51068#47196' '#51200#51109'(&S)'
+      Flat = True
+      Font.Charset = HANGEUL_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Name = #47569#51008' '#44256#46357
+      Font.Style = [fsBold]
+      ParentFont = False
+      OnClick = SpeedButton1Click
+    end
+    object Panel1: TPanel
+      Left = 912
+      Top = 0
+      Width = 113
+      Height = 34
+      Align = alRight
+      AutoSize = True
+      BevelOuter = bvNone
+      Color = clBlack
+      TabOrder = 0
+      object sbtnExit: TSpeedButton
+        Tag = 10
+        Left = 0
+        Top = 1
+        Width = 113
+        Height = 30
+        Caption = #45803#44592'(&C)'
+        Flat = True
+        Font.Charset = HANGEUL_CHARSET
+        Font.Color = clWhite
+        Font.Height = -16
+        Font.Name = #47569#51008' '#44256#46357
+        Font.Style = [fsBold]
+        NumGlyphs = 2
+        ParentFont = False
+        Spacing = 8
+        OnClick = sbtnExitClick
+      end
+    end
+  end
+  object pnlTitle: TPanel
+    Left = 0
+    Top = 0
+    Width = 1025
+    Height = 46
+    Align = alTop
+    BevelOuter = bvNone
+    Caption = 'Ass'#39'y '#51312#47549#46972#51064
+    Color = 5453356
+    FullRepaint = False
+    Font.Charset = HANGEUL_CHARSET
+    Font.Color = clWhite
+    Font.Height = -27
+    Font.Name = #45796#51020'_Regular'
+    Font.Style = [fsBold]
+    ParentBackground = False
+    ParentFont = False
+    TabOrder = 0
+    OnClick = pnlTitleClick
+  end
+  object OpenDialog1: TOpenDialog
+    Left = 960
+    Top = 8
+  end
+  object PrinterSetupDialog1: TPrinterSetupDialog
+    Left = 568
+    Top = 8
+  end
+  object SaveDialog1: TSaveDialog
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
+    Left = 600
+    Top = 8
+  end
+  object Timer1: TTimer
+    Enabled = False
+    OnTimer = Timer1Timer
+    Left = 672
+    Top = 16
+  end
+end

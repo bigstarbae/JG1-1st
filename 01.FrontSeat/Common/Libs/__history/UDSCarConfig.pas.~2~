@@ -1,0 +1,66 @@
+unit UDSCarConfig;
+
+interface
+
+uses
+  UDSDef, SeatType, SeatMoveCtrler, SeatIMSCtrler, Log;  // 필요한 유닛들
+
+type
+  TUDSCarConfigurator = class
+  public
+    class procedure SetupCANIDs(IMSCtrler : TCANIMSCtrler; UDSMoveCtrler: TCANUDSMoveCtrler; CarType: TCAR_TYPE; IsDrvPos: Boolean);
+    class procedure SetupUDSMoveData(UDSMoveCtrler: TCANUDSMoveCtrler; CarType: TCAR_TYPE; IsIMS: Boolean);
+  end;
+
+implementation
+
+// 구현부...
+
+{ TUDSCarConfigurator }
+
+class procedure TUDSCarConfigurator.SetupCANIDs(IMSCtrler : TCANIMSCtrler; UDSMoveCtrler: TCANUDSMoveCtrler; CarType: TCAR_TYPE; IsDrvPos: Boolean);
+var
+    IDSet: TUDSIDSet;
+begin
+    if (CarType < Low(TCAR_TYPE)) or (CarType > High(TCAR_TYPE)) then
+    begin
+        gLog.Error('알 수 없는 차종 타입: %d', [Ord(CarType)]);
+        Exit;
+    end;
+
+    if CarType = ctRJ1 then
+        IMSCtrler.PSUType := false;
+
+    IDSet := UDS_ID_CONFIG[CarType, IsDrvPos];
+
+  // IMS Controller 설정
+    IMSCtrler.ReqID := IDSet.ReqID;
+    IMSCtrler.RespID := IDSet.RespID;
+
+  // UDS Move Controller 설정
+    UDSMoveCtrler.ReqID := IDSet.ReqID;
+    UDSMoveCtrler.RespID := IDSet.RespID;
+
+    gLog.Panel('UDS ID 설정 : (Req:%x, Resp:%x)', [UDSMoveCtrler.ReqID, UDSMoveCtrler.RespID]);
+end;
+
+class procedure TUDSCarConfigurator.SetupUDSMoveData(UDSMoveCtrler: TCANUDSMoveCtrler; CarType: TCAR_TYPE; IsIMS: Boolean);
+begin
+    case CarType of
+        ctJG1:
+            begin
+                UDSMoveCtrler.SetMotorLIDMap(JG1_UDS_LID_MAP);
+            end;
+        ctHI, ctRJ1:
+            begin
+                if IsIMS then
+                    UDSMoveCtrler.SetMotorLIDMap(HI_RJ1_IMS_UDS_LID_MAP)
+                else
+                    UDSMoveCtrler.SetMotorLIDMap(RJ1_EMC_MOTOR_LID_MAP);
+
+            end;
+    end;
+
+end;
+
+end.

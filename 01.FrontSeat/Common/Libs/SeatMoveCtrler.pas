@@ -94,16 +94,13 @@ type
 
         mAdvanceType: boolean;
         mIsDrv: boolean;              // 임시 쿠션 Ext 용 ? (PSU가 왜 CushExt만 해당되는지 체크 필요)
-        mRespReceived: Boolean;  // 응답 수신 플래그
-        mRespTC: TTimeChecker;   // 응답 타임아웃 체크
-        mRetry: Integer;         // 재시도 카운터 추가
-
 
         procedure CanRead(Sender: TObject);
 
         function Mtr2LID(Mtr: TMotorOrd; Dir: TMotorDir): WORD; virtual;
         function WriteIOCBIFrame(LocalID: WORD; Param: byte; DataLen: byte = 4): boolean;
         function WriteExtSession: boolean;      // 이동 명령전 송신 Extended Session
+        function WriteStartSession: boolean;    // ExtendedSession 시작
 
         procedure SetEnabled(const Value: boolean); override;
     public
@@ -127,6 +124,7 @@ type
         property AdvenceType: boolean read mAdvanceType write mAdvanceType;
     end;
 
+
     TSimulMoveCtrler = class(TBaseMoveCtrler)
     public
         function MoveToForw(MtrID: TMotorOrd): Boolean; override;
@@ -143,13 +141,10 @@ uses
     UDSDef, Log, Forms, myUtils, AsyncCalls;
 
 const
-    _UDS_RESP_TIMEOUT = 500;  // 응답 대기 시간 (ms), 차종/환경에 따라 조정
-    _UDS_IOCBI_RESP_SID = $6F;  // Positive Response SID (0x2F + 0x40)
-    _MAX_RETRY = 3;
     _MTR_RUN_CURR = 0.5;
     _RELAY_AFTER_RUN_DELAY = 150;
     _EXT_SESSION_DELAY = 200;
-    _EXT_SESSION_INTERVAL_SEC = 2000;
+    _EXT_SESSION_INTERVAL_SEC = 2500;
 
 { TMoveCtrler }
 constructor TDIOMoveCtrler.Create(DIO: TBaseDIO; ChReqFunc: TDIOMoveChReqEvent);
@@ -294,6 +289,7 @@ end;
 
 procedure TCANUDSMoveCtrler.CanRead(Sender: TObject);
 begin
+
     with Sender as TBaseCAN do
     begin
         if ID = mRespID then
@@ -302,16 +298,6 @@ begin
             begin
                 mIsMove := False;
                 gLog.Error('CAN UDS 응답 오류: %s', [ToStr]);
-                mRespReceived := True;  // 오류라도 응답으로 간주
-            end
-            else if RFrame.Compare(0, [$05, _UDS_IOCBI_RESP_SID], 2) then  // Positive Response 예시 (길이 5바이트, SID 0x6F)
-            begin
-                gLog.Debug('CAN UDS Positive Response: %s', [ToStr]);
-                mRespReceived := True;  // 성공 응답 플래그 설정
-            end
-            else
-            begin
-                gLog.Debug('CAN UDS 기타 응답: %s', [ToStr]);
             end;
         end;
     end;
@@ -323,6 +309,7 @@ begin
     begin
         WriteExtSession;
         mRepeatTC.Start(_EXT_SESSION_INTERVAL_SEC);
+
     end;
 end;
 
@@ -433,64 +420,59 @@ end;
 // _EXT_SESSION_DELAY를 없애기 위한 테스트함수..
 
 function TCANUDSMoveCtrler.FSMMove(MtrID: TMotorOrd; Dir: TMotorDir): integer;
+
+    function IsExtSessionRespDone: Boolean;
+    begin
+        //0x7AB: [06 50 03 00 32 01 F4 AA ]
+        Result := (mCan.Datas[1] = $50) and (mCan.Datas[2] = $03); //and (mResCode in [$7AB, $79F]);
+
+        {
+        if Result then
+            gLog.Debug('EXT.SESSION 응답 수신', []);
+        }
+    end;
+
 begin
+    //  UDS Move명령 구현, 또는 차종별 클래스로 상속하여 구현. 단 일반 명령일 경우 연속(Cyclic) 명령으로 처리해야 함(안전상)
     Result := 0;
 
     case mState of
         0:
             begin
-                mRespReceived := False;  // 응답 플래그 초기화
-                mRetry := 0;  // 재시도 카운터 초기화
+                WriteExtSession;
+                mRepeatTC.Start(300);
+                Inc(mState);
+            end;
+        1:
+            begin
+                if mRepeatTC.IsTimeOut or IsExtSessionRespDone then
+                    Inc(mState);
+//
+            end;
+        2:
+            begin
                 if Dir = twForw then
                 begin
                     if WriteIOCBIFrame(Mtr2LID(MtrID, twForw), _UDS_IOCBI_START) then
                     begin
-                        mRespTC.Start(_UDS_RESP_TIMEOUT);  // 응답 대기 시작
-                        Inc(mState);
-                    end
-                    else
-                    begin
-                        Exit(-1);  // 전송 실패
+                        mIsMove := true;
+                        mRepeatTC.Start(_EXT_SESSION_INTERVAL_SEC);
+                        mState := 0;
+                        Exit(1);
                     end;
+
                 end
                 else
                 begin
                     if WriteIOCBIFrame(Mtr2LID(MtrID, twBack), _UDS_IOCBI_START) then
                     begin
-                        mRespTC.Start(_UDS_RESP_TIMEOUT);
-                        Inc(mState);
-                    end
-                    else
-                    begin
-                        Exit(-1);
-                    end;
-                end;
-            end;
-        1:  // 응답 대기 상태 추가
-            begin
-                if mRespReceived then
-                begin
-                    mIsMove := True;
-                    mRepeatTC.Start(_EXT_SESSION_INTERVAL_SEC);
-                    mState := 0;
-                    Exit(1);  // 응답 확인 후 성공
-                end
-                else if mRespTC.IsTimeOut then
-                begin
-                    Inc(mRetry);
-                    if mRetry <= _MAX_RETRY then
-                    begin
-                        gLog.Error('UDS Move 응답 타임아웃: 재시도 %d/%d (MtrID=%d, Dir=%d)', [mRetry, _MAX_RETRY, Ord(MtrID), Ord(Dir)]);
-                        mState := 0;  // 상태 초기화 후 재전송
-                        Exit(0);  // FSM 계속 진행 (재시도)
-                    end
-                    else
-                    begin
-                        gLog.Error('UDS Move 응답 타임아웃: 재시도 초과 (MtrID=%d, Dir=%d)', [Ord(MtrID), Ord(Dir)]);
+                        mIsMove := true;
+                        mRepeatTC.Start(_EXT_SESSION_INTERVAL_SEC);
                         mState := 0;
-                        Exit(-1);  // 재시도 초과 오류
+                        Exit(1);
                     end;
                 end;
+
             end;
     end;
 end;
@@ -529,6 +511,11 @@ begin
     Result := mCan.Write(mReqID, 0, [$02, $10, $03, 0, 0, 0, 0, 0], 8);
 
     //gLog.Debug('EXT. SESSION 설정:%s', [BoolToStr(Result, true)]);
+end;
+
+function TCANUDSMoveCtrler.WriteStartSession : boolean;
+begin
+    Result := mCan.Write(mReqID, 0, [$02, $3E, 0, 0 , 0 , 0 , 0 , 0], 8);
 end;
 
 function TCANUDSMoveCtrler.WriteIOCBIFrame(LocalID: WORD; Param: byte; DataLen: byte): boolean;
@@ -633,6 +620,7 @@ function TDIODirectMoveCtrler.GetStateStr(IsSimple: Boolean): string;
 begin
     Result := inherited GetStateStr(IsSimple);
 end;
+
 
 function TDIODirectMoveCtrler.MoveToForw(MtrID: TMotorOrd): Boolean;
 begin

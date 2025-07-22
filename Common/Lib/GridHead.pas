@@ -292,6 +292,7 @@ begin
 
     // 셀의 화면 위치 계산 (병합 및 스크롤 고려)
         ARect := Grid.CellRect(x, 0);
+
         if Grid.LeftCol > x then
         begin
             for i := 1 to Grid.LeftCol - x do
@@ -330,6 +331,7 @@ begin
 
     // 텍스트
         SetBkMode(Grid.Canvas.Handle, TRANSPARENT);
+
         DrawText(Grid.Canvas.Handle, PChar(s), Length(s), ARect, DT_CENTER or DT_VCENTER or DT_SINGLELINE);
 
     // 라인 색상

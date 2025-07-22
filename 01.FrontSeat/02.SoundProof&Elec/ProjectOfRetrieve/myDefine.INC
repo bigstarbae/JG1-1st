@@ -1,0 +1,14 @@
+{$DEFINE DEBUG}                //살리면 Log에 모든 상태를 저장시켜 준다.
+//{$DEFINE _AD_DEBUG}
+//{$DEFINE _AD_DEBUG_LOG}
+//{$DEFINE VIRTUALIO}
+//{$DEFINE NO_ERROR_FORM}
+//{$DEFINE TEST_DEBUG}
+{$DEFINE _VIEWER}
+
+{$DEFINE _INT_CODE_AD}
+//DEBUG LEVEL
+{$DEFINE DEBUG_LEVEL1}
+//{$DEFINE DEBUG_LEVEL2}
+//{$DEFINE DEBUG_LEVEL3}
+//-------------------------

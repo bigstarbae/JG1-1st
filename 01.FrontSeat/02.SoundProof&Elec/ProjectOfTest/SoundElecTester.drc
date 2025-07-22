@@ -107,102 +107,102 @@
 #define IdResourceStrings_RSStackEALREADY 65037
 #define IdResourceStrings_RSStackENOTSOCK 65038
 #define IdResourceStrings_RSStackEDESTADDRREQ 65039
-#define XLSPNGLang_EPNGUnknownInterlaceText 65040
-#define XLSPNGLang_EPNGCannotAssignChunkText 65041
-#define XLSPNGLang_EPNGUnexpectedEndText 65042
-#define XLSPNGLang_EPNGNoImageDataText 65043
-#define XLSPNGLang_EPNGCannotAddChunkText 65044
-#define XLSPNGLang_EPNGCannotAddInvalidImageText 65045
-#define XLSPNGLang_EPNGCouldNotLoadResourceText 65046
-#define XLSPNGLang_EPNGOutMemoryText 65047
-#define XLSPNGLang_EPNGCannotChangeTransparentText 65048
-#define XLSPNGLang_EPNGHeaderNotPresentText 65049
-#define XLSPNGLang_EInvalidNewSize 65050
-#define XLSPNGLang_EInvalidSpec 65051
+#define GIFConsts_sInvalidBitSize 65040
+#define GIFConsts_sEmptyColorMap 65041
+#define GIFConsts_sEmptyImage 65042
+#define GIFConsts_sMultipleGCE 65043
+#define GIFConsts_sNoPalette 65044
+#define GIFConsts_sGIFImageFile 65045
+#define GIFConsts_sProgressLoading 65046
+#define GIFConsts_sProgressSaving 65047
+#define GIFConsts_sProgressConverting 65048
+#define GIFConsts_sProgressRendering 65049
+#define GIFConsts_sProgressCopying 65050
+#define GIFConsts_sProgressOptimizing 65051
 #define IdResourceStrings_RSWinsockCallError 65052
 #define IdResourceStrings_RSWinsockLoadError 65053
 #define IdResourceStrings_RSStatusResolving 65054
 #define IdResourceStrings_RSStatusConnecting 65055
-#define GIFConsts_sProgressSaving 65056
-#define GIFConsts_sProgressConverting 65057
-#define GIFConsts_sProgressRendering 65058
-#define GIFConsts_sProgressCopying 65059
-#define GIFConsts_sProgressOptimizing 65060
-#define XLSPNGLang_EPngInvalidCRCText 65061
-#define XLSPNGLang_EPNGInvalidIHDRText 65062
-#define XLSPNGLang_EPNGMissingMultipleIDATText 65063
-#define XLSPNGLang_EPNGZLIBErrorText 65064
-#define XLSPNGLang_EPNGInvalidPaletteText 65065
-#define XLSPNGLang_EPNGInvalidFileHeaderText 65066
-#define XLSPNGLang_EPNGIHDRNotFirstText 65067
-#define XLSPNGLang_EPNGSizeExceedsText 65068
-#define XLSPNGLang_EPNGUnknownPalEntryText 65069
-#define XLSPNGLang_EPNGUnknownCriticalChunkText 65070
-#define XLSPNGLang_EPNGUnknownCompressionText 65071
-#define GIFConsts_sBadSize 65072
-#define GIFConsts_sScreenSizeExceeded 65073
-#define GIFConsts_sNoColorTable 65074
-#define GIFConsts_sBadPixelCoordinates 65075
-#define GIFConsts_sInvalidPixelFormat 65076
-#define GIFConsts_sBadDimension 65077
-#define GIFConsts_sNoDIB 65078
-#define GIFConsts_sInvalidStream 65079
-#define GIFConsts_sInvalidColor 65080
-#define GIFConsts_sInvalidBitSize 65081
-#define GIFConsts_sEmptyColorMap 65082
-#define GIFConsts_sEmptyImage 65083
-#define GIFConsts_sMultipleGCE 65084
-#define GIFConsts_sNoPalette 65085
-#define GIFConsts_sGIFImageFile 65086
-#define GIFConsts_sProgressLoading 65087
-#define GIFConsts_sBadColorIndexFixed 65088
-#define GIFConsts_sGIFErrorSaveEmpty 65089
-#define GIFConsts_sBadSignature 65090
-#define GIFConsts_sScreenBadColorSize 65091
-#define GIFConsts_sImageBadColorSize 65092
-#define GIFConsts_sUnknownExtension 65093
-#define GIFConsts_sBadExtensionLabel 65094
-#define GIFConsts_sOutOfMemDIB 65095
-#define GIFConsts_sDecodeTooFewBits 65096
-#define GIFConsts_sDecodeCircular 65097
-#define GIFConsts_sBadTrailer 65098
-#define GIFConsts_sBadExtensionInstance 65099
-#define GIFConsts_sBadBlockSize 65100
-#define GIFConsts_sBadBlock 65101
-#define GIFConsts_sUnsupportedClass 65102
-#define GIFConsts_sInvalidData 65103
-#define pnglang_EPNGUnexpectedEndText 65104
-#define pnglang_EPNGNoImageDataText 65105
-#define pnglang_EPNGCannotAddChunkText 65106
-#define pnglang_EPNGCannotAddInvalidImageText 65107
-#define pnglang_EPNGCouldNotLoadResourceText 65108
-#define pnglang_EPNGOutMemoryText 65109
-#define pnglang_EPNGCannotChangeTransparentText 65110
-#define pnglang_EPNGHeaderNotPresentText 65111
-#define pnglang_EInvalidNewSize 65112
-#define pnglang_EInvalidSpec 65113
+#define GIFConsts_sDecodeCircular 65056
+#define GIFConsts_sBadTrailer 65057
+#define GIFConsts_sBadExtensionInstance 65058
+#define GIFConsts_sBadBlockSize 65059
+#define GIFConsts_sBadBlock 65060
+#define GIFConsts_sUnsupportedClass 65061
+#define GIFConsts_sInvalidData 65062
+#define GIFConsts_sBadSize 65063
+#define GIFConsts_sScreenSizeExceeded 65064
+#define GIFConsts_sNoColorTable 65065
+#define GIFConsts_sBadPixelCoordinates 65066
+#define GIFConsts_sInvalidPixelFormat 65067
+#define GIFConsts_sBadDimension 65068
+#define GIFConsts_sNoDIB 65069
+#define GIFConsts_sInvalidStream 65070
+#define GIFConsts_sInvalidColor 65071
+#define XLSPNGLang_EPNGCannotChangeTransparentText 65072
+#define XLSPNGLang_EPNGHeaderNotPresentText 65073
+#define XLSPNGLang_EInvalidNewSize 65074
+#define XLSPNGLang_EInvalidSpec 65075
+#define GIFConsts_sOutOfData 65076
+#define GIFConsts_sTooManyColors 65077
+#define GIFConsts_sBadColorIndex 65078
+#define GIFConsts_sBadColorIndexFixed 65079
+#define GIFConsts_sGIFErrorSaveEmpty 65080
+#define GIFConsts_sBadSignature 65081
+#define GIFConsts_sScreenBadColorSize 65082
+#define GIFConsts_sImageBadColorSize 65083
+#define GIFConsts_sUnknownExtension 65084
+#define GIFConsts_sBadExtensionLabel 65085
+#define GIFConsts_sOutOfMemDIB 65086
+#define GIFConsts_sDecodeTooFewBits 65087
+#define XLSPNGLang_EPNGZLIBErrorText 65088
+#define XLSPNGLang_EPNGInvalidPaletteText 65089
+#define XLSPNGLang_EPNGInvalidFileHeaderText 65090
+#define XLSPNGLang_EPNGIHDRNotFirstText 65091
+#define XLSPNGLang_EPNGSizeExceedsText 65092
+#define XLSPNGLang_EPNGUnknownPalEntryText 65093
+#define XLSPNGLang_EPNGUnknownCriticalChunkText 65094
+#define XLSPNGLang_EPNGUnknownCompressionText 65095
+#define XLSPNGLang_EPNGUnknownInterlaceText 65096
+#define XLSPNGLang_EPNGCannotAssignChunkText 65097
+#define XLSPNGLang_EPNGUnexpectedEndText 65098
+#define XLSPNGLang_EPNGNoImageDataText 65099
+#define XLSPNGLang_EPNGCannotAddChunkText 65100
+#define XLSPNGLang_EPNGCannotAddInvalidImageText 65101
+#define XLSPNGLang_EPNGCouldNotLoadResourceText 65102
+#define XLSPNGLang_EPNGOutMemoryText 65103
+#define DBConsts_SInvalidBcdValue 65104
+#define DBConsts_SCouldNotParseTimeStamp 65105
+#define DBConsts_SInvalidSqlTimeStamp 65106
+#define ComConst_SOleError 65107
+#define ComConst_SNoMethod 65108
+#define ComConst_SVarNotObject 65109
+#define ComConst_STooManyParams 65110
+#define AsyncCalls_RsAsyncCallNotFinished 65111
+#define AsyncCalls_RsForgetWasCalled 65112
+#define AsyncCalls_RsNoVclSyncPossible 65113
 #define JConsts_sChangeJPGSize 65114
 #define JConsts_sJPEGError 65115
 #define JConsts_sJPEGImageFile 65116
-#define GIFConsts_sOutOfData 65117
-#define GIFConsts_sTooManyColors 65118
-#define GIFConsts_sBadColorIndex 65119
-#define AsyncCalls_RsAsyncCallNotFinished 65120
-#define AsyncCalls_RsForgetWasCalled 65121
-#define AsyncCalls_RsNoVclSyncPossible 65122
-#define pnglang_EPngInvalidCRCText 65123
-#define pnglang_EPNGInvalidIHDRText 65124
-#define pnglang_EPNGMissingMultipleIDATText 65125
-#define pnglang_EPNGZLIBErrorText 65126
-#define pnglang_EPNGInvalidPaletteText 65127
-#define pnglang_EPNGInvalidFileHeaderText 65128
-#define pnglang_EPNGIHDRNotFirstText 65129
-#define pnglang_EPNGSizeExceedsText 65130
-#define pnglang_EPNGUnknownPalEntryText 65131
-#define pnglang_EPNGUnknownCriticalChunkText 65132
-#define pnglang_EPNGUnknownCompressionText 65133
-#define pnglang_EPNGUnknownInterlaceText 65134
-#define pnglang_EPNGCannotAssignChunkText 65135
+#define XLSPNGLang_EPngInvalidCRCText 65117
+#define XLSPNGLang_EPNGInvalidIHDRText 65118
+#define XLSPNGLang_EPNGMissingMultipleIDATText 65119
+#define pnglang_EPNGUnknownPalEntryText 65120
+#define pnglang_EPNGUnknownCriticalChunkText 65121
+#define pnglang_EPNGUnknownCompressionText 65122
+#define pnglang_EPNGUnknownInterlaceText 65123
+#define pnglang_EPNGCannotAssignChunkText 65124
+#define pnglang_EPNGUnexpectedEndText 65125
+#define pnglang_EPNGNoImageDataText 65126
+#define pnglang_EPNGCannotAddChunkText 65127
+#define pnglang_EPNGCannotAddInvalidImageText 65128
+#define pnglang_EPNGCouldNotLoadResourceText 65129
+#define pnglang_EPNGOutMemoryText 65130
+#define pnglang_EPNGCannotChangeTransparentText 65131
+#define pnglang_EPNGHeaderNotPresentText 65132
+#define pnglang_EInvalidNewSize 65133
+#define pnglang_EInvalidSpec 65134
+#define DBConsts_SBcdOverflow 65135
 #define ComStrs_sInvalidComCtl32 65136
 #define ComStrs_sDateTimeMax 65137
 #define ComStrs_sDateTimeMin 65138
@@ -211,14 +211,14 @@
 #define ComStrs_sFailSetCalMaxSelRange 65141
 #define ComStrs_sFailSetCalMinMaxRange 65142
 #define ComStrs_sFailsetCalSelRange 65143
-#define DBConsts_SBcdOverflow 65144
-#define DBConsts_SInvalidBcdValue 65145
-#define DBConsts_SCouldNotParseTimeStamp 65146
-#define DBConsts_SInvalidSqlTimeStamp 65147
-#define ComConst_SOleError 65148
-#define ComConst_SNoMethod 65149
-#define ComConst_SVarNotObject 65150
-#define ComConst_STooManyParams 65151
+#define pnglang_EPngInvalidCRCText 65144
+#define pnglang_EPNGInvalidIHDRText 65145
+#define pnglang_EPNGMissingMultipleIDATText 65146
+#define pnglang_EPNGZLIBErrorText 65147
+#define pnglang_EPNGInvalidPaletteText 65148
+#define pnglang_EPNGInvalidFileHeaderText 65149
+#define pnglang_EPNGIHDRNotFirstText 65150
+#define pnglang_EPNGSizeExceedsText 65151
 #define ComStrs_sTabFailClear 65152
 #define ComStrs_sTabFailDelete 65153
 #define ComStrs_sTabFailRetrieve 65154
@@ -704,38 +704,29 @@ BEGIN
 	IdResourceStrings_RSStackEALREADY,	"Operation already in progress."
 	IdResourceStrings_RSStackENOTSOCK,	"Socket operation on non-socket."
 	IdResourceStrings_RSStackEDESTADDRREQ,	"Destination address required."
-	XLSPNGLang_EPNGUnknownInterlaceText,	"This \"Portable Network Graphics\" image uses an unknown interlace scheme which could not be decoded."
-	XLSPNGLang_EPNGCannotAssignChunkText,	"The chunks must be compatible to be assigned."
-	XLSPNGLang_EPNGUnexpectedEndText,	"This \"Portable Network Graphics\" image is invalid because the decoder found an unexpected end of the file."
-	XLSPNGLang_EPNGNoImageDataText,	"This \"Portable Network Graphics\" image contains no data."
-	XLSPNGLang_EPNGCannotAddChunkText,	"The program tried to add a existent critical chunk to the current image which is not allowed."
-	XLSPNGLang_EPNGCannotAddInvalidImageText,	"It's not allowed to add a new chunk because the current image is invalid."
-	XLSPNGLang_EPNGCouldNotLoadResourceText,	"The png image could not be loaded from the resource ID."
-	XLSPNGLang_EPNGOutMemoryText,	"Some operation could not be performed because the system is out of resources. Close some windows and try again."
-	XLSPNGLang_EPNGCannotChangeTransparentText,	"Setting bit transparency color is not allowed for png images containing alpha value for each pixel (COLOR_RGBALPHA and COLOR_GRAYSCALEALPHA)"
-	XLSPNGLang_EPNGHeaderNotPresentText,	"This operation is not valid because the current image contains no valid header."
-	XLSPNGLang_EInvalidNewSize,	"The new size provided for image resizing is invalid."
-	XLSPNGLang_EInvalidSpec,	"The \"Portable Network Graphics\" could not be created because invalid image type parameters have being provided."
-	IdResourceStrings_RSWinsockCallError,	"Error on call to Winsock2 library function %s"
-	IdResourceStrings_RSWinsockLoadError,	"Error on loading Winsock2 library (%s)"
-	IdResourceStrings_RSStatusResolving,	"Resolving hostname %s."
-	IdResourceStrings_RSStatusConnecting,	"Connecting to %s."
+	GIFConsts_sInvalidBitSize,	"Invalid Bits Per Pixel value"
+	GIFConsts_sEmptyColorMap,	"Color table is empty"
+	GIFConsts_sEmptyImage,	"Image is empty"
+	GIFConsts_sMultipleGCE,	"Frame contains multiple Graphic Control Extension blocks"
+	GIFConsts_sNoPalette,	"Missing, invalid or empty palette"
+	GIFConsts_sGIFImageFile,	"GIF Image"
+	GIFConsts_sProgressLoading,	"Loading"
 	GIFConsts_sProgressSaving,	"Saving"
 	GIFConsts_sProgressConverting,	"Converting"
 	GIFConsts_sProgressRendering,	"Rendering"
 	GIFConsts_sProgressCopying,	"Copying"
 	GIFConsts_sProgressOptimizing,	"Optimizing"
-	XLSPNGLang_EPngInvalidCRCText,	"This \"Portable Network Graphics\" image is not valid because it contains invalid pieces of data (crc error)"
-	XLSPNGLang_EPNGInvalidIHDRText,	"The \"Portable Network Graphics\" image could not be loaded because one of its main piece of data (ihdr) might be corrupted"
-	XLSPNGLang_EPNGMissingMultipleIDATText,	"This \"Portable Network Graphics\" image is invalid because it has missing image parts."
-	XLSPNGLang_EPNGZLIBErrorText,	"Could not decompress the image because it contains invalid compressed data.\r\n Description: "
-	XLSPNGLang_EPNGInvalidPaletteText,	"The \"Portable Network Graphics\" image contains an invalid palette."
-	XLSPNGLang_EPNGInvalidFileHeaderText,	"The file being readed is not a valid \"Portable Network Graphics\" image because it contains an invalid header. This file may be corruped, try obtaining it again."
-	XLSPNGLang_EPNGIHDRNotFirstText,	"This \"Portable Network Graphics\" image is not supported or it might be invalid.\r\n(IHDR chunk is not the first)"
-	XLSPNGLang_EPNGSizeExceedsText,	"This \"Portable Network Graphics\" image is not supported because either it's width or height exceeds the maximum size, which is 65535 pixels length."
-	XLSPNGLang_EPNGUnknownPalEntryText,	"There is no such palette entry."
-	XLSPNGLang_EPNGUnknownCriticalChunkText,	"This \"Portable Network Graphics\" image contains an unknown critical part which could not be decoded."
-	XLSPNGLang_EPNGUnknownCompressionText,	"This \"Portable Network Graphics\" image is encoded with an unknown compression scheme which could not be decoded."
+	IdResourceStrings_RSWinsockCallError,	"Error on call to Winsock2 library function %s"
+	IdResourceStrings_RSWinsockLoadError,	"Error on loading Winsock2 library (%s)"
+	IdResourceStrings_RSStatusResolving,	"Resolving hostname %s."
+	IdResourceStrings_RSStatusConnecting,	"Connecting to %s."
+	GIFConsts_sDecodeCircular,	"Circular decoder table entry"
+	GIFConsts_sBadTrailer,	"Invalid Image trailer"
+	GIFConsts_sBadExtensionInstance,	"Internal error: Extension Instance does not match Extension Label"
+	GIFConsts_sBadBlockSize,	"Unsupported Application Extension block size"
+	GIFConsts_sBadBlock,	"Unknown GIF block type"
+	GIFConsts_sUnsupportedClass,	"Object type not supported for operation"
+	GIFConsts_sInvalidData,	"Invalid GIF data"
 	GIFConsts_sBadSize,	"Invalid image size"
 	GIFConsts_sScreenSizeExceeded,	"Image exceeds Logical Screen size"
 	GIFConsts_sNoColorTable,	"No global or local color table defined"
@@ -745,13 +736,13 @@ BEGIN
 	GIFConsts_sNoDIB,	"Image has no DIB"
 	GIFConsts_sInvalidStream,	"Invalid stream operation"
 	GIFConsts_sInvalidColor,	"Color not in color table"
-	GIFConsts_sInvalidBitSize,	"Invalid Bits Per Pixel value"
-	GIFConsts_sEmptyColorMap,	"Color table is empty"
-	GIFConsts_sEmptyImage,	"Image is empty"
-	GIFConsts_sMultipleGCE,	"Frame contains multiple Graphic Control Extension blocks"
-	GIFConsts_sNoPalette,	"Missing, invalid or empty palette"
-	GIFConsts_sGIFImageFile,	"GIF Image"
-	GIFConsts_sProgressLoading,	"Loading"
+	XLSPNGLang_EPNGCannotChangeTransparentText,	"Setting bit transparency color is not allowed for png images containing alpha value for each pixel (COLOR_RGBALPHA and COLOR_GRAYSCALEALPHA)"
+	XLSPNGLang_EPNGHeaderNotPresentText,	"This operation is not valid because the current image contains no valid header."
+	XLSPNGLang_EInvalidNewSize,	"The new size provided for image resizing is invalid."
+	XLSPNGLang_EInvalidSpec,	"The \"Portable Network Graphics\" could not be created because invalid image type parameters have being provided."
+	GIFConsts_sOutOfData,	"Premature end of data"
+	GIFConsts_sTooManyColors,	"Color table overflow"
+	GIFConsts_sBadColorIndex,	"Invalid color index"
 	GIFConsts_sBadColorIndexFixed,	"Invalid color index - color map expanded"
 	GIFConsts_sGIFErrorSaveEmpty,	"Cannot save empty GIF"
 	GIFConsts_sBadSignature,	"Invalid GIF signature"
@@ -761,13 +752,43 @@ BEGIN
 	GIFConsts_sBadExtensionLabel,	"Invalid extension introducer"
 	GIFConsts_sOutOfMemDIB,	"Failed to allocate memory for GIF DIB"
 	GIFConsts_sDecodeTooFewBits,	"Decoder bit buffer under-run"
-	GIFConsts_sDecodeCircular,	"Circular decoder table entry"
-	GIFConsts_sBadTrailer,	"Invalid Image trailer"
-	GIFConsts_sBadExtensionInstance,	"Internal error: Extension Instance does not match Extension Label"
-	GIFConsts_sBadBlockSize,	"Unsupported Application Extension block size"
-	GIFConsts_sBadBlock,	"Unknown GIF block type"
-	GIFConsts_sUnsupportedClass,	"Object type not supported for operation"
-	GIFConsts_sInvalidData,	"Invalid GIF data"
+	XLSPNGLang_EPNGZLIBErrorText,	"Could not decompress the image because it contains invalid compressed data.\r\n Description: "
+	XLSPNGLang_EPNGInvalidPaletteText,	"The \"Portable Network Graphics\" image contains an invalid palette."
+	XLSPNGLang_EPNGInvalidFileHeaderText,	"The file being readed is not a valid \"Portable Network Graphics\" image because it contains an invalid header. This file may be corruped, try obtaining it again."
+	XLSPNGLang_EPNGIHDRNotFirstText,	"This \"Portable Network Graphics\" image is not supported or it might be invalid.\r\n(IHDR chunk is not the first)"
+	XLSPNGLang_EPNGSizeExceedsText,	"This \"Portable Network Graphics\" image is not supported because either it's width or height exceeds the maximum size, which is 65535 pixels length."
+	XLSPNGLang_EPNGUnknownPalEntryText,	"There is no such palette entry."
+	XLSPNGLang_EPNGUnknownCriticalChunkText,	"This \"Portable Network Graphics\" image contains an unknown critical part which could not be decoded."
+	XLSPNGLang_EPNGUnknownCompressionText,	"This \"Portable Network Graphics\" image is encoded with an unknown compression scheme which could not be decoded."
+	XLSPNGLang_EPNGUnknownInterlaceText,	"This \"Portable Network Graphics\" image uses an unknown interlace scheme which could not be decoded."
+	XLSPNGLang_EPNGCannotAssignChunkText,	"The chunks must be compatible to be assigned."
+	XLSPNGLang_EPNGUnexpectedEndText,	"This \"Portable Network Graphics\" image is invalid because the decoder found an unexpected end of the file."
+	XLSPNGLang_EPNGNoImageDataText,	"This \"Portable Network Graphics\" image contains no data."
+	XLSPNGLang_EPNGCannotAddChunkText,	"The program tried to add a existent critical chunk to the current image which is not allowed."
+	XLSPNGLang_EPNGCannotAddInvalidImageText,	"It's not allowed to add a new chunk because the current image is invalid."
+	XLSPNGLang_EPNGCouldNotLoadResourceText,	"The png image could not be loaded from the resource ID."
+	XLSPNGLang_EPNGOutMemoryText,	"Some operation could not be performed because the system is out of resources. Close some windows and try again."
+	DBConsts_SInvalidBcdValue,	"%s is not a valid BCD value"
+	DBConsts_SCouldNotParseTimeStamp,	"Could not parse SQL TimeStamp string"
+	DBConsts_SInvalidSqlTimeStamp,	"Invalid SQL date/time values"
+	ComConst_SOleError,	"OLE error %.8x"
+	ComConst_SNoMethod,	"Method '%s' not supported by automation object"
+	ComConst_SVarNotObject,	"Variant does not reference an automation object"
+	ComConst_STooManyParams,	"Dispatch methods do not support more than 64 parameters"
+	AsyncCalls_RsAsyncCallNotFinished,	"The asynchronous call is not finished yet"
+	AsyncCalls_RsForgetWasCalled,	"IAsyncCall.Forget was called. The interface isn't connected to the asynchronous call anymore"
+	AsyncCalls_RsNoVclSyncPossible,	"Cannot synchronize with the main thread anymore. Don't call IAsyncCall.Forget for functions that access the VCL"
+	JConsts_sChangeJPGSize,	"Cannot change the size of a JPEG image"
+	JConsts_sJPEGError,	"JPEG error #%d"
+	JConsts_sJPEGImageFile,	"JPEG Image File"
+	XLSPNGLang_EPngInvalidCRCText,	"This \"Portable Network Graphics\" image is not valid because it contains invalid pieces of data (crc error)"
+	XLSPNGLang_EPNGInvalidIHDRText,	"The \"Portable Network Graphics\" image could not be loaded because one of its main piece of data (ihdr) might be corrupted"
+	XLSPNGLang_EPNGMissingMultipleIDATText,	"This \"Portable Network Graphics\" image is invalid because it has missing image parts."
+	pnglang_EPNGUnknownPalEntryText,	"There is no such palette entry."
+	pnglang_EPNGUnknownCriticalChunkText,	"This \"Portable Network Graphics\" image contains an unknown critical part which could not be decoded."
+	pnglang_EPNGUnknownCompressionText,	"This \"Portable Network Graphics\" image is encoded with an unknown compression scheme which could not be decoded."
+	pnglang_EPNGUnknownInterlaceText,	"This \"Portable Network Graphics\" image uses an unknown interlace scheme which could not be decoded."
+	pnglang_EPNGCannotAssignChunkText,	"The chunks must be compatible to be assigned."
 	pnglang_EPNGUnexpectedEndText,	"This \"Portable Network Graphics\" image is invalid because the decoder found an unexpected end of the file."
 	pnglang_EPNGNoImageDataText,	"This \"Portable Network Graphics\" image contains no data."
 	pnglang_EPNGCannotAddChunkText,	"The program tried to add a existent critical chunk to the current image which is not allowed."
@@ -778,28 +799,7 @@ BEGIN
 	pnglang_EPNGHeaderNotPresentText,	"This operation is not valid because the current image contains no valid header."
 	pnglang_EInvalidNewSize,	"The new size provided for image resizing is invalid."
 	pnglang_EInvalidSpec,	"The \"Portable Network Graphics\" could not be created because invalid image type parameters have being provided."
-	JConsts_sChangeJPGSize,	"Cannot change the size of a JPEG image"
-	JConsts_sJPEGError,	"JPEG error #%d"
-	JConsts_sJPEGImageFile,	"JPEG Image File"
-	GIFConsts_sOutOfData,	"Premature end of data"
-	GIFConsts_sTooManyColors,	"Color table overflow"
-	GIFConsts_sBadColorIndex,	"Invalid color index"
-	AsyncCalls_RsAsyncCallNotFinished,	"The asynchronous call is not finished yet"
-	AsyncCalls_RsForgetWasCalled,	"IAsyncCall.Forget was called. The interface isn't connected to the asynchronous call anymore"
-	AsyncCalls_RsNoVclSyncPossible,	"Cannot synchronize with the main thread anymore. Don't call IAsyncCall.Forget for functions that access the VCL"
-	pnglang_EPngInvalidCRCText,	"This \"Portable Network Graphics\" image is not valid because it contains invalid pieces of data (crc error)"
-	pnglang_EPNGInvalidIHDRText,	"The \"Portable Network Graphics\" image could not be loaded because one of its main piece of data (ihdr) might be corrupted"
-	pnglang_EPNGMissingMultipleIDATText,	"This \"Portable Network Graphics\" image is invalid because it has missing image parts."
-	pnglang_EPNGZLIBErrorText,	"Could not decompress the image because it contains invalid compressed data.\r\n Description: "
-	pnglang_EPNGInvalidPaletteText,	"The \"Portable Network Graphics\" image contains an invalid palette."
-	pnglang_EPNGInvalidFileHeaderText,	"The file being read is not a valid \"Portable Network Graphics\" image because it contains an invalid header. This file may be corrupted, try obtaining it again"
-	pnglang_EPNGIHDRNotFirstText,	"This \"Portable Network Graphics\" image is not supported or it might be invalid.\r\n(IHDR chunk is not the first)"
-	pnglang_EPNGSizeExceedsText,	"This \"Portable Network Graphics\" image is not supported because either it's width or height exceeds the maximum size, which is 65535 pixels length."
-	pnglang_EPNGUnknownPalEntryText,	"There is no such palette entry."
-	pnglang_EPNGUnknownCriticalChunkText,	"This \"Portable Network Graphics\" image contains an unknown critical part which could not be decoded."
-	pnglang_EPNGUnknownCompressionText,	"This \"Portable Network Graphics\" image is encoded with an unknown compression scheme which could not be decoded."
-	pnglang_EPNGUnknownInterlaceText,	"This \"Portable Network Graphics\" image uses an unknown interlace scheme which could not be decoded."
-	pnglang_EPNGCannotAssignChunkText,	"The chunks must be compatible to be assigned."
+	DBConsts_SBcdOverflow,	"BCD overflow"
 	ComStrs_sInvalidComCtl32,	"This control requires version 4.70 or greater of COMCTL32.DLL"
 	ComStrs_sDateTimeMax,	"Date exceeds maximum of %s"
 	ComStrs_sDateTimeMin,	"Date is less than minimum of %s"
@@ -808,14 +808,14 @@ BEGIN
 	ComStrs_sFailSetCalMaxSelRange,	"Failed to set maximum selection range"
 	ComStrs_sFailSetCalMinMaxRange,	"Failed to set calendar min/max range"
 	ComStrs_sFailsetCalSelRange,	"Failed to set calendar selected range"
-	DBConsts_SBcdOverflow,	"BCD overflow"
-	DBConsts_SInvalidBcdValue,	"%s is not a valid BCD value"
-	DBConsts_SCouldNotParseTimeStamp,	"Could not parse SQL TimeStamp string"
-	DBConsts_SInvalidSqlTimeStamp,	"Invalid SQL date/time values"
-	ComConst_SOleError,	"OLE error %.8x"
-	ComConst_SNoMethod,	"Method '%s' not supported by automation object"
-	ComConst_SVarNotObject,	"Variant does not reference an automation object"
-	ComConst_STooManyParams,	"Dispatch methods do not support more than 64 parameters"
+	pnglang_EPngInvalidCRCText,	"This \"Portable Network Graphics\" image is not valid because it contains invalid pieces of data (crc error)"
+	pnglang_EPNGInvalidIHDRText,	"The \"Portable Network Graphics\" image could not be loaded because one of its main piece of data (ihdr) might be corrupted"
+	pnglang_EPNGMissingMultipleIDATText,	"This \"Portable Network Graphics\" image is invalid because it has missing image parts."
+	pnglang_EPNGZLIBErrorText,	"Could not decompress the image because it contains invalid compressed data.\r\n Description: "
+	pnglang_EPNGInvalidPaletteText,	"The \"Portable Network Graphics\" image contains an invalid palette."
+	pnglang_EPNGInvalidFileHeaderText,	"The file being read is not a valid \"Portable Network Graphics\" image because it contains an invalid header. This file may be corrupted, try obtaining it again"
+	pnglang_EPNGIHDRNotFirstText,	"This \"Portable Network Graphics\" image is not supported or it might be invalid.\r\n(IHDR chunk is not the first)"
+	pnglang_EPNGSizeExceedsText,	"This \"Portable Network Graphics\" image is not supported because either it's width or height exceeds the maximum size, which is 65535 pixels length."
 	ComStrs_sTabFailClear,	"Failed to clear tab control"
 	ComStrs_sTabFailDelete,	"Failed to delete tab at index %d"
 	ComStrs_sTabFailRetrieve,	"Failed to retrieve tab at index %d"
@@ -1205,27 +1205,27 @@ END
 /* c:\program files (x86)\embarcadero\rad studio\7.0\lib\Character.res */
 /* c:\program files (x86)\embarcadero\rad studio\7.0\lib\controls.res */
 /* c:\program files (x86)\embarcadero\rad studio\7.0\lib\buttons.res */
-/* c:\program files (x86)\embarcadero\rad studio\7.0\lib\filectrl.res */
-/* c:\program files (x86)\embarcadero\rad studio\7.0\lib\Teeresou.res */
-/* ..\..\Common\Forms\PasswdForm.dfm */
-/* ..\..\Common\Forms\ErrorForm.dfm */
-/* ..\..\..\Common\Form\NotifyForm.dfm */
-/* ..\Forms\HVDataFrame.dfm */
-/* ..\..\..\Common\Form\SeatMtrTestFrame.dfm */
-/* ..\..\..\Common\Form\MsgForm.dfm */
-/* ..\..\Common\Forms\ModelInfoFrame.dfm */
 /* D:\Project\KIILIBS\Public\VCL\Abakus\ABK_RUN.RES */
-/* ..\..\..\Common\Form\StateViewForm.dfm */
-/* ..\..\Common\Forms\ModelSelSimForm.dfm */
+/* c:\program files (x86)\embarcadero\rad studio\7.0\lib\filectrl.res */
+/* D:\Project\1_DaeWon\2502. HI RJ1 JG Line(경주)\Src\01.FrontSeat\Common\Forms\ErrorForm.dfm */
+/* ..\..\Common\Forms\ModelInfoFrame.dfm */
+/* ..\..\Common\Forms\PasswdForm.dfm */
+/* ..\..\..\Common\Form\NotifyForm.dfm */
+/* ..\..\..\Common\Form\MsgForm.dfm */
 /* ..\..\..\Common\Form\ReferBaseForm.dfm */
-/* ..\..\..\Common\Form\DIOform.dfm */
+/* D:\Project\1_DaeWon\2502. HI RJ1 JG Line(경주)\Src\Common\Form\DIOform.dfm */
+/* c:\program files (x86)\embarcadero\rad studio\7.0\lib\Teeresou.res */
 /* ..\..\..\Common\Form\ADForm.dfm */
 /* ..\..\..\Common\Form\DioReferForm.dfm */
-/* ..\..\Common\Forms\BaseMainForm.dfm */
+/* ..\..\Common\Forms\ModelSelSimForm.dfm */
+/* ..\..\..\Common\Form\StateViewForm.dfm */
+/* D:\Project\1_DaeWon\2502. HI RJ1 JG Line(경주)\Src\01.FrontSeat\Common\Forms\BaseMainForm.dfm */
+/* ..\..\..\Common\Form\SeatMtrTestFrame.dfm */
+/* ..\Forms\HVDataFrame.dfm */
 /* D:\Project\KIILIBS\Delphi\GCommon\Lib\CpuUsage\waitForm.dfm */
 /* ..\..\..\Common\Form\ExitForm.dfm */
 /* ..\Forms\MotorSpecFrame.dfm */
-/* ..\Forms\EditForm.dfm */
+/* D:\Project\1_DaeWon\2502. HI RJ1 JG Line(경주)\Src\01.FrontSeat\02.SoundProof&Elec\Forms\EditForm.dfm */
 /* ..\Forms\SelModelForm.dfm */
 /* ..\Forms\UserModelForm.dfm */
 /* ..\..\..\Common\Form\MagneticForm.dfm */
@@ -1233,19 +1233,19 @@ END
 /* ..\..\..\Common\Form\DIOExForm.dfm */
 /* ..\..\..\Common\Form\ECUVerListForm.dfm */
 /* ..\..\..\Common\Form\TechSupportForm.dfm */
+/* ..\Forms\ADCheckform.dfm */
 /* ..\Forms\AComReferForm.dfm */
 /* ..\Forms\ComsForm.dfm */
 /* ..\Forms\ComReferForm.dfm */
-/* ..\Forms\ReferenceForm.dfm */
-/* ..\Forms\LanSetupform.dfm */
+/* ..\..\Common\Forms\PowerSupplyForm.dfm */
+/* ..\..\..\Common\Form\CanOperForm.dfm */
 /* ..\..\..\Common\Form\CANMatrixFrame.dfm */
 /* ..\..\..\Common\Form\CanCtrlForm.dfm */
-/* ..\..\..\Common\Form\CanOperForm.dfm */
-/* ..\..\Common\Forms\PowerSupplyForm.dfm */
-/* ..\Forms\ADCheckform.dfm */
-/* D:\Project\1_DaeWon\2502. HI RJ1 JG Line(경주)\Src\01.FrontSeat\02.SoundProof&Elec\Forms\UserReferForm.dfm */
+/* ..\Forms\LanSetupform.dfm */
+/* D:\Project\1_DaeWon\2502. HI RJ1 JG Line(경주)\Src\01.FrontSeat\02.SoundProof&Elec\Forms\ReferenceForm.dfm */
+/* ..\Forms\UserReferForm.dfm */
 /* ..\..\..\Common\Form\colorListForm.dfm */
-/* ..\..\Common\Forms\Graphconfigform.dfm */
+/* D:\Project\1_DaeWon\2502. HI RJ1 JG Line(경주)\Src\01.FrontSeat\Common\Forms\Graphconfigform.dfm */
 /* D:\Project\1_DaeWon\2502. HI RJ1 JG Line(경주)\Src\01.FrontSeat\02.SoundProof&Elec\Forms\SoundElecTestForm.dfm */
 /* ..\..\..\Common\Form\BkForm.dfm */
 /* ..\..\..\Common\Form\DAQValFrame.dfm */

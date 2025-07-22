@@ -149,7 +149,7 @@ begin
             Result := CreateSimCAN;
         end;
 
-        Result.WQueueing := true;
+        Result.WQueueing := false;
 
     end;
 
@@ -424,31 +424,15 @@ var
 begin
     mReady := false;
 
-    mPLCAddInfos.Free;
-
-
-    if Assigned(gTsWorks) then
-        FreeAndNil(gTsWorks);
-
-    if Assigned(gKiiDB) then
-        FreeAndNil(gKiiDB);
-
-    if Assigned(gPopsys) then
-        FreeAndNil(gPopsys);
-    if Assigned(gDcPower) then
-        FreeAndNil(gDcPower);
-
-    if Assigned(gModels) then
-        FreeAndNil(gModels);
-
-    if Assigned(gDevComs) then
-        FreeAndNil(gDevComs);
-
-    if Assigned(gLanDIO) then
-        FreeAndNil(gLanDIO);
-
-    if Assigned(gSocketMan) then
-        FreeAndNil(gSocketMan);
+    FreeAndNil(mPLCAddinfos);
+    FreeAndNil(gTsWorks);
+    FreeAndNil(gKiiDB);
+    FreeAndNil(gPopsys);
+    FreeAndNil(gDCPower);
+    FreeAndNil(gModels);
+    FreeAndNil(gDevComs);
+    FreeAndNil(gLanDIO);
+    FreeAndNil(gSocketMan);
 
     gLog.Debug('WORK DESTROIED', []);
 
